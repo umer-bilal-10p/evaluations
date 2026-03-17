@@ -1,5 +1,6 @@
 import { useMsal } from "@azure/msal-react";
 import { loginRequest } from "@/lib/msalConfig";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
 export default function LoginPage() {
@@ -56,10 +57,11 @@ export default function LoginPage() {
             </div>
           )}
 
-          <button
+          <Button
             onClick={handleMicrosoftLogin}
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 rounded-xl bg-[#0047BB] hover:bg-[#0052d4] active:bg-[#003fa3] text-white font-semibold py-3.5 px-5 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 disabled:opacity-60 disabled:cursor-not-allowed"
+            size="lg"
+            className="w-full flex items-center justify-center gap-3 bg-[#0047BB] hover:bg-[#0052d4] active:bg-[#003fa3] text-white font-semibold rounded-xl py-3.5 transition-colors duration-150 focus-visible:ring-white/60"
           >
             {isLoading ? (
               <svg
@@ -86,7 +88,7 @@ export default function LoginPage() {
               <MicrosoftIcon />
             )}
             <span>{isLoading ? "Signing in…" : "Sign in with Microsoft"}</span>
-          </button>
+          </Button>
 
           <p className="mt-6 text-center text-xs text-white/40">
             Access is restricted to Sunbelt Solomon employees.

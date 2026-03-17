@@ -1,4 +1,4 @@
-import { Configuration, PopupRequest } from "@azure/msal-browser";
+import { Configuration, RedirectRequest } from "@azure/msal-browser";
 
 export const msalConfig: Configuration = {
   auth: {
@@ -9,10 +9,9 @@ export const msalConfig: Configuration = {
   },
   cache: {
     cacheLocation: "sessionStorage",
-    storeAuthStateInCookie: false,
   },
 };
 
-export const loginRequest: PopupRequest = {
+export const loginRequest: RedirectRequest = {
   scopes: ["openid", "profile", "email"],
 };
