@@ -69,21 +69,12 @@ export default function LoginPage() {
       />
 
       <div className="relative z-10 flex flex-col items-center w-full px-4">
-        <div className="mb-10 flex flex-col items-center">
-          <img
-            src="/logo-white.png"
-            alt="Sunbelt Solomon"
-            className="h-28 w-auto object-contain select-none"
-            draggable={false}
-          />
-        </div>
-
         <div className="w-full max-w-sm rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl px-8 py-10">
           <div className="mb-8 text-center">
             <img
-              src="/wordmark-white.png"
+              src="/sss-mark-white.png"
               alt="Sunbelt Solomon"
-              className="h-3.5 w-auto object-contain select-none mx-auto mb-2"
+              className="h-14 w-auto object-contain select-none mx-auto mb-4"
               draggable={false}
             />
             <h1 className="text-3xl font-bold text-white tracking-tight">
