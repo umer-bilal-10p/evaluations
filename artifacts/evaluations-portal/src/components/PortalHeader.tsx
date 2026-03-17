@@ -14,18 +14,12 @@ export function PortalHeader({ pageName }: { pageName: string }) {
         gap: 16,
       }}
     >
-      {/* Left: brand + divider + page name */}
+      {/* Left: brand logo + divider + page name */}
       <div className="flex items-center gap-3">
         <img
-          src="/logo-white.png"
+          src="/sss-logo-white.png"
           alt="Sunbelt Solomon"
-          style={{ height: 28, width: "auto", objectFit: "contain" }}
-          draggable={false}
-        />
-        <img
-          src="/wordmark-white.png"
-          alt="Sunbelt Solomon"
-          style={{ height: 11, width: "auto", objectFit: "contain" }}
+          style={{ height: 22, width: "auto", objectFit: "contain" }}
           draggable={false}
         />
         <div style={{ width: 1, height: 24, background: "rgba(255,255,255,0.20)", margin: "0 4px" }} />
