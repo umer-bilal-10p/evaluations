@@ -77,14 +77,10 @@ export default function LoginPage() {
 
   function LightLogin({ openSso, toggleDark }: { openSso: () => void; toggleDark: () => void }) {
     return (
-      <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden"
-        style={{ background: "linear-gradient(145deg, #eef2ff 0%, #f8fafc 50%, #e0f2fe 100%)" }}>
-
-        {/* Subtle background decoration */}
-        <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
-          <div style={{ position: "absolute", top: "-15%", right: "-10%", width: 520, height: 520, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,71,187,0.06) 0%, transparent 70%)" }} />
-          <div style={{ position: "absolute", bottom: "-10%", left: "-8%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,71,187,0.04) 0%, transparent 70%)" }} />
-        </div>
+      <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('/bg-power.png')" }} />
+        {/* Light overlay to brighten the photo */}
+        <div className="absolute inset-0" style={{ background: "rgba(255,255,255,0.55)" }} />
 
         {/* Mode toggle — top right */}
         <button onClick={toggleDark} title="Switch to dark mode"
