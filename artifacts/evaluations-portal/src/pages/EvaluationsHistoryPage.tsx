@@ -15,25 +15,28 @@ interface EvaluationUnit {
 }
 
 const SEED_UNITS: EvaluationUnit[] = [
-  { id: "1",  dateReceived: "2024-11-15", icSerialNumber: "IC-2024-001", manufacturer: "ABB",     kva: 500,  warehouse: "99 - Houston, TX",  status: "Completed" },
-  { id: "2",  dateReceived: "2024-12-03", icSerialNumber: "TF-8842-B",   manufacturer: "Siemens", kva: 1000, warehouse: "12 - Dallas, TX",   status: "Completed" },
-  { id: "3",  dateReceived: "2025-01-08", icSerialNumber: "TF-9901-C",   manufacturer: "GE",      kva: 750,  warehouse: "07 - Atlanta, GA",  status: "Completed" },
-  { id: "4",  dateReceived: "2025-01-22", icSerialNumber: "TF-1045-A",   manufacturer: "Eaton",   kva: 250,  warehouse: "34 - Phoenix, AZ",  status: "Completed" },
-  { id: "5",  dateReceived: "2025-02-14", icSerialNumber: "IC-2025-008", manufacturer: "ABB",     kva: 1500, warehouse: "99 - Houston, TX",  status: "Completed" },
-  { id: "6",  dateReceived: "2025-03-01", icSerialNumber: "TF-3371-D",   manufacturer: "Siemens", kva: 2000, warehouse: "22 - Denver, CO",   status: "Completed" },
-  { id: "7",  dateReceived: "2025-03-18", icSerialNumber: "TF-5509-E",   manufacturer: "ABB",     kva: 500,  warehouse: "12 - Dallas, TX",   status: "Completed" },
-  { id: "8",  dateReceived: "2025-04-02", icSerialNumber: "IC-2025-044", manufacturer: "GE",      kva: 1000, warehouse: "99 - Houston, TX",  status: "Completed" },
-  { id: "9",  dateReceived: "2025-04-19", icSerialNumber: "TF-7723-F",   manufacturer: "Eaton",   kva: 3000, warehouse: "07 - Atlanta, GA",  status: "Completed" },
-  { id: "10", dateReceived: "2025-05-07", icSerialNumber: "TF-8831-G",   manufacturer: "Siemens", kva: 750,  warehouse: "34 - Phoenix, AZ",  status: "Completed" },
+  { id: "1",  dateReceived: "2024-11-15", icSerialNumber: "IC-2024-001", manufacturer: "ABB",     kva: 500,  warehouse: "99 - Houston, TX", status: "Completed" },
+  { id: "2",  dateReceived: "2024-12-03", icSerialNumber: "TF-8842-B",   manufacturer: "Siemens", kva: 1000, warehouse: "12 - Dallas, TX",  status: "Completed" },
+  { id: "3",  dateReceived: "2025-01-08", icSerialNumber: "TF-9901-C",   manufacturer: "GE",      kva: 750,  warehouse: "07 - Atlanta, GA", status: "Completed" },
+  { id: "4",  dateReceived: "2025-01-22", icSerialNumber: "TF-1045-A",   manufacturer: "Eaton",   kva: 250,  warehouse: "34 - Phoenix, AZ", status: "Completed" },
+  { id: "5",  dateReceived: "2025-02-14", icSerialNumber: "IC-2025-008", manufacturer: "ABB",     kva: 1500, warehouse: "99 - Houston, TX", status: "Completed" },
+  { id: "6",  dateReceived: "2025-03-01", icSerialNumber: "TF-3371-D",   manufacturer: "Siemens", kva: 2000, warehouse: "22 - Denver, CO",  status: "Completed" },
+  { id: "7",  dateReceived: "2025-03-18", icSerialNumber: "TF-5509-E",   manufacturer: "ABB",     kva: 500,  warehouse: "12 - Dallas, TX",  status: "Completed" },
+  { id: "8",  dateReceived: "2025-04-02", icSerialNumber: "IC-2025-044", manufacturer: "GE",      kva: 1000, warehouse: "99 - Houston, TX", status: "Completed" },
+  { id: "9",  dateReceived: "2025-04-19", icSerialNumber: "TF-7723-F",   manufacturer: "Eaton",   kva: 3000, warehouse: "07 - Atlanta, GA", status: "Completed" },
+  { id: "10", dateReceived: "2025-05-07", icSerialNumber: "TF-8831-G",   manufacturer: "Siemens", kva: 750,  warehouse: "34 - Phoenix, AZ", status: "Completed" },
 ];
 
 const ROW_INTERVAL_MS = 900;
 const ALL_STATUSES: EvalStatus[] = ["Pending", "In Progress", "Completed", "On Hold"];
 
 const MANUFACTURERS = [...new Set(SEED_UNITS.map((u) => u.manufacturer))].sort();
-const WAREHOUSES = [...new Set(SEED_UNITS.map((u) => u.warehouse))].sort();
+const WAREHOUSES    = [...new Set(SEED_UNITS.map((u) => u.warehouse))].sort();
+const KVA_VALUES    = [...new Set(SEED_UNITS.map((u) => u.kva))].sort((a, b) => a - b);
 
 type Filters = {
+  dateFrom: string;
+  dateTo: string;
   icSerialNumber: string;
   manufacturer: string;
   kva: string;
@@ -42,6 +45,8 @@ type Filters = {
 };
 
 const EMPTY_FILTERS: Filters = {
+  dateFrom: "",
+  dateTo: "",
   icSerialNumber: "",
   manufacturer: "",
   kva: "",
@@ -77,14 +82,9 @@ function StatusIcon({ status }: { status: EvalStatus }) {
 function StatusBadge({ status, onClick }: { status: EvalStatus; onClick: (e: React.MouseEvent) => void }) {
   const s = STATUS_STYLES[status];
   return (
-    <button
-      onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
-      style={{ background: s.bg, color: s.color, border: `1px solid ${s.borderColor}`, cursor: "pointer" }}
-      title="Click to change status"
-    >
-      <StatusIcon status={status} />
-      {status}
+    <button onClick={onClick} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
+      style={{ background: s.bg, color: s.color, border: `1px solid ${s.borderColor}`, cursor: "pointer" }} title="Click to change status">
+      <StatusIcon status={status} />{status}
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
         <polyline points="6 9 12 15 18 9" />
       </svg>
@@ -99,7 +99,6 @@ function StatusDropdown({ current, onSelect, onClose }: { current: EvalStatus; o
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, [onClose]);
-
   return (
     <div ref={ref} style={{ position: "absolute", zIndex: 200, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.18)", minWidth: 160, overflow: "hidden", marginTop: 4 }}>
       {ALL_STATUSES.map((s) => {
@@ -108,15 +107,9 @@ function StatusDropdown({ current, onSelect, onClose }: { current: EvalStatus; o
           <button key={s} onClick={() => { onSelect(s); onClose(); }}
             style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: s === current ? st.bg : "transparent", border: "none", cursor: "pointer", textAlign: "left", color: s === current ? st.color : "hsl(var(--foreground))", fontSize: 13, fontWeight: s === current ? 600 : 400, transition: "background 0.1s" }}
             onMouseEnter={(e) => { if (s !== current) (e.currentTarget as HTMLButtonElement).style.background = "hsl(var(--muted))"; }}
-            onMouseLeave={(e) => { if (s !== current) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
-          >
-            <span style={{ color: st.color }}><StatusIcon status={s} /></span>
-            {s}
-            {s === current && (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ marginLeft: "auto", color: st.color }}>
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            )}
+            onMouseLeave={(e) => { if (s !== current) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
+            <span style={{ color: st.color }}><StatusIcon status={s} /></span>{s}
+            {s === current && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ marginLeft: "auto", color: st.color }}><polyline points="20 6 9 17 4 12" /></svg>}
           </button>
         );
       })}
@@ -128,7 +121,6 @@ function CommentModal({ unitId, icNumber, onClose }: { unitId: string; icNumber:
   const [text, setText] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const handleSubmit = () => { if (!text.trim()) return; setSubmitted(true); setTimeout(onClose, 1200); };
-
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 14, width: "100%", maxWidth: 440, margin: "0 16px", padding: 24, boxShadow: "0 20px 48px rgba(0,0,0,0.25)" }}>
@@ -151,8 +143,7 @@ function CommentModal({ unitId, icNumber, onClose }: { unitId: string; icNumber:
         ) : (
           <>
             <textarea autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder="Add your notes about this evaluation unit…" rows={4}
-              style={{ width: "100%", resize: "none", padding: "10px 12px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))", color: "hsl(var(--foreground))", fontSize: 14, outline: "none", lineHeight: 1.6, boxSizing: "border-box" }}
-            />
+              style={{ width: "100%", resize: "none", padding: "10px 12px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))", color: "hsl(var(--foreground))", fontSize: 14, outline: "none", lineHeight: 1.6, boxSizing: "border-box" }} />
             <div className="flex justify-end gap-2 mt-3">
               <button onClick={onClose} style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent", color: "hsl(var(--muted-foreground))", fontSize: 13, cursor: "pointer" }}>Cancel</button>
               <button onClick={handleSubmit} disabled={!text.trim()} style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: text.trim() ? "#182557" : "hsl(var(--muted))", color: text.trim() ? "#fff" : "hsl(var(--muted-foreground))", fontSize: 13, fontWeight: 600, cursor: text.trim() ? "pointer" : "default", transition: "background 0.15s" }}>Save Comment</button>
@@ -164,56 +155,69 @@ function CommentModal({ unitId, icNumber, onClose }: { unitId: string; icNumber:
   );
 }
 
-/* ─── Filter input styles ──────────────────────────────────────────────────── */
-const filterInputBase: React.CSSProperties = {
+/* ─── Shared filter field styles ────────────────────────────────────────────── */
+const FIELD: React.CSSProperties = {
   width: "100%",
-  fontSize: 11,
-  padding: "4px 8px",
-  borderRadius: 6,
+  height: 34,
+  fontSize: 13,
+  fontWeight: 400,
+  padding: "0 10px",
+  borderRadius: 7,
   border: "1px solid hsl(var(--border))",
   background: "hsl(var(--background))",
   color: "hsl(var(--foreground))",
   outline: "none",
-  height: 28,
   boxSizing: "border-box",
+  lineHeight: "34px",
 };
 
-function FilterInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
-  return (
-    <input
-      type="text"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      style={filterInputBase}
-    />
-  );
+const SELECT_ARROW = `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E")`;
+
+const SELECT: React.CSSProperties = {
+  ...FIELD,
+  appearance: "none",
+  cursor: "pointer",
+  backgroundImage: SELECT_ARROW,
+  backgroundRepeat: "no-repeat",
+  backgroundPosition: "right 9px center",
+  paddingRight: 28,
+};
+
+const DATE_FIELD: React.CSSProperties = {
+  ...FIELD,
+  padding: "0 8px",
+  fontSize: 12,
+};
+
+function FInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  return <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={FIELD} />;
 }
 
-function FilterSelect({ value, onChange, options, placeholder }: { value: string; onChange: (v: string) => void; options: string[]; placeholder: string }) {
+function FSelect({ value, onChange, options, placeholder }: { value: string; onChange: (v: string) => void; options: string[]; placeholder: string }) {
   return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      style={{ ...filterInputBase, cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center", paddingRight: 24 }}
-    >
+    <select value={value} onChange={(e) => onChange(e.target.value)} style={SELECT}>
       <option value="">{placeholder}</option>
       {options.map((o) => <option key={o} value={o}>{o}</option>)}
     </select>
   );
 }
 
-/* ─── Main page ────────────────────────────────────────────────────────────── */
+function FDate({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  return <input type="date" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={DATE_FIELD} />;
+}
+
+/* ─── Main page ─────────────────────────────────────────────────────────────── */
 export default function EvaluationsHistoryPage() {
-  const [visibleCount, setVisibleCount] = useState(0);
-  const [started, setStarted] = useState(false);
-  const [statuses, setStatuses] = useState<Record<string, EvalStatus>>({});
+  const [visibleCount, setVisibleCount]     = useState(0);
+  const [started, setStarted]               = useState(false);
+  const [statuses, setStatuses]             = useState<Record<string, EvalStatus>>({});
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-  const [commentUnitId, setCommentUnitId] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [spinning, setSpinning] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [commentUnitId, setCommentUnitId]   = useState<string | null>(null);
+  const [refreshKey, setRefreshKey]         = useState(0);
+  const [spinning, setSpinning]             = useState(false);
+  /* Filters visible by default */
+  const [showFilters, setShowFilters]       = useState(true);
+  const [filters, setFilters]               = useState<Filters>(EMPTY_FILTERS);
 
   const startPopulation = useCallback(() => {
     setVisibleCount(0);
@@ -228,10 +232,9 @@ export default function EvaluationsHistoryPage() {
   }, [refreshKey, startPopulation]);
 
   useEffect(() => {
-    if (!started) return;
-    if (visibleCount >= SEED_UNITS.length) return;
-    const timer = setTimeout(() => setVisibleCount((c) => c + 1), ROW_INTERVAL_MS);
-    return () => clearTimeout(timer);
+    if (!started || visibleCount >= SEED_UNITS.length) return;
+    const t = setTimeout(() => setVisibleCount((c) => c + 1), ROW_INTERVAL_MS);
+    return () => clearTimeout(t);
   }, [started, visibleCount]);
 
   const handleRefresh = () => {
@@ -243,29 +246,32 @@ export default function EvaluationsHistoryPage() {
     setTimeout(() => setSpinning(false), 800);
   };
 
-  const setFilter = (key: keyof Filters, value: string) => {
+  const setFilter = (key: keyof Filters, value: string) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
-  };
 
   const visibleRows = SEED_UNITS.slice(0, visibleCount);
 
   const filteredRows = visibleRows.filter((unit) => {
     const status: EvalStatus = statuses[unit.id] ?? unit.status;
     return (
-      (!filters.icSerialNumber || unit.icSerialNumber.toLowerCase().includes(filters.icSerialNumber.toLowerCase())) &&
-      (!filters.manufacturer   || unit.manufacturer === filters.manufacturer) &&
-      (!filters.kva            || unit.kva.toString().includes(filters.kva)) &&
-      (!filters.warehouse      || unit.warehouse === filters.warehouse) &&
-      (!filters.status         || status === filters.status)
+      (!filters.dateFrom      || unit.dateReceived >= filters.dateFrom) &&
+      (!filters.dateTo        || unit.dateReceived <= filters.dateTo) &&
+      (!filters.icSerialNumber|| unit.icSerialNumber.toLowerCase().includes(filters.icSerialNumber.toLowerCase())) &&
+      (!filters.manufacturer  || unit.manufacturer === filters.manufacturer) &&
+      (!filters.kva           || unit.kva === Number(filters.kva)) &&
+      (!filters.warehouse     || unit.warehouse === filters.warehouse) &&
+      (!filters.status        || status === filters.status)
     );
   });
 
   const activeFilterCount = countActiveFilters(filters);
   const commentUnit = SEED_UNITS.find((u) => u.id === commentUnitId);
 
-  const COLUMNS = ["Date Received", "IC / Serial Number", "Manufacturer", "KVA", "Warehouse", "Status", ""];
+  /* Sticky header offsets */
+  const COL_HEADER_H = 41;
+  const FILTER_ROW_H = 58;
 
-  const thStyle: React.CSSProperties = {
+  const thBase: React.CSSProperties = {
     color: "hsl(var(--muted-foreground))",
     whiteSpace: "nowrap",
     position: "sticky",
@@ -273,15 +279,22 @@ export default function EvaluationsHistoryPage() {
     background: "hsl(var(--card))",
     zIndex: 10,
     borderBottom: showFilters ? "none" : "1px solid hsl(var(--border))",
+    padding: "10px 20px",
+    textAlign: "left",
+    fontSize: 11,
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: "0.07em",
   };
 
-  const filterRowThStyle: React.CSSProperties = {
+  const filterTh: React.CSSProperties = {
     position: "sticky",
-    top: 41,
+    top: COL_HEADER_H,
     background: "hsl(var(--card))",
     zIndex: 9,
-    padding: "0 20px 8px",
+    padding: "6px 12px 10px",
     borderBottom: "1px solid hsl(var(--border))",
+    verticalAlign: "top",
   };
 
   return (
@@ -292,31 +305,21 @@ export default function EvaluationsHistoryPage() {
         <Sidebar />
 
         <main className="flex-1 overflow-auto p-6 lg:p-8">
-          <div
-            className="rounded-xl overflow-hidden flex flex-col"
-            style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", boxShadow: "0 1px 3px rgba(0,0,0,0.08)", height: "calc(100vh - 136px)" }}
-          >
-            {/* Card header */}
+          <div className="rounded-xl overflow-hidden flex flex-col"
+            style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", boxShadow: "0 1px 3px rgba(0,0,0,0.08)", height: `calc(100vh - ${showFilters ? 136 : 136}px)` }}>
+
+            {/* ── Card header ── */}
             <div className="flex items-center justify-between px-6 py-5 flex-shrink-0" style={{ borderBottom: "1px solid hsl(var(--border))" }}>
               <div>
                 <h1 className="text-xl font-semibold" style={{ color: "hsl(var(--foreground))" }}>Evaluation History</h1>
                 <p className="mt-0.5 text-sm" style={{ color: "hsl(var(--muted-foreground))" }}>Transformer units received for evaluation, sorted oldest to newest</p>
               </div>
-
               <div className="flex items-center gap-2">
                 {/* Filter toggle */}
-                <button
-                  onClick={() => { setShowFilters((v) => !v); if (showFilters) setFilters(EMPTY_FILTERS); }}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8,
-                    border: showFilters ? "1px solid #5b9cf6" : "1px solid hsl(var(--border))",
-                    background: showFilters ? "rgba(91,156,246,0.10)" : "transparent",
-                    color: showFilters ? "#5b9cf6" : "hsl(var(--foreground))",
-                    fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "all 0.15s",
-                  }}
+                <button onClick={() => { setShowFilters((v) => !v); if (showFilters) setFilters(EMPTY_FILTERS); }}
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: showFilters ? "1px solid #5b9cf6" : "1px solid hsl(var(--border))", background: showFilters ? "rgba(91,156,246,0.10)" : "transparent", color: showFilters ? "#5b9cf6" : "hsl(var(--foreground))", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "all 0.15s" }}
                   onMouseEnter={(e) => { if (!showFilters) (e.currentTarget as HTMLButtonElement).style.background = "hsl(var(--muted))"; }}
-                  onMouseLeave={(e) => { if (!showFilters) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
-                >
+                  onMouseLeave={(e) => { if (!showFilters) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
                     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
                   </svg>
@@ -327,15 +330,11 @@ export default function EvaluationsHistoryPage() {
                     </span>
                   )}
                 </button>
-
                 {/* Refresh */}
-                <button
-                  onClick={handleRefresh}
-                  title="Refresh"
+                <button onClick={handleRefresh} title="Refresh"
                   style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent", color: "hsl(var(--foreground))", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "background 0.15s" }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "hsl(var(--muted))"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
-                >
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"
                     style={{ transition: "transform 0.6s ease", transform: spinning ? "rotate(360deg)" : "rotate(0deg)" }}>
                     <polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-.04-6.5" />
@@ -345,49 +344,64 @@ export default function EvaluationsHistoryPage() {
               </div>
             </div>
 
-            {/* Scrollable table */}
+            {/* ── Table ── */}
             <div className="flex-1 overflow-auto" style={{ position: "relative" }}>
-              {visibleCount === 0 ? (
-                <EmptyState />
-              ) : (
+              {visibleCount === 0 ? <EmptyState /> : (
                 <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
                   <thead>
-                    {/* Column label row */}
+                    {/* Column labels */}
                     <tr>
-                      {COLUMNS.map((col, i) => (
-                        <th key={i} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={thStyle}>
-                          {col}
-                        </th>
+                      {["Date Received","IC / Serial Number","Manufacturer","KVA","Warehouse","Status",""].map((col, i) => (
+                        <th key={i} style={thBase}>{col}</th>
                       ))}
                     </tr>
 
                     {/* Filter row */}
                     {showFilters && (
                       <tr>
-                        <th style={{ ...filterRowThStyle, minWidth: 140 }}>
-                          {/* Date has no dedicated filter — leave blank */}
+                        {/* Date range */}
+                        <th style={{ ...filterTh, minWidth: 160 }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                              <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap", minWidth: 20 }}>From</span>
+                              <FDate value={filters.dateFrom} onChange={(v) => setFilter("dateFrom", v)} placeholder="" />
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                              <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap", minWidth: 20 }}>To</span>
+                              <FDate value={filters.dateTo} onChange={(v) => setFilter("dateTo", v)} placeholder="" />
+                            </div>
+                          </div>
                         </th>
-                        <th style={{ ...filterRowThStyle, minWidth: 150 }}>
-                          <FilterInput value={filters.icSerialNumber} onChange={(v) => setFilter("icSerialNumber", v)} placeholder="Search…" />
+                        {/* IC search */}
+                        <th style={{ ...filterTh, minWidth: 150 }}>
+                          <FInput value={filters.icSerialNumber} onChange={(v) => setFilter("icSerialNumber", v)} placeholder="Search serial…" />
                         </th>
-                        <th style={{ ...filterRowThStyle, minWidth: 130 }}>
-                          <FilterSelect value={filters.manufacturer} onChange={(v) => setFilter("manufacturer", v)} options={MANUFACTURERS} placeholder="All" />
+                        {/* Manufacturer */}
+                        <th style={{ ...filterTh, minWidth: 130 }}>
+                          <FSelect value={filters.manufacturer} onChange={(v) => setFilter("manufacturer", v)} options={MANUFACTURERS} placeholder="All manufacturers" />
                         </th>
-                        <th style={{ ...filterRowThStyle, minWidth: 100 }}>
-                          <FilterInput value={filters.kva} onChange={(v) => setFilter("kva", v)} placeholder="e.g. 500" />
+                        {/* KVA */}
+                        <th style={{ ...filterTh, minWidth: 110 }}>
+                          <FSelect
+                            value={filters.kva}
+                            onChange={(v) => setFilter("kva", v)}
+                            options={KVA_VALUES.map(String)}
+                            placeholder="All kVA"
+                          />
                         </th>
-                        <th style={{ ...filterRowThStyle, minWidth: 160 }}>
-                          <FilterSelect value={filters.warehouse} onChange={(v) => setFilter("warehouse", v)} options={WAREHOUSES} placeholder="All" />
+                        {/* Warehouse */}
+                        <th style={{ ...filterTh, minWidth: 170 }}>
+                          <FSelect value={filters.warehouse} onChange={(v) => setFilter("warehouse", v)} options={WAREHOUSES} placeholder="All warehouses" />
                         </th>
-                        <th style={{ ...filterRowThStyle, minWidth: 180 }}>
-                          <FilterSelect value={filters.status} onChange={(v) => setFilter("status", v)} options={ALL_STATUSES} placeholder="All" />
+                        {/* Status */}
+                        <th style={{ ...filterTh, minWidth: 170 }}>
+                          <FSelect value={filters.status} onChange={(v) => setFilter("status", v)} options={ALL_STATUSES} placeholder="All statuses" />
                         </th>
-                        <th style={{ ...filterRowThStyle }}>
+                        {/* Clear all */}
+                        <th style={{ ...filterTh, verticalAlign: "middle" }}>
                           {activeFilterCount > 0 && (
-                            <button
-                              onClick={() => setFilters(EMPTY_FILTERS)}
-                              style={{ fontSize: 11, color: "#5b9cf6", background: "none", border: "none", cursor: "pointer", whiteSpace: "nowrap", padding: 0 }}
-                            >
+                            <button onClick={() => setFilters(EMPTY_FILTERS)}
+                              style={{ fontSize: 12, color: "#5b9cf6", background: "none", border: "none", cursor: "pointer", whiteSpace: "nowrap", padding: 0, fontWeight: 500 }}>
                               Clear all
                             </button>
                           )}
@@ -398,59 +412,48 @@ export default function EvaluationsHistoryPage() {
 
                   <tbody>
                     {filteredRows.length === 0 ? (
-                      <tr>
-                        <td colSpan={7}>
-                          <div className="flex flex-col items-center justify-center py-14 text-center">
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 10, opacity: 0.5 }}>
-                              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                            </svg>
-                            <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 13 }}>No results match the active filters.</p>
-                            <button onClick={() => setFilters(EMPTY_FILTERS)} style={{ marginTop: 8, fontSize: 12, color: "#5b9cf6", background: "none", border: "none", cursor: "pointer" }}>Clear filters</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredRows.map((unit, idx) => {
-                        const status: EvalStatus = statuses[unit.id] ?? unit.status;
-                        const isDropdownOpen = openDropdownId === unit.id;
-                        return (
-                          <tr
-                            key={unit.id}
-                            style={{ borderBottom: idx < filteredRows.length - 1 ? "1px solid hsl(var(--border))" : undefined, animation: "fadeSlideIn 0.4s ease-out" }}
-                            onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "hsl(var(--muted) / 0.4)"; }}
-                            onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "transparent"; }}
-                          >
-                            <td className="px-5 py-3.5" style={{ color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap" }}>{formatDate(unit.dateReceived)}</td>
-                            <td className="px-5 py-3.5 font-mono font-medium" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap" }}>{unit.icSerialNumber}</td>
-                            <td className="px-5 py-3.5" style={{ color: "hsl(var(--foreground))" }}>{unit.manufacturer}</td>
-                            <td className="px-5 py-3.5 font-medium" style={{ color: "hsl(var(--foreground))" }}>{unit.kva.toLocaleString()} kVA</td>
-                            <td className="px-5 py-3.5" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap" }}>{unit.warehouse}</td>
-                            <td className="px-5 py-3.5" style={{ position: "relative" }}>
-                              <div className="flex items-center gap-2">
-                                <div style={{ position: "relative" }}>
-                                  <StatusBadge status={status} onClick={(e) => { e.stopPropagation(); setOpenDropdownId(isDropdownOpen ? null : unit.id); }} />
-                                  {isDropdownOpen && (
-                                    <StatusDropdown current={status} onSelect={(s) => setStatuses((prev) => ({ ...prev, [unit.id]: s }))} onClose={() => setOpenDropdownId(null)} />
-                                  )}
-                                </div>
-                                <button
-                                  onClick={() => setCommentUnitId(unit.id)}
-                                  title="Add comment"
-                                  style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid hsl(var(--border))", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "hsl(var(--muted-foreground))", transition: "color 0.15s, background 0.15s", flexShrink: 0 }}
-                                  onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.color = "hsl(var(--foreground))"; b.style.background = "hsl(var(--muted))"; }}
-                                  onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.color = "hsl(var(--muted-foreground))"; b.style.background = "transparent"; }}
-                                >
-                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                                  </svg>
-                                </button>
+                      <tr><td colSpan={7}>
+                        <div className="flex flex-col items-center justify-center py-14 text-center">
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 10, opacity: 0.5 }}>
+                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                          </svg>
+                          <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 13 }}>No results match the active filters.</p>
+                          <button onClick={() => setFilters(EMPTY_FILTERS)} style={{ marginTop: 8, fontSize: 12, color: "#5b9cf6", background: "none", border: "none", cursor: "pointer" }}>Clear filters</button>
+                        </div>
+                      </td></tr>
+                    ) : filteredRows.map((unit, idx) => {
+                      const status: EvalStatus = statuses[unit.id] ?? unit.status;
+                      const isDropdownOpen = openDropdownId === unit.id;
+                      return (
+                        <tr key={unit.id}
+                          style={{ borderBottom: idx < filteredRows.length - 1 ? "1px solid hsl(var(--border))" : undefined, animation: "fadeSlideIn 0.4s ease-out" }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "hsl(var(--muted) / 0.4)"; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "transparent"; }}>
+                          <td className="px-5 py-3.5" style={{ color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap" }}>{formatDate(unit.dateReceived)}</td>
+                          <td className="px-5 py-3.5 font-mono font-medium" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap" }}>{unit.icSerialNumber}</td>
+                          <td className="px-5 py-3.5" style={{ color: "hsl(var(--foreground))" }}>{unit.manufacturer}</td>
+                          <td className="px-5 py-3.5 font-medium" style={{ color: "hsl(var(--foreground))" }}>{unit.kva.toLocaleString()} kVA</td>
+                          <td className="px-5 py-3.5" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap" }}>{unit.warehouse}</td>
+                          <td className="px-5 py-3.5" style={{ position: "relative" }}>
+                            <div className="flex items-center gap-2">
+                              <div style={{ position: "relative" }}>
+                                <StatusBadge status={status} onClick={(e) => { e.stopPropagation(); setOpenDropdownId(isDropdownOpen ? null : unit.id); }} />
+                                {isDropdownOpen && <StatusDropdown current={status} onSelect={(s) => setStatuses((prev) => ({ ...prev, [unit.id]: s }))} onClose={() => setOpenDropdownId(null)} />}
                               </div>
-                            </td>
-                            <td className="px-3 py-3.5" />
-                          </tr>
-                        );
-                      })
-                    )}
+                              <button onClick={() => setCommentUnitId(unit.id)} title="Add comment"
+                                style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid hsl(var(--border))", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "hsl(var(--muted-foreground))", transition: "color 0.15s, background 0.15s", flexShrink: 0 }}
+                                onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.color = "hsl(var(--foreground))"; b.style.background = "hsl(var(--muted))"; }}
+                                onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.color = "hsl(var(--muted-foreground))"; b.style.background = "transparent"; }}>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                                </svg>
+                              </button>
+                            </div>
+                          </td>
+                          <td className="px-3 py-3.5" />
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
@@ -467,6 +470,14 @@ export default function EvaluationsHistoryPage() {
         @keyframes fadeSlideIn {
           from { opacity: 0; transform: translateY(5px); }
           to   { opacity: 1; transform: translateY(0); }
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+          opacity: 0.5;
+          cursor: pointer;
+          filter: invert(0.4);
+        }
+        .dark input[type="date"]::-webkit-calendar-picker-indicator {
+          filter: invert(0.8);
         }
       `}</style>
     </div>
