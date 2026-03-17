@@ -264,10 +264,11 @@ export default function EvaluationsHistoryPage() {
     whiteSpace: "nowrap",
     position: "sticky",
     top: 0,
+    height: COL_HEADER_H,
     background: "hsl(var(--card))",
     zIndex: 10,
     borderBottom: showFilters ? "none" : "1px solid hsl(var(--border))",
-    padding: "10px 20px",
+    padding: "0 20px",
     textAlign: "left",
     fontSize: 11,
     fontWeight: 600,
@@ -411,13 +412,7 @@ export default function EvaluationsHistoryPage() {
                           <td className="px-5 py-3.5" style={{ color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap" }}>{formatDate(unit.dateReceived)}</td>
                           <td className="px-5 py-3.5 font-mono font-medium" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap" }}>{unit.icSerialNumber}</td>
                           <td className="px-5 py-3.5" style={{ color: "hsl(var(--foreground))" }}>{unit.manufacturer}</td>
-                          <td className="px-5 py-3.5">
-                            <select disabled value={unit.transformerType}
-                              style={{ ...SELECT, height: 30, fontSize: 13, opacity: 0.55, cursor: "not-allowed", width: "auto", minWidth: 140, paddingRight: 28 }}
-                              onChange={() => {}}>
-                              {ALL_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                            </select>
-                          </td>
+                          <td className="px-5 py-3.5" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap" }}>{unit.transformerType}</td>
                           <td className="px-5 py-3.5 font-medium" style={{ color: "hsl(var(--foreground))" }}>{unit.kva.toLocaleString()} kVA</td>
                           <td className="px-5 py-3.5" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap" }}>{unit.warehouse}</td>
                           <td className="px-5 py-3.5" style={{ position: "relative" }}>
