@@ -73,7 +73,7 @@ export default function LoginPage() {
             <img
               src="/wordmark-white.png"
               alt="Sunbelt Solomon"
-              className="h-3 w-auto object-contain select-none mx-auto mb-2"
+              className="h-3.5 w-auto object-contain select-none mx-auto mb-2"
               draggable={false}
             />
             <h1 className="text-3xl font-bold text-white tracking-tight">
