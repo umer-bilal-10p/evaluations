@@ -35,8 +35,6 @@ const WAREHOUSES    = [...new Set(SEED_UNITS.map((u) => u.warehouse))].sort();
 const KVA_VALUES    = [...new Set(SEED_UNITS.map((u) => u.kva))].sort((a, b) => a - b);
 
 type Filters = {
-  dateFrom: string;
-  dateTo: string;
   icSerialNumber: string;
   manufacturer: string;
   kva: string;
@@ -45,8 +43,6 @@ type Filters = {
 };
 
 const EMPTY_FILTERS: Filters = {
-  dateFrom: "",
-  dateTo: "",
   icSerialNumber: "",
   manufacturer: "",
   kva: "",
@@ -183,12 +179,6 @@ const SELECT: React.CSSProperties = {
   paddingRight: 28,
 };
 
-const DATE_FIELD: React.CSSProperties = {
-  ...FIELD,
-  padding: "0 8px",
-  fontSize: 12,
-};
-
 function FInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
   return <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={FIELD} />;
 }
@@ -200,10 +190,6 @@ function FSelect({ value, onChange, options, placeholder }: { value: string; onC
       {options.map((o) => <option key={o} value={o}>{o}</option>)}
     </select>
   );
-}
-
-function FDate({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
-  return <input type="date" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={DATE_FIELD} />;
 }
 
 /* ─── Main page ─────────────────────────────────────────────────────────────── */
@@ -254,8 +240,6 @@ export default function EvaluationsHistoryPage() {
   const filteredRows = visibleRows.filter((unit) => {
     const status: EvalStatus = statuses[unit.id] ?? unit.status;
     return (
-      (!filters.dateFrom      || unit.dateReceived >= filters.dateFrom) &&
-      (!filters.dateTo        || unit.dateReceived <= filters.dateTo) &&
       (!filters.icSerialNumber|| unit.icSerialNumber.toLowerCase().includes(filters.icSerialNumber.toLowerCase())) &&
       (!filters.manufacturer  || unit.manufacturer === filters.manufacturer) &&
       (!filters.kva           || unit.kva === Number(filters.kva)) &&
@@ -359,43 +343,27 @@ export default function EvaluationsHistoryPage() {
                     {/* Filter row */}
                     {showFilters && (
                       <tr>
-                        {/* Date range */}
-                        <th style={{ ...filterTh, minWidth: 160 }}>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                              <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap", minWidth: 20 }}>From</span>
-                              <FDate value={filters.dateFrom} onChange={(v) => setFilter("dateFrom", v)} placeholder="" />
-                            </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                              <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap", minWidth: 20 }}>To</span>
-                              <FDate value={filters.dateTo} onChange={(v) => setFilter("dateTo", v)} placeholder="" />
-                            </div>
-                          </div>
-                        </th>
+                        {/* Date Received — no filter */}
+                        <th style={{ ...filterTh, minWidth: 140 }} />
                         {/* IC search */}
                         <th style={{ ...filterTh, minWidth: 150 }}>
                           <FInput value={filters.icSerialNumber} onChange={(v) => setFilter("icSerialNumber", v)} placeholder="Search serial…" />
                         </th>
                         {/* Manufacturer */}
                         <th style={{ ...filterTh, minWidth: 130 }}>
-                          <FSelect value={filters.manufacturer} onChange={(v) => setFilter("manufacturer", v)} options={MANUFACTURERS} placeholder="All manufacturers" />
+                          <FSelect value={filters.manufacturer} onChange={(v) => setFilter("manufacturer", v)} options={MANUFACTURERS} placeholder="All" />
                         </th>
                         {/* KVA */}
                         <th style={{ ...filterTh, minWidth: 110 }}>
-                          <FSelect
-                            value={filters.kva}
-                            onChange={(v) => setFilter("kva", v)}
-                            options={KVA_VALUES.map(String)}
-                            placeholder="All kVA"
-                          />
+                          <FSelect value={filters.kva} onChange={(v) => setFilter("kva", v)} options={KVA_VALUES.map(String)} placeholder="All" />
                         </th>
                         {/* Warehouse */}
                         <th style={{ ...filterTh, minWidth: 170 }}>
-                          <FSelect value={filters.warehouse} onChange={(v) => setFilter("warehouse", v)} options={WAREHOUSES} placeholder="All warehouses" />
+                          <FSelect value={filters.warehouse} onChange={(v) => setFilter("warehouse", v)} options={WAREHOUSES} placeholder="All" />
                         </th>
                         {/* Status */}
                         <th style={{ ...filterTh, minWidth: 170 }}>
-                          <FSelect value={filters.status} onChange={(v) => setFilter("status", v)} options={ALL_STATUSES} placeholder="All statuses" />
+                          <FSelect value={filters.status} onChange={(v) => setFilter("status", v)} options={ALL_STATUSES} placeholder="All" />
                         </th>
                         {/* Clear all */}
                         <th style={{ ...filterTh, verticalAlign: "middle" }}>
@@ -470,14 +438,6 @@ export default function EvaluationsHistoryPage() {
         @keyframes fadeSlideIn {
           from { opacity: 0; transform: translateY(5px); }
           to   { opacity: 1; transform: translateY(0); }
-        }
-        input[type="date"]::-webkit-calendar-picker-indicator {
-          opacity: 0.5;
-          cursor: pointer;
-          filter: invert(0.4);
-        }
-        .dark input[type="date"]::-webkit-calendar-picker-indicator {
-          filter: invert(0.8);
         }
       `}</style>
     </div>
