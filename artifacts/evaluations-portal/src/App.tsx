@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { DemoProvider, useDemoContext } from "@/context/DemoContext";
 import { DemoNav } from "@/components/DemoNav";
 import LoginPage from "@/pages/LoginPage";
+import HomePage from "@/pages/HomePage";
 import EvaluationsHistoryPage from "@/pages/EvaluationsHistoryPage";
 
 const queryClient = new QueryClient();
@@ -18,6 +19,7 @@ function AppContent() {
   return (
     <>
       {currentPage === "login" && <LoginPage />}
+      {currentPage === "home" && <HomePage />}
       {currentPage === "evaluations-history" && <EvaluationsHistoryPage />}
       <DemoNav />
     </>

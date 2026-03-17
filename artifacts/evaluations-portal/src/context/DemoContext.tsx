@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
-export type DemoPage = "login" | "evaluations-history";
+export type DemoPage = "login" | "home" | "evaluations-history";
 
 export interface DemoPageDef {
   id: DemoPage;
@@ -9,6 +9,7 @@ export interface DemoPageDef {
 
 export const DEMO_PAGES: DemoPageDef[] = [
   { id: "login", label: "Login" },
+  { id: "home", label: "Home" },
   { id: "evaluations-history", label: "Evaluations History" },
 ];
 

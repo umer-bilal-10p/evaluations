@@ -9,6 +9,16 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   {
+    id: "home",
+    label: "Home",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    ),
+  },
+  {
     id: "evaluations-history",
     label: "Evaluation History",
     icon: (
@@ -31,10 +41,6 @@ export function Sidebar() {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    /*
-     * Outer div: always 52px wide in flex layout — reserves the column.
-     * Inner div: absolutely positioned, animates from 52→220px, overlays content.
-     */
     <div
       className="relative flex-shrink-0"
       style={{ width: COLLAPSED_W }}
@@ -56,10 +62,6 @@ export function Sidebar() {
           boxShadow: expanded ? "4px 0 20px rgba(0,0,0,0.28)" : "none",
         }}
       >
-        {/*
-         * Nav items — fixed width inner container so buttons don't grow with sidebar.
-         * Padding is constant so nothing repositions on hover.
-         */}
         <div style={{ padding: "12px 8px", width: EXPANDED_W }}>
           {NAV_ITEMS.map((item) => {
             const isActive = currentPage === item.id;
@@ -69,15 +71,14 @@ export function Sidebar() {
                 onClick={() => { setCurrentPage(item.id); setExpanded(false); }}
                 title={expanded ? undefined : item.label}
                 style={{
-                  /* Fixed width = expanded sidebar minus 2×padding. Clipped when collapsed. */
                   width: EXPANDED_W - 16,
                   height: 36,
                   display: "flex",
                   alignItems: "center",
                   gap: 0,
                   padding: 0,
+                  marginBottom: 2,
                   borderRadius: 8,
-                  /* Single background on the button only — no nested box */
                   background: isActive ? "rgba(91,156,246,0.12)" : "transparent",
                   border: "none",
                   cursor: "pointer",
@@ -98,7 +99,6 @@ export function Sidebar() {
                   }
                 }}
               >
-                {/* Icon — single span, no background, always at fixed position */}
                 <span
                   style={{
                     flexShrink: 0,
@@ -112,7 +112,6 @@ export function Sidebar() {
                   {item.icon}
                 </span>
 
-                {/* Label — fades in on expand */}
                 <span
                   style={{
                     fontSize: 13,
@@ -129,7 +128,6 @@ export function Sidebar() {
                   {item.label}
                 </span>
 
-                {/* Active bar — only visible when expanded */}
                 {isActive && (
                   <span
                     style={{
