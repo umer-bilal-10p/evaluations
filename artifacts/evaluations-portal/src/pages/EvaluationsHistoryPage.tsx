@@ -59,19 +59,19 @@ function StatusBadge({ status }: { status: EvalStatus }) {
 
 export default function EvaluationsHistoryPage() {
   const [visibleCount, setVisibleCount] = useState(0);
-  const [isPopulating, setIsPopulating] = useState(false);
+  const [started, setStarted] = useState(false);
 
   useEffect(() => {
     setVisibleCount(0);
-    setIsPopulating(false);
+    setStarted(false);
     const startDelay = setTimeout(() => {
-      setIsPopulating(true);
+      setStarted(true);
     }, 1200);
     return () => clearTimeout(startDelay);
   }, []);
 
   useEffect(() => {
-    if (!isPopulating) return;
+    if (!started) return;
     if (visibleCount >= ALL_UNITS.length) return;
 
     const timer = setTimeout(() => {
@@ -79,7 +79,7 @@ export default function EvaluationsHistoryPage() {
     }, ROW_INTERVAL_MS);
 
     return () => clearTimeout(timer);
-  }, [isPopulating, visibleCount]);
+  }, [started, visibleCount]);
 
   const visibleRows = ALL_UNITS.slice(0, visibleCount);
 
@@ -140,7 +140,7 @@ export default function EvaluationsHistoryPage() {
           {/* Table */}
           <div className="overflow-auto" style={{ maxHeight: "calc(100vh - 220px)" }}>
             {visibleCount === 0 ? (
-              <EmptyState isLoading={!isPopulating} />
+              <EmptyState />
             ) : (
               <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
                 <thead>
@@ -217,64 +217,39 @@ export default function EvaluationsHistoryPage() {
   );
 }
 
-function EmptyState({ isLoading }: { isLoading: boolean }) {
+function EmptyState() {
   return (
     <div
       className="flex flex-col items-center justify-center py-20 px-6 text-center"
       style={{ minHeight: 280 }}
     >
-      {isLoading ? (
-        <>
-          <div
-            className="rounded-full flex items-center justify-center mb-4"
-            style={{ width: 48, height: 48, background: "hsl(var(--muted))" }}
-          >
-            <svg
-              className="animate-spin"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="hsl(var(--muted-foreground))"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-            </svg>
-          </div>
-          <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 14 }}>Loading units…</p>
-        </>
-      ) : (
-        <>
-          <div
-            className="rounded-full flex items-center justify-center mb-4"
-            style={{ width: 52, height: 52, background: "hsl(var(--muted))" }}
-          >
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="hsl(var(--muted-foreground))"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
-          </div>
-          <p
-            className="font-medium mb-1"
-            style={{ color: "hsl(var(--foreground))", fontSize: 15 }}
-          >
-            No units currently awaiting evaluation.
-          </p>
-          <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 13 }}>
-            Units will appear here as they are received for evaluation.
-          </p>
-        </>
-      )}
+      <div
+        className="rounded-full flex items-center justify-center mb-4"
+        style={{ width: 52, height: 52, background: "hsl(var(--muted))" }}
+      >
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="hsl(var(--muted-foreground))"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+      </div>
+      <p
+        className="font-medium mb-1"
+        style={{ color: "hsl(var(--foreground))", fontSize: 15 }}
+      >
+        No units currently awaiting evaluation.
+      </p>
+      <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 13 }}>
+        Units will appear here as they are received for evaluation.
+      </p>
     </div>
   );
 }
