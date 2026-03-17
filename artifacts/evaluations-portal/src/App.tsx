@@ -1,22 +1,26 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MsalProvider } from "@azure/msal-react";
 import { PublicClientApplication } from "@azure/msal-browser";
 import { msalConfig } from "@/lib/msalConfig";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { DemoProvider, useDemoContext } from "@/context/DemoContext";
+import { DemoNav } from "@/components/DemoNav";
 import LoginPage from "@/pages/LoginPage";
-import NotFound from "@/pages/not-found";
+import EvaluationsHistoryPage from "@/pages/EvaluationsHistoryPage";
 
 const queryClient = new QueryClient();
 const msalInstance = new PublicClientApplication(msalConfig);
 
-function Router() {
+function AppContent() {
+  const { currentPage } = useDemoContext();
+
   return (
-    <Switch>
-      <Route path="/" component={LoginPage} />
-      <Route component={NotFound} />
-    </Switch>
+    <>
+      {currentPage === "login" && <LoginPage />}
+      {currentPage === "evaluations-history" && <EvaluationsHistoryPage />}
+      <DemoNav />
+    </>
   );
 }
 
@@ -25,9 +29,9 @@ function App() {
     <MsalProvider instance={msalInstance}>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
+          <DemoProvider>
+            <AppContent />
+          </DemoProvider>
           <Toaster />
         </TooltipProvider>
       </QueryClientProvider>

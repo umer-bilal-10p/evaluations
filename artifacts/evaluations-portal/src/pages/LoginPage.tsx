@@ -3,6 +3,12 @@ import { Button } from "@/components/ui/button";
 
 type SsoStep = "idle" | "email" | "password" | "signing-in" | "done";
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function isValidEmail(value: string): boolean {
+  return EMAIL_REGEX.test(value.trim());
+}
+
 export default function LoginPage() {
   const [ssoStep, setSsoStep] = useState<SsoStep>("idle");
   const [email, setEmail] = useState("");
@@ -25,8 +31,12 @@ export default function LoginPage() {
   };
 
   const handleEmailNext = () => {
-    if (!email.trim() || !email.includes("@")) {
-      setEmailError("Enter a valid email address.");
+    if (!email.trim()) {
+      setEmailError("Enter your email address.");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setEmailError("That doesn't look right — enter a valid email (e.g. name@company.com).");
       return;
     }
     setEmailError("");
@@ -173,7 +183,22 @@ function MsEmailStep({
           onKeyDown={onKeyDown}
           className={`w-full border-b-2 ${error ? "border-[#a80000]" : "border-[#666]"} focus:border-[#182557] outline-none py-2 text-[15px] text-[#1b1b1b] bg-transparent transition-colors placeholder:text-[#666]`}
         />
-        {error && <p className="mt-1 text-xs text-[#a80000]">{error}</p>}
+        {error && (
+          <div className="mt-2 flex items-start gap-1.5">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              className="shrink-0 mt-px"
+            >
+              <circle cx="8" cy="8" r="7.5" stroke="#a80000" />
+              <path d="M8 4.5v4" stroke="#a80000" strokeWidth="1.5" strokeLinecap="round" />
+              <circle cx="8" cy="11" r="0.75" fill="#a80000" />
+            </svg>
+            <p className="text-xs text-[#a80000] leading-snug">{error}</p>
+          </div>
+        )}
       </div>
 
       <p className="mt-4 text-[13px] text-[#1b1b1b]">
@@ -241,7 +266,22 @@ function MsPasswordStep({
           onKeyDown={onKeyDown}
           className={`w-full border-b-2 ${error ? "border-[#a80000]" : "border-[#666]"} focus:border-[#182557] outline-none py-2 text-[15px] text-[#1b1b1b] bg-transparent transition-colors placeholder:text-[#666]`}
         />
-        {error && <p className="mt-1 text-xs text-[#a80000]">{error}</p>}
+        {error && (
+          <div className="mt-2 flex items-start gap-1.5">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              className="shrink-0 mt-px"
+            >
+              <circle cx="8" cy="8" r="7.5" stroke="#a80000" />
+              <path d="M8 4.5v4" stroke="#a80000" strokeWidth="1.5" strokeLinecap="round" />
+              <circle cx="8" cy="11" r="0.75" fill="#a80000" />
+            </svg>
+            <p className="text-xs text-[#a80000] leading-snug">{error}</p>
+          </div>
+        )}
       </div>
 
       <p className="mt-4 text-[13px] text-[#182557] cursor-pointer hover:underline">
