@@ -15,13 +15,28 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
+- **Frontend UI**: shadcn/ui + Tailwind CSS (flexible — may be swapped in future)
+- **Auth**: Microsoft SSO via MSAL (`@azure/msal-browser`, `@azure/msal-react`)
+
+## Artifacts
+
+### `artifacts/evaluations-portal` — Evaluations Portal (root `/`)
+
+Sunbelt Solomon branded web portal for viewing Transformer Evaluation History and future user/role management. Currently shows a branded login page with Microsoft SSO sign-in.
+
+- **Branding**: Cobalt (#0047BB) and Navy (#182557) color scheme; Sunbelt Solomon vertical white logo; power infrastructure background image
+- **Login page**: Full-screen branded login with Microsoft SSO via MSAL redirect flow
+- **SSO config**: `src/lib/msalConfig.ts` — needs `VITE_AZURE_CLIENT_ID` and `VITE_AZURE_TENANT_ID` env vars set when Azure app registration is ready
+- **Brand assets**: `public/logo-white.png`, `public/bg-power.png`
+- **Design system**: shadcn/ui components, Tailwind CSS with custom CSS variables for Sunbelt Solomon colors
 
 ## Structure
 
 ```text
 artifacts-monorepo/
 ├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
+│   ├── api-server/         # Express API server
+│   └── evaluations-portal/ # Sunbelt Solomon Evaluations web portal (react-vite at /)
 ├── lib/                    # Shared libraries
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
