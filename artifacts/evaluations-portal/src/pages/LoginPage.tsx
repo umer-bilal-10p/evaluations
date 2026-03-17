@@ -31,9 +31,10 @@ export default function LoginPage() {
   const handleKeyPassword = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") handlePasswordSignIn(); };
 
   /* ── Mode-specific tokens ──────────────────────────────────────────────── */
+  const FOOTER_COLOR = "rgba(255,255,255,0.40)";
   const card = isDark
-    ? { bg: "rgba(255,255,255,0.10)", border: "rgba(255,255,255,0.20)", titleColor: "#ffffff", subtitleColor: "rgba(255,255,255,0.60)", footerColor: "rgba(255,255,255,0.30)", logoSrc: "/sss-mark-white.png", backdropFilter: "blur(14px)" }
-    : { bg: "rgba(255,255,255,0.88)", border: "rgba(255,255,255,0.60)", titleColor: "#0f172a",  subtitleColor: "rgba(15,23,42,0.55)",     footerColor: "rgba(255,255,255,0.55)", logoSrc: "/sss-mark-black.png", backdropFilter: "blur(14px)" };
+    ? { bg: "rgba(255,255,255,0.10)", border: "rgba(255,255,255,0.20)", titleColor: "#ffffff", subtitleColor: "rgba(255,255,255,0.60)", footerColor: FOOTER_COLOR, logoSrc: "/sss-mark-white.png", backdropFilter: "blur(14px)" }
+    : { bg: "rgba(255,255,255,0.88)", border: "rgba(255,255,255,0.60)", titleColor: "#0f172a",  subtitleColor: "rgba(15,23,42,0.55)",     footerColor: FOOTER_COLOR, logoSrc: "/sss-mark-black.png", backdropFilter: "blur(14px)" };
 
   const toggleBtnStyle: React.CSSProperties = isDark
     ? { border: "1px solid rgba(255,255,255,0.20)", background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.70)" }
