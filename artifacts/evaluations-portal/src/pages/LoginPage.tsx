@@ -69,7 +69,7 @@ export default function LoginPage() {
               draggable={false}
             />
             <h1 style={{ fontSize: 30, fontWeight: 700, color: card.titleColor, letterSpacing: "-0.02em", lineHeight: 1.1, margin: 0 }}>
-              Evaluations
+              EvalAI
             </h1>
             <p style={{ marginTop: 8, fontSize: 14, color: card.subtitleColor }}>
               Sign in to access your portal
