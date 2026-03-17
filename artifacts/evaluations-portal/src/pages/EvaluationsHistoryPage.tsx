@@ -4,27 +4,31 @@ import { Sidebar } from "@/components/Sidebar";
 
 type EvalStatus = "Pending" | "In Progress" | "Completed" | "On Hold";
 
+type TransformerType = "Three-Phase Pad" | "Single-Phase Pad" | "Pole Mount";
+const ALL_TYPES: TransformerType[] = ["Three-Phase Pad", "Single-Phase Pad", "Pole Mount"];
+
 interface EvaluationUnit {
   id: string;
   dateReceived: string;
   icSerialNumber: string;
   manufacturer: string;
+  transformerType: TransformerType;
   kva: number;
   warehouse: string;
   status: EvalStatus;
 }
 
 const SEED_UNITS: EvaluationUnit[] = [
-  { id: "1",  dateReceived: "2024-11-15", icSerialNumber: "IC-2024-001", manufacturer: "ABB",     kva: 500,  warehouse: "99 - Houston, TX", status: "Completed" },
-  { id: "2",  dateReceived: "2024-12-03", icSerialNumber: "TF-8842-B",   manufacturer: "Siemens", kva: 1000, warehouse: "12 - Dallas, TX",  status: "Completed" },
-  { id: "3",  dateReceived: "2025-01-08", icSerialNumber: "TF-9901-C",   manufacturer: "GE",      kva: 750,  warehouse: "07 - Atlanta, GA", status: "Completed" },
-  { id: "4",  dateReceived: "2025-01-22", icSerialNumber: "TF-1045-A",   manufacturer: "Eaton",   kva: 250,  warehouse: "34 - Phoenix, AZ", status: "Completed" },
-  { id: "5",  dateReceived: "2025-02-14", icSerialNumber: "IC-2025-008", manufacturer: "ABB",     kva: 1500, warehouse: "99 - Houston, TX", status: "Completed" },
-  { id: "6",  dateReceived: "2025-03-01", icSerialNumber: "TF-3371-D",   manufacturer: "Siemens", kva: 2000, warehouse: "22 - Denver, CO",  status: "Completed" },
-  { id: "7",  dateReceived: "2025-03-18", icSerialNumber: "TF-5509-E",   manufacturer: "ABB",     kva: 500,  warehouse: "12 - Dallas, TX",  status: "Completed" },
-  { id: "8",  dateReceived: "2025-04-02", icSerialNumber: "IC-2025-044", manufacturer: "GE",      kva: 1000, warehouse: "99 - Houston, TX", status: "Completed" },
-  { id: "9",  dateReceived: "2025-04-19", icSerialNumber: "TF-7723-F",   manufacturer: "Eaton",   kva: 3000, warehouse: "07 - Atlanta, GA", status: "Completed" },
-  { id: "10", dateReceived: "2025-05-07", icSerialNumber: "TF-8831-G",   manufacturer: "Siemens", kva: 750,  warehouse: "34 - Phoenix, AZ", status: "Completed" },
+  { id: "1",  dateReceived: "2024-11-15", icSerialNumber: "IC-2024-001", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 500,  warehouse: "99 - Houston, TX", status: "Completed" },
+  { id: "2",  dateReceived: "2024-12-03", icSerialNumber: "TF-8842-B",   manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 1000, warehouse: "12 - Dallas, TX",  status: "Completed" },
+  { id: "3",  dateReceived: "2025-01-08", icSerialNumber: "TF-9901-C",   manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 750,  warehouse: "07 - Atlanta, GA", status: "Completed" },
+  { id: "4",  dateReceived: "2025-01-22", icSerialNumber: "TF-1045-A",   manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 250,  warehouse: "34 - Phoenix, AZ", status: "Completed" },
+  { id: "5",  dateReceived: "2025-02-14", icSerialNumber: "IC-2025-008", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 1500, warehouse: "99 - Houston, TX", status: "Completed" },
+  { id: "6",  dateReceived: "2025-03-01", icSerialNumber: "TF-3371-D",   manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 2000, warehouse: "22 - Denver, CO",  status: "Completed" },
+  { id: "7",  dateReceived: "2025-03-18", icSerialNumber: "TF-5509-E",   manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 500,  warehouse: "12 - Dallas, TX",  status: "Completed" },
+  { id: "8",  dateReceived: "2025-04-02", icSerialNumber: "IC-2025-044", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 1000, warehouse: "99 - Houston, TX", status: "Completed" },
+  { id: "9",  dateReceived: "2025-04-19", icSerialNumber: "TF-7723-F",   manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 3000, warehouse: "07 - Atlanta, GA", status: "Completed" },
+  { id: "10", dateReceived: "2025-05-07", icSerialNumber: "TF-8831-G",   manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 750,  warehouse: "34 - Phoenix, AZ", status: "Completed" },
 ];
 
 const ROW_INTERVAL_MS = 900;
@@ -335,7 +339,7 @@ export default function EvaluationsHistoryPage() {
                   <thead>
                     {/* Column labels */}
                     <tr>
-                      {["Date Received","IC / Serial Number","Manufacturer","KVA","Warehouse","Status",""].map((col, i) => (
+                      {["Date Received","IC / Serial Number","Manufacturer","Type","KVA","Warehouse","Status",""].map((col, i) => (
                         <th key={i} style={thBase}>{col}</th>
                       ))}
                     </tr>
@@ -352,6 +356,13 @@ export default function EvaluationsHistoryPage() {
                         {/* Manufacturer */}
                         <th style={{ ...filterTh, minWidth: 130 }}>
                           <FSelect value={filters.manufacturer} onChange={(v) => setFilter("manufacturer", v)} options={MANUFACTURERS} placeholder="All" />
+                        </th>
+                        {/* Type — locked */}
+                        <th style={{ ...filterTh, minWidth: 150 }}>
+                          <select disabled style={{ ...SELECT, opacity: 0.5, cursor: "not-allowed" }}>
+                            <option>Three-Phase Pad</option>
+                            {ALL_TYPES.map((t) => <option key={t}>{t}</option>)}
+                          </select>
                         </th>
                         {/* KVA */}
                         <th style={{ ...filterTh, minWidth: 110 }}>
@@ -380,7 +391,7 @@ export default function EvaluationsHistoryPage() {
 
                   <tbody>
                     {filteredRows.length === 0 ? (
-                      <tr><td colSpan={7}>
+                      <tr><td colSpan={8}>
                         <div className="flex flex-col items-center justify-center py-14 text-center">
                           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 10, opacity: 0.5 }}>
                             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
@@ -400,6 +411,13 @@ export default function EvaluationsHistoryPage() {
                           <td className="px-5 py-3.5" style={{ color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap" }}>{formatDate(unit.dateReceived)}</td>
                           <td className="px-5 py-3.5 font-mono font-medium" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap" }}>{unit.icSerialNumber}</td>
                           <td className="px-5 py-3.5" style={{ color: "hsl(var(--foreground))" }}>{unit.manufacturer}</td>
+                          <td className="px-5 py-3.5">
+                            <select disabled value={unit.transformerType}
+                              style={{ ...SELECT, height: 30, fontSize: 13, opacity: 0.55, cursor: "not-allowed", width: "auto", minWidth: 140, paddingRight: 28 }}
+                              onChange={() => {}}>
+                              {ALL_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                          </td>
                           <td className="px-5 py-3.5 font-medium" style={{ color: "hsl(var(--foreground))" }}>{unit.kva.toLocaleString()} kVA</td>
                           <td className="px-5 py-3.5" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap" }}>{unit.warehouse}</td>
                           <td className="px-5 py-3.5" style={{ position: "relative" }}>
