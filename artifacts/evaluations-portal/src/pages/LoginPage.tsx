@@ -87,7 +87,7 @@ export default function LoginPage() {
           <Button
             onClick={openSso}
             size="lg"
-            className="w-full flex items-center justify-center gap-3 bg-[#0047BB] hover:bg-[#0052d4] active:bg-[#003fa3] text-white font-semibold rounded-xl border-0 shadow-none outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-white/60"
+            className="w-full flex items-center justify-center gap-3 bg-[#182557] hover:bg-[#1e2f6b] active:bg-[#111c40] text-white font-semibold rounded-xl border-0 shadow-none outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-white/60"
           >
             <MicrosoftIcon />
             <span>Sign in with Microsoft</span>
