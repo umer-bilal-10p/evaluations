@@ -127,7 +127,7 @@ export default function EvaluationsHistoryPage() {
                 color: visibleCount > 0 ? "#3b82f6" : "hsl(var(--muted-foreground))",
               }}
             >
-              {isPopulating && visibleCount < ALL_UNITS.length && (
+              {started && visibleCount < ALL_UNITS.length && (
                 <span
                   className="inline-block rounded-full animate-pulse"
                   style={{ width: 7, height: 7, background: "#3b82f6", flexShrink: 0 }}
