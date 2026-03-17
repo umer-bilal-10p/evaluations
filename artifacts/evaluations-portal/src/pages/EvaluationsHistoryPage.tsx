@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { PortalHeader } from "@/components/PortalHeader";
+import { Sidebar } from "@/components/Sidebar";
 
 type EvalStatus = "Pending" | "In Progress" | "Completed" | "On Hold";
 
@@ -13,20 +14,21 @@ interface EvaluationUnit {
   status: EvalStatus;
 }
 
-const ALL_UNITS: EvaluationUnit[] = [
-  { id: "1",  dateReceived: "2024-11-15", icSerialNumber: "IC-2024-001", manufacturer: "ABB",     kva: 500,  warehouse: "Houston, TX",  status: "Pending"     },
-  { id: "2",  dateReceived: "2024-12-03", icSerialNumber: "TF-8842-B",   manufacturer: "Siemens", kva: 1000, warehouse: "Dallas, TX",    status: "In Progress" },
-  { id: "3",  dateReceived: "2025-01-08", icSerialNumber: "TF-9901-C",   manufacturer: "GE",      kva: 750,  warehouse: "Atlanta, GA",   status: "Pending"     },
-  { id: "4",  dateReceived: "2025-01-22", icSerialNumber: "TF-1045-A",   manufacturer: "Eaton",   kva: 250,  warehouse: "Phoenix, AZ",   status: "On Hold"     },
-  { id: "5",  dateReceived: "2025-02-14", icSerialNumber: "IC-2025-008", manufacturer: "ABB",     kva: 1500, warehouse: "Houston, TX",   status: "Pending"     },
-  { id: "6",  dateReceived: "2025-03-01", icSerialNumber: "TF-3371-D",   manufacturer: "Siemens", kva: 2000, warehouse: "Denver, CO",    status: "Pending"     },
-  { id: "7",  dateReceived: "2025-03-18", icSerialNumber: "TF-5509-E",   manufacturer: "ABB",     kva: 500,  warehouse: "Dallas, TX",    status: "In Progress" },
-  { id: "8",  dateReceived: "2025-04-02", icSerialNumber: "IC-2025-044", manufacturer: "GE",      kva: 1000, warehouse: "Houston, TX",   status: "Pending"     },
-  { id: "9",  dateReceived: "2025-04-19", icSerialNumber: "TF-7723-F",   manufacturer: "Eaton",   kva: 3000, warehouse: "Atlanta, GA",   status: "On Hold"     },
-  { id: "10", dateReceived: "2025-05-07", icSerialNumber: "TF-8831-G",   manufacturer: "Siemens", kva: 750,  warehouse: "Phoenix, AZ",   status: "Pending"     },
+const SEED_UNITS: EvaluationUnit[] = [
+  { id: "1",  dateReceived: "2024-11-15", icSerialNumber: "IC-2024-001", manufacturer: "ABB",     kva: 500,  warehouse: "99 - Houston, TX",  status: "Completed" },
+  { id: "2",  dateReceived: "2024-12-03", icSerialNumber: "TF-8842-B",   manufacturer: "Siemens", kva: 1000, warehouse: "12 - Dallas, TX",   status: "Completed" },
+  { id: "3",  dateReceived: "2025-01-08", icSerialNumber: "TF-9901-C",   manufacturer: "GE",      kva: 750,  warehouse: "07 - Atlanta, GA",  status: "Completed" },
+  { id: "4",  dateReceived: "2025-01-22", icSerialNumber: "TF-1045-A",   manufacturer: "Eaton",   kva: 250,  warehouse: "34 - Phoenix, AZ",  status: "Completed" },
+  { id: "5",  dateReceived: "2025-02-14", icSerialNumber: "IC-2025-008", manufacturer: "ABB",     kva: 1500, warehouse: "99 - Houston, TX",  status: "Completed" },
+  { id: "6",  dateReceived: "2025-03-01", icSerialNumber: "TF-3371-D",   manufacturer: "Siemens", kva: 2000, warehouse: "22 - Denver, CO",   status: "Completed" },
+  { id: "7",  dateReceived: "2025-03-18", icSerialNumber: "TF-5509-E",   manufacturer: "ABB",     kva: 500,  warehouse: "12 - Dallas, TX",   status: "Completed" },
+  { id: "8",  dateReceived: "2025-04-02", icSerialNumber: "IC-2025-044", manufacturer: "GE",      kva: 1000, warehouse: "99 - Houston, TX",  status: "Completed" },
+  { id: "9",  dateReceived: "2025-04-19", icSerialNumber: "TF-7723-F",   manufacturer: "Eaton",   kva: 3000, warehouse: "07 - Atlanta, GA",  status: "Completed" },
+  { id: "10", dateReceived: "2025-05-07", icSerialNumber: "TF-8831-G",   manufacturer: "Siemens", kva: 750,  warehouse: "34 - Phoenix, AZ",  status: "Completed" },
 ];
 
 const ROW_INTERVAL_MS = 900;
+const ALL_STATUSES: EvalStatus[] = ["Pending", "In Progress", "Completed", "On Hold"];
 
 function formatDate(iso: string): string {
   const [year, month, day] = iso.split("-");
@@ -34,54 +36,298 @@ function formatDate(iso: string): string {
   return `${months[Number(month) - 1]} ${Number(day)}, ${year}`;
 }
 
-const STATUS_STYLES: Record<EvalStatus, { bg: string; color: string; dot: string }> = {
-  "Pending":     { bg: "rgba(251,191,36,0.12)",  color: "#d97706", dot: "#f59e0b" },
-  "In Progress": { bg: "rgba(59,130,246,0.12)",   color: "#3b82f6", dot: "#60a5fa" },
-  "Completed":   { bg: "rgba(34,197,94,0.12)",    color: "#16a34a", dot: "#22c55e" },
-  "On Hold":     { bg: "rgba(239,68,68,0.12)",    color: "#dc2626", dot: "#f87171" },
+const STATUS_STYLES: Record<EvalStatus, { bg: string; color: string; borderColor: string }> = {
+  "Pending":     { bg: "rgba(251,191,36,0.10)",  color: "#d97706", borderColor: "rgba(251,191,36,0.25)" },
+  "In Progress": { bg: "rgba(59,130,246,0.10)",   color: "#3b82f6", borderColor: "rgba(59,130,246,0.25)" },
+  "Completed":   { bg: "rgba(34,197,94,0.10)",    color: "#16a34a", borderColor: "rgba(34,197,94,0.25)"  },
+  "On Hold":     { bg: "rgba(239,68,68,0.10)",    color: "#dc2626", borderColor: "rgba(239,68,68,0.25)"  },
 };
 
-function StatusBadge({ status }: { status: EvalStatus }) {
+function StatusIcon({ status }: { status: EvalStatus }) {
+  const props = { width: 13, height: 13, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.25, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  if (status === "Completed") {
+    return <svg {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
+  }
+  if (status === "In Progress") {
+    return <svg {...props}><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.04-6.5"/></svg>;
+  }
+  if (status === "On Hold") {
+    return <svg {...props}><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>;
+  }
+  return <svg {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+}
+
+function StatusBadge({
+  status,
+  onClick,
+}: {
+  status: EvalStatus;
+  onClick: (e: React.MouseEvent) => void;
+}) {
   const s = STATUS_STYLES[status];
   return (
-    <span
-      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
-      style={{ background: s.bg, color: s.color }}
+    <button
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-opacity"
+      style={{
+        background: s.bg,
+        color: s.color,
+        border: `1px solid ${s.borderColor}`,
+        cursor: "pointer",
+      }}
+      title="Click to change status"
     >
-      <span
-        className="inline-block rounded-full"
-        style={{ width: 6, height: 6, background: s.dot, flexShrink: 0 }}
-      />
+      <StatusIcon status={status} />
       {status}
-    </span>
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
+    </button>
+  );
+}
+
+function StatusDropdown({
+  current,
+  onSelect,
+  onClose,
+}: {
+  current: EvalStatus;
+  onSelect: (s: EvalStatus) => void;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [onClose]);
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        position: "absolute",
+        zIndex: 200,
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
+        borderRadius: 10,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+        minWidth: 160,
+        overflow: "hidden",
+        marginTop: 4,
+      }}
+    >
+      {ALL_STATUSES.map((s) => {
+        const style = STATUS_STYLES[s];
+        return (
+          <button
+            key={s}
+            onClick={() => { onSelect(s); onClose(); }}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "8px 12px",
+              background: s === current ? style.bg : "transparent",
+              border: "none",
+              cursor: "pointer",
+              textAlign: "left",
+              color: s === current ? style.color : "hsl(var(--foreground))",
+              fontSize: 13,
+              fontWeight: s === current ? 600 : 400,
+              transition: "background 0.1s",
+            }}
+            onMouseEnter={(e) => {
+              if (s !== current) (e.currentTarget as HTMLButtonElement).style.background = "hsl(var(--muted))";
+            }}
+            onMouseLeave={(e) => {
+              if (s !== current) (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+            }}
+          >
+            <span style={{ color: style.color }}><StatusIcon status={s} /></span>
+            {s}
+            {s === current && (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ marginLeft: "auto", color: style.color }}>
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function CommentModal({
+  unitId,
+  icNumber,
+  onClose,
+}: {
+  unitId: string;
+  icNumber: string;
+  onClose: () => void;
+}) {
+  const [text, setText] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = () => {
+    if (!text.trim()) return;
+    setSubmitted(true);
+    setTimeout(onClose, 1200);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[500] flex items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        style={{
+          background: "hsl(var(--card))",
+          border: "1px solid hsl(var(--border))",
+          borderRadius: 14,
+          width: "100%",
+          maxWidth: 440,
+          margin: "0 16px",
+          padding: 24,
+          boxShadow: "0 20px 48px rgba(0,0,0,0.25)",
+        }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: "hsl(var(--foreground))" }}>
+              Add Comment
+            </h2>
+            <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
+              Unit: {icNumber}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{ color: "hsl(var(--muted-foreground))", background: "none", border: "none", cursor: "pointer", padding: 4 }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        {submitted ? (
+          <div className="flex flex-col items-center py-6 gap-3">
+            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(34,197,94,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <p style={{ fontSize: 14, fontWeight: 500, color: "hsl(var(--foreground))" }}>Comment saved</p>
+          </div>
+        ) : (
+          <>
+            <textarea
+              autoFocus
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Add your notes about this evaluation unit…"
+              rows={4}
+              style={{
+                width: "100%",
+                resize: "none",
+                padding: "10px 12px",
+                borderRadius: 8,
+                border: "1px solid hsl(var(--border))",
+                background: "hsl(var(--background))",
+                color: "hsl(var(--foreground))",
+                fontSize: 14,
+                outline: "none",
+                lineHeight: 1.6,
+                boxSizing: "border-box",
+              }}
+            />
+            <div className="flex justify-end gap-2 mt-3">
+              <button
+                onClick={onClose}
+                style={{
+                  padding: "7px 16px",
+                  borderRadius: 8,
+                  border: "1px solid hsl(var(--border))",
+                  background: "transparent",
+                  color: "hsl(var(--muted-foreground))",
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={!text.trim()}
+                style={{
+                  padding: "7px 16px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: text.trim() ? "#182557" : "hsl(var(--muted))",
+                  color: text.trim() ? "#fff" : "hsl(var(--muted-foreground))",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: text.trim() ? "pointer" : "default",
+                  transition: "background 0.15s",
+                }}
+              >
+                Save Comment
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 
 export default function EvaluationsHistoryPage() {
   const [visibleCount, setVisibleCount] = useState(0);
   const [started, setStarted] = useState(false);
+  const [statuses, setStatuses] = useState<Record<string, EvalStatus>>({});
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [commentUnitId, setCommentUnitId] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [spinning, setSpinning] = useState(false);
 
-  useEffect(() => {
+  const startPopulation = useCallback(() => {
     setVisibleCount(0);
     setStarted(false);
-    const startDelay = setTimeout(() => {
-      setStarted(true);
-    }, 1200);
-    return () => clearTimeout(startDelay);
+    const t = setTimeout(() => setStarted(true), 1200);
+    return t;
   }, []);
 
   useEffect(() => {
+    const t = startPopulation();
+    return () => clearTimeout(t);
+  }, [refreshKey, startPopulation]);
+
+  useEffect(() => {
     if (!started) return;
-    if (visibleCount >= ALL_UNITS.length) return;
-
-    const timer = setTimeout(() => {
-      setVisibleCount((c) => c + 1);
-    }, ROW_INTERVAL_MS);
-
+    if (visibleCount >= SEED_UNITS.length) return;
+    const timer = setTimeout(() => setVisibleCount((c) => c + 1), ROW_INTERVAL_MS);
     return () => clearTimeout(timer);
   }, [started, visibleCount]);
 
-  const visibleRows = ALL_UNITS.slice(0, visibleCount);
+  const handleRefresh = () => {
+    setSpinning(true);
+    setStatuses({});
+    setOpenDropdownId(null);
+    setRefreshKey((k) => k + 1);
+    setTimeout(() => setSpinning(false), 800);
+  };
+
+  const visibleRows = SEED_UNITS.slice(0, visibleCount);
+  const commentUnit = SEED_UNITS.find((u) => u.id === commentUnitId);
+
+  const COLUMNS = ["Date Received", "IC / Serial Number", "Manufacturer", "KVA", "Warehouse", "Status", ""];
 
   return (
     <div
@@ -90,126 +336,211 @@ export default function EvaluationsHistoryPage() {
     >
       <PortalHeader pageName="Evaluations" />
 
-      <main className="flex-1 p-6 lg:p-8 overflow-auto">
-        <div
-          className="rounded-xl overflow-hidden"
-          style={{
-            background: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-          }}
-        >
-          {/* Card header */}
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+
+        <main className="flex-1 overflow-auto p-6 lg:p-8">
           <div
-            className="flex items-center justify-between px-6 py-5"
-            style={{ borderBottom: "1px solid hsl(var(--border))" }}
+            className="rounded-xl overflow-hidden flex flex-col"
+            style={{
+              background: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+              height: "calc(100vh - 136px)",
+            }}
           >
-            <div>
-              <h1
-                className="text-xl font-semibold"
-                style={{ color: "hsl(var(--foreground))" }}
-              >
-                Units for Evaluation
-              </h1>
-              <p
-                className="mt-0.5 text-sm"
-                style={{ color: "hsl(var(--muted-foreground))" }}
-              >
-                Transformer units awaiting evaluation, sorted oldest to newest
-              </p>
-            </div>
-
-            {/* Live count badge */}
+            {/* Card header */}
             <div
-              className="flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium"
-              style={{
-                background: visibleCount > 0 ? "rgba(59,130,246,0.10)" : "hsl(var(--muted))",
-                color: visibleCount > 0 ? "#3b82f6" : "hsl(var(--muted-foreground))",
-              }}
+              className="flex items-center justify-between px-6 py-5 flex-shrink-0"
+              style={{ borderBottom: "1px solid hsl(var(--border))" }}
             >
-              {started && visibleCount < ALL_UNITS.length && (
-                <span
-                  className="inline-block rounded-full animate-pulse"
-                  style={{ width: 7, height: 7, background: "#3b82f6", flexShrink: 0 }}
-                />
+              <div>
+                <h1 className="text-xl font-semibold" style={{ color: "hsl(var(--foreground))" }}>
+                  Evaluation History
+                </h1>
+                <p className="mt-0.5 text-sm" style={{ color: "hsl(var(--muted-foreground))" }}>
+                  Transformer units received for evaluation, sorted oldest to newest
+                </p>
+              </div>
+
+              {/* Refresh button */}
+              <button
+                onClick={handleRefresh}
+                title="Refresh"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "7px 14px",
+                  borderRadius: 8,
+                  border: "1px solid hsl(var(--border))",
+                  background: "transparent",
+                  color: "hsl(var(--foreground))",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  transition: "background 0.15s",
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "hsl(var(--muted))"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.25"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{
+                    transition: "transform 0.6s ease",
+                    transform: spinning ? "rotate(360deg)" : "rotate(0deg)",
+                  }}
+                >
+                  <polyline points="23 4 23 10 17 10" />
+                  <path d="M20.49 15a9 9 0 1 1-.04-6.5" />
+                </svg>
+                Refresh
+              </button>
+            </div>
+
+            {/* Scrollable table area */}
+            <div className="flex-1 overflow-auto" style={{ position: "relative" }}>
+              {visibleCount === 0 ? (
+                <EmptyState />
+              ) : (
+                <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid hsl(var(--border))" }}>
+                      {COLUMNS.map((col, i) => (
+                        <th
+                          key={i}
+                          className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider"
+                          style={{
+                            color: "hsl(var(--muted-foreground))",
+                            whiteSpace: "nowrap",
+                            position: "sticky",
+                            top: 0,
+                            background: "hsl(var(--card))",
+                            zIndex: 10,
+                            borderBottom: "1px solid hsl(var(--border))",
+                          }}
+                        >
+                          {col}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleRows.map((unit, idx) => {
+                      const status: EvalStatus = statuses[unit.id] ?? unit.status;
+                      const isDropdownOpen = openDropdownId === unit.id;
+                      return (
+                        <tr
+                          key={unit.id}
+                          style={{
+                            borderBottom: idx < visibleRows.length - 1 ? "1px solid hsl(var(--border))" : undefined,
+                            animation: "fadeSlideIn 0.4s ease-out",
+                          }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "hsl(var(--muted) / 0.4)"; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "transparent"; }}
+                        >
+                          <td className="px-5 py-3.5" style={{ color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap" }}>
+                            {formatDate(unit.dateReceived)}
+                          </td>
+                          <td className="px-5 py-3.5 font-mono font-medium" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap" }}>
+                            {unit.icSerialNumber}
+                          </td>
+                          <td className="px-5 py-3.5" style={{ color: "hsl(var(--foreground))" }}>
+                            {unit.manufacturer}
+                          </td>
+                          <td className="px-5 py-3.5 font-medium" style={{ color: "hsl(var(--foreground))" }}>
+                            {unit.kva.toLocaleString()} kVA
+                          </td>
+                          <td className="px-5 py-3.5" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap" }}>
+                            {unit.warehouse}
+                          </td>
+                          <td className="px-5 py-3.5" style={{ position: "relative" }}>
+                            <div className="flex items-center gap-2">
+                              <div style={{ position: "relative" }}>
+                                <StatusBadge
+                                  status={status}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenDropdownId(isDropdownOpen ? null : unit.id);
+                                  }}
+                                />
+                                {isDropdownOpen && (
+                                  <StatusDropdown
+                                    current={status}
+                                    onSelect={(s) => setStatuses((prev) => ({ ...prev, [unit.id]: s }))}
+                                    onClose={() => setOpenDropdownId(null)}
+                                  />
+                                )}
+                              </div>
+
+                              {/* Comment button */}
+                              <button
+                                onClick={() => setCommentUnitId(unit.id)}
+                                title="Add comment"
+                                style={{
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: 7,
+                                  border: "1px solid hsl(var(--border))",
+                                  background: "transparent",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  cursor: "pointer",
+                                  color: "hsl(var(--muted-foreground))",
+                                  transition: "color 0.15s, background 0.15s, border-color 0.15s",
+                                  flexShrink: 0,
+                                }}
+                                onMouseEnter={(e) => {
+                                  const btn = e.currentTarget as HTMLButtonElement;
+                                  btn.style.color = "hsl(var(--foreground))";
+                                  btn.style.background = "hsl(var(--muted))";
+                                  btn.style.borderColor = "hsl(var(--border))";
+                                }}
+                                onMouseLeave={(e) => {
+                                  const btn = e.currentTarget as HTMLButtonElement;
+                                  btn.style.color = "hsl(var(--muted-foreground))";
+                                  btn.style.background = "transparent";
+                                }}
+                              >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                                </svg>
+                              </button>
+                            </div>
+                          </td>
+                          {/* empty actions column placeholder */}
+                          <td className="px-3 py-3.5" />
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               )}
-              {visibleCount} unit{visibleCount !== 1 ? "s" : ""}
             </div>
           </div>
+        </main>
+      </div>
 
-          {/* Table */}
-          <div className="overflow-auto" style={{ maxHeight: "calc(100vh - 220px)" }}>
-            {visibleCount === 0 ? (
-              <EmptyState />
-            ) : (
-              <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid hsl(var(--border))" }}>
-                    {[
-                      "Date Received",
-                      "IC / Serial Number",
-                      "Manufacturer",
-                      "KVA",
-                      "Warehouse",
-                      "Status",
-                    ].map((col) => (
-                      <th
-                        key={col}
-                        className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider"
-                        style={{ color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap" }}
-                      >
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibleRows.map((unit, idx) => (
-                    <tr
-                      key={unit.id}
-                      className="transition-all duration-500"
-                      style={{
-                        borderBottom: idx < visibleRows.length - 1 ? "1px solid hsl(var(--border))" : undefined,
-                        opacity: 1,
-                        animation: "fadeSlideIn 0.4s ease-out",
-                      }}
-                      onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLTableRowElement).style.background = "hsl(var(--muted) / 40%)";
-                      }}
-                      onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLTableRowElement).style.background = "transparent";
-                      }}
-                    >
-                      <td className="px-5 py-4" style={{ color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap" }}>
-                        {formatDate(unit.dateReceived)}
-                      </td>
-                      <td className="px-5 py-4 font-mono font-medium" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap" }}>
-                        {unit.icSerialNumber}
-                      </td>
-                      <td className="px-5 py-4" style={{ color: "hsl(var(--foreground))" }}>
-                        {unit.manufacturer}
-                      </td>
-                      <td className="px-5 py-4 font-medium" style={{ color: "hsl(var(--foreground))" }}>
-                        {unit.kva.toLocaleString()} kVA
-                      </td>
-                      <td className="px-5 py-4" style={{ color: "hsl(var(--foreground))" }}>
-                        {unit.warehouse}
-                      </td>
-                      <td className="px-5 py-4">
-                        <StatusBadge status={unit.status} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-      </main>
+      {/* Comment modal */}
+      {commentUnitId && commentUnit && (
+        <CommentModal
+          unitId={commentUnitId}
+          icNumber={commentUnit.icSerialNumber}
+          onClose={() => setCommentUnitId(null)}
+        />
+      )}
 
       <style>{`
         @keyframes fadeSlideIn {
-          from { opacity: 0; transform: translateY(6px); }
+          from { opacity: 0; transform: translateY(5px); }
           to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
@@ -227,24 +558,14 @@ function EmptyState() {
         className="rounded-full flex items-center justify-center mb-4"
         style={{ width: 52, height: 52, background: "hsl(var(--muted))" }}
       >
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="hsl(var(--muted-foreground))"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-          <polyline points="9 22 9 12 15 12 15 22" />
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
         </svg>
       </div>
-      <p
-        className="font-medium mb-1"
-        style={{ color: "hsl(var(--foreground))", fontSize: 15 }}
-      >
+      <p className="font-medium mb-1" style={{ color: "hsl(var(--foreground))", fontSize: 15 }}>
         No units currently awaiting evaluation.
       </p>
       <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 13 }}>
