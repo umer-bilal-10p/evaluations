@@ -2,21 +2,6 @@ import { PortalHeader } from "@/components/PortalHeader";
 import { Sidebar } from "@/components/Sidebar";
 import { useDemoContext } from "@/context/DemoContext";
 
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
-}
-
-const COMING_SOON = [
-  "Unit intake and intake form submission",
-  "Evaluation workflow management",
-  "Inspector assignment and scheduling",
-  "Reporting and analytics dashboard",
-  "Role-based access and team management",
-];
-
 export default function HomePage() {
   const { user, setCurrentPage } = useDemoContext();
 
@@ -25,7 +10,7 @@ export default function HomePage() {
       className="min-h-screen flex flex-col"
       style={{ background: "hsl(var(--background))", color: "hsl(var(--foreground))" }}
     >
-      <PortalHeader pageName="Home" />
+      <PortalHeader />
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
@@ -35,12 +20,6 @@ export default function HomePage() {
 
             {/* Welcome block */}
             <div className="mb-10">
-              <p
-                className="text-sm font-medium mb-1"
-                style={{ color: "hsl(var(--muted-foreground))" }}
-              >
-                {getGreeting()}
-              </p>
               <h1
                 className="text-3xl font-bold tracking-tight mb-2"
                 style={{ color: "hsl(var(--foreground))" }}
@@ -123,40 +102,12 @@ export default function HomePage() {
                     Portal Under Construction
                   </h2>
                   <p
-                    className="text-sm leading-relaxed mb-5"
+                    className="text-sm leading-relaxed"
                     style={{ color: "hsl(var(--muted-foreground))" }}
                   >
-                    We're actively building the Sunbelt Solomon Evaluations portal. The features
-                    below are in development and will be rolling out over the coming weeks.
-                    Thank you for your patience.
+                    We're actively building the Sunbelt Solomon Evaluations portal. More features
+                    and tools will be rolling out over the coming weeks. Thank you for your patience.
                   </p>
-
-                  <p
-                    className="text-xs font-semibold uppercase tracking-wider mb-3"
-                    style={{ color: "hsl(var(--muted-foreground))" }}
-                  >
-                    Coming Soon
-                  </p>
-                  <ul className="space-y-2">
-                    {COMING_SOON.map((item) => (
-                      <li
-                        key={item}
-                        className="flex items-center gap-2.5 text-sm"
-                        style={{ color: "hsl(var(--foreground))" }}
-                      >
-                        <span
-                          style={{
-                            width: 6,
-                            height: 6,
-                            borderRadius: "50%",
-                            background: "rgba(251,191,36,0.7)",
-                            flexShrink: 0,
-                          }}
-                        />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
                 </div>
               </div>
             </div>

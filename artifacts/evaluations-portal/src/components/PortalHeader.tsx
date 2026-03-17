@@ -1,6 +1,6 @@
 import { useDemoContext } from "@/context/DemoContext";
 
-export function PortalHeader({ pageName }: { pageName: string }) {
+export function PortalHeader() {
   const { user, setCurrentPage, isDark, toggleDark } = useDemoContext();
 
   return (
@@ -14,7 +14,7 @@ export function PortalHeader({ pageName }: { pageName: string }) {
         gap: 16,
       }}
     >
-      {/* Left: brand logo + divider + page name */}
+      {/* Left: brand logo + portal name */}
       <div className="flex items-center gap-3">
         <img
           src="/sss-logo-white.png"
@@ -23,7 +23,7 @@ export function PortalHeader({ pageName }: { pageName: string }) {
           draggable={false}
         />
         <div style={{ width: 1, height: 24, background: "rgba(255,255,255,0.20)", margin: "0 4px" }} />
-        <span style={{ color: "#5b9cf6", fontSize: 14, fontWeight: 500 }}>{pageName}</span>
+        <span style={{ color: "#5b9cf6", fontSize: 14, fontWeight: 500 }}>Evaluations</span>
       </div>
 
       {/* Spacer */}
