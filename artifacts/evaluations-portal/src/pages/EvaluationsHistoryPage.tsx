@@ -39,6 +39,8 @@ const WAREHOUSES    = [...new Set(SEED_UNITS.map((u) => u.warehouse))].sort();
 const KVA_VALUES    = [...new Set(SEED_UNITS.map((u) => u.kva))].sort((a, b) => a - b);
 
 type Filters = {
+  dateFrom: string;
+  dateTo: string;
   icSerialNumber: string;
   manufacturer: string;
   kva: string;
@@ -47,6 +49,8 @@ type Filters = {
 };
 
 const EMPTY_FILTERS: Filters = {
+  dateFrom: "",
+  dateTo: "",
   icSerialNumber: "",
   manufacturer: "",
   kva: "",
@@ -244,6 +248,8 @@ export default function EvaluationsHistoryPage() {
   const filteredRows = visibleRows.filter((unit) => {
     const status: EvalStatus = statuses[unit.id] ?? unit.status;
     return (
+      (!filters.dateFrom      || unit.dateReceived >= filters.dateFrom) &&
+      (!filters.dateTo        || unit.dateReceived <= filters.dateTo) &&
       (!filters.icSerialNumber|| unit.icSerialNumber.toLowerCase().includes(filters.icSerialNumber.toLowerCase())) &&
       (!filters.manufacturer  || unit.manufacturer === filters.manufacturer) &&
       (!filters.kva           || unit.kva === Number(filters.kva)) &&
@@ -255,20 +261,16 @@ export default function EvaluationsHistoryPage() {
   const activeFilterCount = countActiveFilters(filters);
   const commentUnit = SEED_UNITS.find((u) => u.id === commentUnitId);
 
-  /* Sticky header offsets */
-  const COL_HEADER_H = 41;
-  const FILTER_ROW_H = 58;
-
   const thBase: React.CSSProperties = {
     color: "hsl(var(--muted-foreground))",
     whiteSpace: "nowrap",
     position: "sticky",
     top: 0,
-    height: COL_HEADER_H,
     background: "hsl(var(--card))",
     zIndex: 10,
-    borderBottom: showFilters ? "none" : "1px solid hsl(var(--border))",
+    borderBottom: "1px solid hsl(var(--border))",
     padding: "0 20px",
+    height: 41,
     textAlign: "left",
     fontSize: 11,
     fontWeight: 600,
@@ -276,14 +278,21 @@ export default function EvaluationsHistoryPage() {
     letterSpacing: "0.07em",
   };
 
-  const filterTh: React.CSSProperties = {
-    position: "sticky",
-    top: COL_HEADER_H,
-    background: "hsl(var(--card))",
-    zIndex: 9,
-    padding: "6px 12px 10px",
-    borderBottom: "1px solid hsl(var(--border))",
-    verticalAlign: "top",
+  const LABEL: React.CSSProperties = {
+    display: "block",
+    fontSize: 10,
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: "0.07em",
+    color: "hsl(var(--muted-foreground))",
+    marginBottom: 4,
+    whiteSpace: "nowrap",
+  };
+
+  const DATE_INPUT: React.CSSProperties = {
+    ...FIELD,
+    width: 130,
+    colorScheme: "inherit" as React.CSSProperties["colorScheme"],
   };
 
   return (
@@ -333,61 +342,80 @@ export default function EvaluationsHistoryPage() {
               </div>
             </div>
 
+            {/* ── Filter bar ── */}
+            {showFilters && (
+              <div style={{ flexShrink: 0, borderBottom: "1px solid hsl(var(--border))", padding: "12px 20px", display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap", background: "hsl(var(--card))" }}>
+
+                {/* Date Received range */}
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={LABEL}>Date Received</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <input type="date" value={filters.dateFrom} onChange={(e) => setFilter("dateFrom", e.target.value)}
+                      style={{ ...DATE_INPUT, width: 130 }} />
+                    <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>–</span>
+                    <input type="date" value={filters.dateTo} onChange={(e) => setFilter("dateTo", e.target.value)}
+                      style={{ ...DATE_INPUT, width: 130 }} />
+                  </div>
+                </div>
+
+                {/* IC / Serial */}
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={LABEL}>IC / Serial</span>
+                  <FInput value={filters.icSerialNumber} onChange={(v) => setFilter("icSerialNumber", v)} placeholder="Search…" />
+                </div>
+
+                {/* Manufacturer */}
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={LABEL}>Manufacturer</span>
+                  <FSelect value={filters.manufacturer} onChange={(v) => setFilter("manufacturer", v)} options={MANUFACTURERS} placeholder="All" />
+                </div>
+
+                {/* Type — locked */}
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={LABEL}>Type</span>
+                  <select disabled style={{ ...SELECT, opacity: 0.5, cursor: "not-allowed", minWidth: 140 }}>
+                    <option>Three-Phase Pad</option>
+                  </select>
+                </div>
+
+                {/* KVA */}
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={LABEL}>KVA</span>
+                  <FSelect value={filters.kva} onChange={(v) => setFilter("kva", v)} options={KVA_VALUES.map(String)} placeholder="All" />
+                </div>
+
+                {/* Warehouse */}
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={LABEL}>Warehouse</span>
+                  <FSelect value={filters.warehouse} onChange={(v) => setFilter("warehouse", v)} options={WAREHOUSES} placeholder="All" />
+                </div>
+
+                {/* Status */}
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={LABEL}>Status</span>
+                  <FSelect value={filters.status} onChange={(v) => setFilter("status", v)} options={ALL_STATUSES} placeholder="All" />
+                </div>
+
+                {/* Clear all */}
+                {activeFilterCount > 0 && (
+                  <button onClick={() => setFilters(EMPTY_FILTERS)}
+                    style={{ alignSelf: "flex-end", marginBottom: 1, fontSize: 12, color: "#5b9cf6", background: "none", border: "none", cursor: "pointer", whiteSpace: "nowrap", padding: "0 4px", fontWeight: 500, height: 34 }}>
+                    Clear all
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* ── Table ── */}
             <div className="flex-1 overflow-auto" style={{ position: "relative" }}>
               {visibleCount === 0 ? <EmptyState /> : (
                 <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
                   <thead>
-                    {/* Column labels */}
                     <tr>
                       {["Date Received","IC / Serial Number","Manufacturer","Type","KVA","Warehouse","Status",""].map((col, i) => (
                         <th key={i} style={thBase}>{col}</th>
                       ))}
                     </tr>
-
-                    {/* Filter row */}
-                    {showFilters && (
-                      <tr>
-                        {/* Date Received — no filter */}
-                        <th style={{ ...filterTh, minWidth: 140 }} />
-                        {/* IC search */}
-                        <th style={{ ...filterTh, minWidth: 150 }}>
-                          <FInput value={filters.icSerialNumber} onChange={(v) => setFilter("icSerialNumber", v)} placeholder="Search serial…" />
-                        </th>
-                        {/* Manufacturer */}
-                        <th style={{ ...filterTh, minWidth: 130 }}>
-                          <FSelect value={filters.manufacturer} onChange={(v) => setFilter("manufacturer", v)} options={MANUFACTURERS} placeholder="All" />
-                        </th>
-                        {/* Type — locked */}
-                        <th style={{ ...filterTh, minWidth: 150 }}>
-                          <select disabled style={{ ...SELECT, opacity: 0.5, cursor: "not-allowed" }}>
-                            <option>Three-Phase Pad</option>
-                            {ALL_TYPES.map((t) => <option key={t}>{t}</option>)}
-                          </select>
-                        </th>
-                        {/* KVA */}
-                        <th style={{ ...filterTh, minWidth: 110 }}>
-                          <FSelect value={filters.kva} onChange={(v) => setFilter("kva", v)} options={KVA_VALUES.map(String)} placeholder="All" />
-                        </th>
-                        {/* Warehouse */}
-                        <th style={{ ...filterTh, minWidth: 170 }}>
-                          <FSelect value={filters.warehouse} onChange={(v) => setFilter("warehouse", v)} options={WAREHOUSES} placeholder="All" />
-                        </th>
-                        {/* Status */}
-                        <th style={{ ...filterTh, minWidth: 170 }}>
-                          <FSelect value={filters.status} onChange={(v) => setFilter("status", v)} options={ALL_STATUSES} placeholder="All" />
-                        </th>
-                        {/* Clear all */}
-                        <th style={{ ...filterTh, verticalAlign: "middle" }}>
-                          {activeFilterCount > 0 && (
-                            <button onClick={() => setFilters(EMPTY_FILTERS)}
-                              style={{ fontSize: 12, color: "#5b9cf6", background: "none", border: "none", cursor: "pointer", whiteSpace: "nowrap", padding: 0, fontWeight: 500 }}>
-                              Clear all
-                            </button>
-                          )}
-                        </th>
-                      </tr>
-                    )}
                   </thead>
 
                   <tbody>

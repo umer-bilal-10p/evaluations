@@ -23,7 +23,7 @@ export function PortalHeader() {
           draggable={false}
         />
         <div style={{ width: 1, height: 24, background: "rgba(255,255,255,0.20)", margin: "0 4px" }} />
-        <span style={{ color: "#5b9cf6", fontSize: 14, fontWeight: 500 }}>Evaluations</span>
+        <span style={{ color: "#5b9cf6", fontSize: 14, fontWeight: 500 }}>EvalAI</span>
       </div>
 
       {/* Spacer */}
