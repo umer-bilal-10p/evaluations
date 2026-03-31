@@ -151,7 +151,7 @@ function IntakePills({ category, tags }: { category: IntakeCategory; tags: Intak
                 padding: "2px 8px", borderRadius: 20,
                 fontSize: 11, fontWeight: 500, whiteSpace: "nowrap",
                 background: isDamage ? "rgba(251,191,36,0.18)" : "rgba(100,116,139,0.08)",
-                color:      isDamage ? "#b45309"               : "#64748b",
+                color:      isDamage ? "#d97706"               : "#64748b",
                 border:     isDamage ? "1px solid rgba(251,191,36,0.35)" : "1px solid rgba(100,116,139,0.22)",
               }}>
               {isDamage ? (
