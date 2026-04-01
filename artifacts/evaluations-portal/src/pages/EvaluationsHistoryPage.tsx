@@ -532,60 +532,79 @@ export default function EvaluationsHistoryPage() {
           {/* ── 2. Filter card ── */}
           {showFilters && (
             <div style={CARD}>
+              {/*
+                Ordered by table column position:
+                Row 1 (5): Date Received · IC# · Manufacturer · Type · KVA
+                Row 2 (4): Intake Type · Warehouse · Status · Site
+                Date Received gets flex:2 since it contains two date pickers.
+              */}
+
               {/* Row 1 */}
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 12, padding: "16px 20px 12px", flexWrap: "wrap" }}>
-                <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 10, padding: "16px 20px 12px" }}>
+                {/* Date Received — flex:2 to fit two pickers */}
+                <div style={{ flex: 2, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Date Received</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <input type="date" value={filters.dateFrom} onChange={(e) => setFilter("dateFrom", e.target.value)} style={DATE_INPUT} />
-                    <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>–</span>
-                    <input type="date" value={filters.dateTo} onChange={(e) => setFilter("dateTo", e.target.value)} style={DATE_INPUT} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <input type="date" value={filters.dateFrom} onChange={(e) => setFilter("dateFrom", e.target.value)}
+                      style={{ ...FIELD, flex: 1, minWidth: 0, width: "auto", colorScheme: "inherit" as React.CSSProperties["colorScheme"] }} />
+                    <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", flexShrink: 0 }}>–</span>
+                    <input type="date" value={filters.dateTo} onChange={(e) => setFilter("dateTo", e.target.value)}
+                      style={{ ...FIELD, flex: 1, minWidth: 0, width: "auto", colorScheme: "inherit" as React.CSSProperties["colorScheme"] }} />
                   </div>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column" }}>
+
+                {/* IC # */}
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>IC #</span>
-                  <FInput value={filters.icNumber} onChange={(v) => setFilter("icNumber", v)} placeholder="Search IC number…" style={{ width: 160 }} />
+                  <FInput value={filters.icNumber} onChange={(v) => setFilter("icNumber", v)} placeholder="Search IC number…" />
                 </div>
-                <div style={{ display: "flex", flexDirection: "column" }}>
+
+                {/* Manufacturer */}
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Manufacturer</span>
-                  <MultiSelect value={filters.manufacturer} onChange={(v) => setFilter("manufacturer", v)} options={MANUFACTURERS} placeholder="All" style={{ width: 140 }} />
+                  <MultiSelect value={filters.manufacturer} onChange={(v) => setFilter("manufacturer", v)} options={MANUFACTURERS} placeholder="All" style={{ width: "100%" }} />
                 </div>
-                <div style={{ display: "flex", flexDirection: "column" }}>
+
+                {/* Type (locked) */}
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Type</span>
-                  <select disabled style={{ ...FIELD, appearance: "none", opacity: 0.5, cursor: "not-allowed", width: 148, backgroundImage: SELECT_ARROW, backgroundRepeat: "no-repeat", backgroundPosition: "right 9px center", paddingRight: 28 }}>
+                  <select disabled style={{ ...FIELD, width: "100%", appearance: "none", opacity: 0.5, cursor: "not-allowed", backgroundImage: SELECT_ARROW, backgroundRepeat: "no-repeat", backgroundPosition: "right 9px center", paddingRight: 28 }}>
                     <option>Three-Phase Pad</option>
                   </select>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={LABEL}>Intake Type</span>
-                  <MultiSelect value={filters.intakeCategory} onChange={(v) => setFilter("intakeCategory", v)} options={ALL_CATEGORIES} placeholder="All" style={{ width: 130 }} />
+
+                {/* KVA */}
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                  <span style={LABEL}>KVA</span>
+                  <MultiSelect value={filters.kva} onChange={(v) => setFilter("kva", v)} options={KVA_VALUES} placeholder="All" style={{ width: "100%" }} />
                 </div>
               </div>
 
               {/* Row 2 */}
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 12, padding: "12px 20px 16px", flexWrap: "wrap", borderTop: "1px solid hsl(var(--border))" }}>
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={LABEL}>Site</span>
-                  <MultiSelect value={filters.site} onChange={(v) => setFilter("site", v)} options={SITES} placeholder="All Sites" style={{ width: 160 }} />
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 10, padding: "12px 20px 16px", borderTop: "1px solid hsl(var(--border))" }}>
+                {/* Intake Type */}
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                  <span style={LABEL}>Intake Type</span>
+                  <MultiSelect value={filters.intakeCategory} onChange={(v) => setFilter("intakeCategory", v)} options={ALL_CATEGORIES} placeholder="All" style={{ width: "100%" }} />
                 </div>
-                <div style={{ display: "flex", flexDirection: "column" }}>
+
+                {/* Warehouse */}
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Warehouse</span>
-                  <MultiSelect value={filters.warehouse} onChange={(v) => setFilter("warehouse", v)} options={WAREHOUSES} placeholder="All" style={{ width: 190 }} />
+                  <MultiSelect value={filters.warehouse} onChange={(v) => setFilter("warehouse", v)} options={WAREHOUSES} placeholder="All" style={{ width: "100%" }} />
                 </div>
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={LABEL}>KVA</span>
-                  <MultiSelect value={filters.kva} onChange={(v) => setFilter("kva", v)} options={KVA_VALUES} placeholder="All" style={{ width: 110 }} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column" }}>
+
+                {/* Status */}
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Status</span>
-                  <MultiSelect value={filters.status} onChange={(v) => setFilter("status", v)} options={ALL_STATUSES} placeholder="All" style={{ width: 150 }} />
+                  <MultiSelect value={filters.status} onChange={(v) => setFilter("status", v)} options={ALL_STATUSES} placeholder="All" style={{ width: "100%" }} />
                 </div>
-                {activeFilterCount > 0 && (
-                  <button onClick={() => setFilters(EMPTY_FILTERS)}
-                    style={{ alignSelf: "flex-end", marginBottom: 1, fontSize: 12, color: "#0047BB", background: "none", border: "none", cursor: "pointer", whiteSpace: "nowrap", padding: "0 4px", fontWeight: 500, height: 34 }}>
-                    Clear all
-                  </button>
-                )}
+
+                {/* Site */}
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                  <span style={LABEL}>Site</span>
+                  <MultiSelect value={filters.site} onChange={(v) => setFilter("site", v)} options={SITES} placeholder="All Sites" style={{ width: "100%" }} />
+                </div>
               </div>
             </div>
           )}
