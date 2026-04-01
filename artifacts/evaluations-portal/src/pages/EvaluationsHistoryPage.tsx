@@ -24,8 +24,8 @@ const COL_DEFS = [
   { key: "whs",        label: "WHS" },
   { key: "status",     label: "Status" },
   { key: "site",       label: "Site" },
-  { key: "completedOn", label: "Completed On" },
-  { key: "completedBy", label: "Completed By" },
+  { key: "completedOn",  label: "Completed On" },
+  { key: "completedBy",  label: "Completed By" },
 ] as const;
 
 type ColKey = typeof COL_DEFS[number]["key"];
@@ -39,6 +39,15 @@ const DEFAULT_COL_VISIBILITY: ColVisibility = {
 
 /* ─── Data model ─────────────────────────────────────────────────────────────── */
 interface ActiveUser { name: string; initials: string; color: string; }
+
+interface UnitComment {
+  id: string;
+  author: string;
+  authorInitials: string;
+  authorColor: string;
+  timestamp: string;
+  text: string;
+}
 
 interface EvaluationUnit {
   id: string;
@@ -58,21 +67,43 @@ interface EvaluationUnit {
   completedOn: string | null;
   completedBy: string | null;
   activeUser: ActiveUser | null;
+  comments: UnitComment[];
+  hasUnreadComment: boolean;
 }
 
 function siteFromWarehouse(w: string): string { return w.split(" - ")[1] ?? w; }
 
+/* ─── Seed comments ──────────────────────────────────────────────────────────── */
+const C = (id: string, author: string, initials: string, color: string, timestamp: string, text: string): UnitComment =>
+  ({ id, author, authorInitials: initials, authorColor: color, timestamp, text });
+
 const SEED_UNITS: EvaluationUnit[] = [
-  { id: "1",  dateReceived: "2024-07-22", timeReceived: "11:28 AM", mfgSerial: "TF-7662-M", icNumber: "185940632", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 1750, intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 194503, warehouseNumber: 18, warehouse: "18 - Houston, TX",  status: "Not Started", completedOn: null, completedBy: null, activeUser: null },
-  { id: "2",  dateReceived: "2024-08-20", timeReceived: "9:53 AM",  mfgSerial: "TF-9884-K", icNumber: "221083647", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 250,  intakeCategory: "Recycle", intakeTags: ["NPX: Repair"],                 loadNumber: 425019, warehouseNumber: 55, warehouse: "55 - Dallas, TX",   status: "Not Started", completedOn: null, completedBy: null, activeUser: null },
-  { id: "3",  dateReceived: "2024-11-05", timeReceived: "3:21 PM",  mfgSerial: "TF-5540-E", icNumber: "312048756", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 2000, intakeCategory: "Recycle", intakeTags: ["Base Damage", "NPX: Repair"],  loadNumber: 314087, warehouseNumber: 7,  warehouse: "07 - Atlanta, GA", status: "Not Started", completedOn: null, completedBy: null, activeUser: null },
-  { id: "4",  dateReceived: "2024-11-18", timeReceived: "2:37 PM",  mfgSerial: "TF-9201-A", icNumber: "098432711", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Recycle", intakeTags: ["NPX: Rewind"],                 loadNumber: 203415, warehouseNumber: 12, warehouse: "12 - Dallas, TX",   status: "Not Started", completedOn: null, completedBy: null, activeUser: null },
-  { id: "5",  dateReceived: "2024-07-09", timeReceived: "6:47 PM",  mfgSerial: "TF-6551-N", icNumber: "093284756", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 400,  intakeCategory: "Recycle", intakeTags: ["Base Damage", "NPX: Scrap"],   loadNumber: 362780, warehouseNumber: 31, warehouse: "31 - Phoenix, AZ", status: "In Progress", completedOn: null, completedBy: null, activeUser: { name: "Carlos Rivera", initials: "CR", color: "#0047BB" } },
-  { id: "6",  dateReceived: "2025-01-15", timeReceived: "10:12 AM", mfgSerial: "TF-3371-D", icNumber: "441928573", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 1000, intakeCategory: "Surplus", intakeTags: ["Base Damage"],                 loadNumber: 119204, warehouseNumber: 99, warehouse: "99 - Houston, TX", status: "Not Started", completedOn: null, completedBy: null, activeUser: null },
-  { id: "7",  dateReceived: "2025-02-03", timeReceived: "8:05 AM",  mfgSerial: "TF-8831-G", icNumber: "554738201", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 750,  intakeCategory: "Recycle", intakeTags: ["NPX: Rewind", "NPX: Repair"],  loadNumber: 278456, warehouseNumber: 22, warehouse: "22 - Denver, CO",   status: "Not Started", completedOn: null, completedBy: null, activeUser: null },
-  { id: "8",  dateReceived: "2025-02-28", timeReceived: "1:44 PM",  mfgSerial: "TF-4492-C", icNumber: "667193845", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 1500, intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 390127, warehouseNumber: 44, warehouse: "44 - Atlanta, GA", status: "Completed",   completedOn: "2025-03-05", completedBy: "Maria Santos", activeUser: null },
-  { id: "9",  dateReceived: "2025-03-14", timeReceived: "4:30 PM",  mfgSerial: "TF-2278-B", icNumber: "789042316", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 3000, intakeCategory: "Recycle", intakeTags: ["NPX: Scrap"],                  loadNumber: 451803, warehouseNumber: 7,  warehouse: "07 - Atlanta, GA", status: "In Progress", completedOn: null, completedBy: null, activeUser: { name: "Sarah Chen", initials: "SC", color: "#7c3aed" } },
-  { id: "10", dateReceived: "2025-04-07", timeReceived: "11:55 AM", mfgSerial: "TF-1045-A", icNumber: "823615490", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Repair"],  loadNumber: 512948, warehouseNumber: 34, warehouse: "34 - Phoenix, AZ", status: "Not Started", completedOn: null, completedBy: null, activeUser: null },
+  { id: "1",  dateReceived: "2024-07-22", timeReceived: "11:28 AM", mfgSerial: "TF-7662-M", icNumber: "185940632", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 1750, intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 194503, warehouseNumber: 18, warehouse: "18 - Houston, TX",  status: "Not Started", completedOn: null, completedBy: null, activeUser: null, hasUnreadComment: true,  comments: [
+    C("c1a", "Maria Santos",  "MS", "#7c3aed", "2024-07-24T09:15:00Z", "Tank exterior shows impact damage on the south panel. Flagged for structural review before proceeding."),
+    C("c1b", "Carlos Rivera", "CR", "#0047BB", "2024-07-25T14:32:00Z", "Noted — holding intake until structural team signs off. Will update."),
+  ]},
+  { id: "2",  dateReceived: "2024-08-20", timeReceived: "9:53 AM",  mfgSerial: "TF-9884-K", icNumber: "221083647", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 250,  intakeCategory: "Recycle", intakeTags: ["NPX: Repair"],                 loadNumber: 425019, warehouseNumber: 55, warehouse: "55 - Dallas, TX",   status: "Not Started", completedOn: null, completedBy: null, activeUser: null, hasUnreadComment: false, comments: [] },
+  { id: "3",  dateReceived: "2024-11-05", timeReceived: "3:21 PM",  mfgSerial: "TF-5540-E", icNumber: "312048756", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 2000, intakeCategory: "Recycle", intakeTags: ["Base Damage", "NPX: Repair"],  loadNumber: 314087, warehouseNumber: 7,  warehouse: "07 - Atlanta, GA", status: "Not Started", completedOn: null, completedBy: null, activeUser: null, hasUnreadComment: false, comments: [
+    C("c3a", "James Mitchell", "JM", "#0047BB", "2024-11-06T10:00:00Z", "Confirmed base damage on bottom rail. Photos uploaded to SharePoint."),
+  ]},
+  { id: "4",  dateReceived: "2024-11-18", timeReceived: "2:37 PM",  mfgSerial: "TF-9201-A", icNumber: "098432711", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Recycle", intakeTags: ["NPX: Rewind"],                 loadNumber: 203415, warehouseNumber: 12, warehouse: "12 - Dallas, TX",   status: "Not Started", completedOn: null, completedBy: null, activeUser: null, hasUnreadComment: false, comments: [] },
+  { id: "5",  dateReceived: "2024-07-09", timeReceived: "6:47 PM",  mfgSerial: "TF-6551-N", icNumber: "093284756", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 400,  intakeCategory: "Recycle", intakeTags: ["Base Damage", "NPX: Scrap"],   loadNumber: 362780, warehouseNumber: 31, warehouse: "31 - Phoenix, AZ", status: "In Progress", completedOn: null, completedBy: null, activeUser: { name: "Carlos Rivera", initials: "CR", color: "#0047BB" }, hasUnreadComment: false, comments: [
+    C("c5a", "Carlos Rivera", "CR", "#0047BB", "2024-07-12T11:20:00Z", "Evaluation started. Core appears intact but windings need closer inspection."),
+  ]},
+  { id: "6",  dateReceived: "2025-01-15", timeReceived: "10:12 AM", mfgSerial: "TF-3371-D", icNumber: "441928573", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 1000, intakeCategory: "Surplus", intakeTags: ["Base Damage"],                 loadNumber: 119204, warehouseNumber: 99, warehouse: "99 - Houston, TX", status: "Not Started", completedOn: null, completedBy: null, activeUser: null, hasUnreadComment: true,  comments: [
+    C("c6a", "Maria Santos",  "MS", "#7c3aed", "2025-01-17T08:45:00Z", "Please prioritize this unit — customer is waiting on evaluation results before making a purchase decision."),
+  ]},
+  { id: "7",  dateReceived: "2025-02-03", timeReceived: "8:05 AM",  mfgSerial: "TF-8831-G", icNumber: "554738201", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 750,  intakeCategory: "Recycle", intakeTags: ["NPX: Rewind", "NPX: Repair"],  loadNumber: 278456, warehouseNumber: 22, warehouse: "22 - Denver, CO",   status: "Not Started", completedOn: null, completedBy: null, activeUser: null, hasUnreadComment: false, comments: [] },
+  { id: "8",  dateReceived: "2025-02-28", timeReceived: "1:44 PM",  mfgSerial: "TF-4492-C", icNumber: "667193845", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 1500, intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 390127, warehouseNumber: 44, warehouse: "44 - Atlanta, GA", status: "Completed",   completedOn: "2025-03-05", completedBy: "Maria Santos", activeUser: null, hasUnreadComment: false, comments: [
+    C("c8a", "James Mitchell", "JM", "#0047BB", "2025-03-01T09:00:00Z", "Inspection complete. All components within spec. Recommending for surplus resale."),
+    C("c8b", "Maria Santos",  "MS", "#7c3aed", "2025-03-05T15:10:00Z", "Evaluation finalized and closed. Documentation submitted to logistics."),
+  ]},
+  { id: "9",  dateReceived: "2025-03-14", timeReceived: "4:30 PM",  mfgSerial: "TF-2278-B", icNumber: "789042316", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 3000, intakeCategory: "Recycle", intakeTags: ["NPX: Scrap"],                  loadNumber: 451803, warehouseNumber: 7,  warehouse: "07 - Atlanta, GA", status: "In Progress", completedOn: null, completedBy: null, activeUser: { name: "Sarah Chen", initials: "SC", color: "#7c3aed" }, hasUnreadComment: false, comments: [
+    C("c9a", "Sarah Chen",    "SC", "#7c3aed", "2025-03-15T13:30:00Z", "Initial assessment done. Unit is a strong scrap candidate — oil contaminated, core delaminated."),
+    C("c9b", "James Mitchell","JM", "#0047BB", "2025-03-16T09:45:00Z", "Understood. Proceed with scrap evaluation pathway and document weight and materials."),
+    C("c9c", "Sarah Chen",    "SC", "#7c3aed", "2025-03-17T11:00:00Z", "Materials documented. Awaiting final sign-off to proceed."),
+  ]},
+  { id: "10", dateReceived: "2025-04-07", timeReceived: "11:55 AM", mfgSerial: "TF-1045-A", icNumber: "823615490", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Repair"],  loadNumber: 512948, warehouseNumber: 34, warehouse: "34 - Phoenix, AZ", status: "Not Started", completedOn: null, completedBy: null, activeUser: null, hasUnreadComment: false, comments: [] },
 ];
 
 const ROW_INTERVAL_MS = 900;
@@ -87,13 +118,11 @@ type Filters = {
   manufacturer: string[]; kva: string[]; warehouse: string[];
   intakeCategory: string[]; status: string[]; site: string[];
 };
-
 const EMPTY_FILTERS: Filters = {
   dateFrom: "", dateTo: "", icNumber: "",
   manufacturer: [], kva: [], warehouse: [],
   intakeCategory: [], status: [], site: [],
 };
-
 function countActiveFilters(f: Filters): number {
   let n = 0;
   if (f.dateFrom) n++; if (f.dateTo) n++; if (f.icNumber) n++;
@@ -109,56 +138,47 @@ function formatDate(iso: string): string {
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   return `${months[Number(month) - 1]} ${Number(day)}, ${year}`;
 }
-function formatDateTime(iso: string, time: string): { date: string; time: string } {
-  return { date: formatDate(iso), time };
+function formatDateTime(iso: string, time: string) { return { date: formatDate(iso), time }; }
+function formatTimestamp(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + " · " +
+    d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
 /* ─── Shared field styles ────────────────────────────────────────────────────── */
 const FIELD: React.CSSProperties = {
-  height: 34, fontSize: 13, fontWeight: 400, padding: "0 10px",
-  borderRadius: 7, border: "1px solid hsl(var(--border))",
-  background: "hsl(var(--background))", color: "hsl(var(--foreground))",
-  outline: "none", boxSizing: "border-box", lineHeight: "34px", width: "100%",
+  height: 34, fontSize: 13, padding: "0 10px", borderRadius: 7,
+  border: "1px solid hsl(var(--border))", background: "hsl(var(--background))",
+  color: "hsl(var(--foreground))", outline: "none", boxSizing: "border-box",
+  lineHeight: "34px", width: "100%",
 };
 const SELECT_ARROW = `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E")`;
 const LABEL: React.CSSProperties = {
-  display: "block", fontSize: 10, fontWeight: 600,
-  textTransform: "uppercase", letterSpacing: "0.07em",
-  color: "hsl(var(--muted-foreground))", marginBottom: 4, whiteSpace: "nowrap",
-};
-const DATE_INPUT: React.CSSProperties = {
-  ...FIELD, width: 130, colorScheme: "inherit" as React.CSSProperties["colorScheme"],
+  display: "block", fontSize: 10, fontWeight: 600, textTransform: "uppercase",
+  letterSpacing: "0.07em", color: "hsl(var(--muted-foreground))", marginBottom: 4, whiteSpace: "nowrap",
 };
 const CARD: React.CSSProperties = {
   background: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
   borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.07)",
 };
 
-function FInput({ value, onChange, placeholder, style }: { value: string; onChange: (v: string) => void; placeholder: string; style?: React.CSSProperties }) {
-  return <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ ...FIELD, ...style }} />;
+function FInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  return <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={FIELD} />;
 }
 
-/* ─── Multi-select dropdown ──────────────────────────────────────────────────── */
+/* ─── Multi-select ───────────────────────────────────────────────────────────── */
 function MultiSelect({ value, onChange, options, placeholder, style }: {
-  value: string[]; onChange: (v: string[]) => void;
-  options: string[]; placeholder: string; style?: React.CSSProperties;
+  value: string[]; onChange: (v: string[]) => void; options: string[]; placeholder: string; style?: React.CSSProperties;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
-
-  const toggle = (opt: string) =>
-    onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt]);
-
-  const displayText = value.length === 0
-    ? placeholder
-    : value.length === 1 ? value[0] : `${value.length} selected`;
-
+  const toggle = (opt: string) => onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt]);
+  const displayText = value.length === 0 ? placeholder : value.length === 1 ? value[0] : `${value.length} selected`;
   return (
     <div ref={ref} style={{ position: "relative", ...style }}>
       <button onClick={() => setOpen((v) => !v)} style={{
@@ -171,19 +191,9 @@ function MultiSelect({ value, onChange, options, placeholder, style }: {
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{displayText}</span>
       </button>
       {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 400,
-          background: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
-          borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.14)",
-          minWidth: "100%", maxHeight: 220, overflowY: "auto", padding: "4px 0",
-        }}>
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 400, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.14)", minWidth: "100%", maxHeight: 220, overflowY: "auto", padding: "4px 0" }}>
           {options.map((opt) => (
-            <label key={opt} style={{
-              display: "flex", alignItems: "center", gap: 9,
-              padding: "7px 12px", cursor: "pointer", fontSize: 13,
-              color: "hsl(var(--foreground))", userSelect: "none",
-              background: value.includes(opt) ? "rgba(0,71,187,0.06)" : "transparent",
-            }}
+            <label key={opt} style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 12px", cursor: "pointer", fontSize: 13, color: "hsl(var(--foreground))", userSelect: "none", background: value.includes(opt) ? "rgba(0,71,187,0.06)" : "transparent" }}
               onMouseEnter={(e) => { if (!value.includes(opt)) (e.currentTarget as HTMLLabelElement).style.background = "hsl(var(--muted))"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLLabelElement).style.background = value.includes(opt) ? "rgba(0,71,187,0.06)" : "transparent"; }}>
               <input type="checkbox" checked={value.includes(opt)} onChange={() => toggle(opt)}
@@ -197,11 +207,16 @@ function MultiSelect({ value, onChange, options, placeholder, style }: {
   );
 }
 
-/* ─── Status ─────────────────────────────────────────────────────────────────── */
+/* ─── Status
+ *  Colors extracted from tablet app screenshot:
+ *  In Progress  → cornflower blue  (#E8F2FF bg, #93C5FD border, #1D4ED8 text)
+ *  Completed    → soft mint green  (#D4F7E8 bg, #6EE7B7 border, #047857 text)
+ *  Not Started  → neutral slate    (unchanged)
+ * ─────────────────────────────────────────────────────────────────────────────── */
 const STATUS_STYLES: Record<EvalStatus, { bg: string; color: string; borderColor: string }> = {
   "Not Started": { bg: "rgba(100,116,139,0.08)",  color: "#64748b", borderColor: "rgba(100,116,139,0.28)" },
-  "In Progress": { bg: "rgba(59,130,246,0.10)",   color: "#3b82f6", borderColor: "rgba(59,130,246,0.30)" },
-  "Completed":   { bg: "rgba(34,197,94,0.10)",    color: "#16a34a", borderColor: "rgba(34,197,94,0.30)"  },
+  "In Progress": { bg: "#E8F2FF",                  color: "#1D4ED8", borderColor: "#93C5FD" },
+  "Completed":   { bg: "#D4F7E8",                  color: "#047857", borderColor: "#6EE7B7" },
 };
 
 function StatusIcon({ status }: { status: EvalStatus }) {
@@ -249,12 +264,15 @@ function StatusDropdown({ current, onSelect, onClose }: { current: EvalStatus; o
   );
 }
 
-/* ─── Intake pills ───────────────────────────────────────────────────────────── */
+/* ─── Intake pills
+ *  Colors extracted from tablet app screenshot:
+ *  Base Damage → golden amber (#FEF3C7 bg, #FCD34D border, #92400E text)
+ *  NPX tags    → neutral slate (unchanged)
+ * ─────────────────────────────────────────────────────────────────────────────── */
 function FlagIcon() {
   return (
     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
-      <line x1="4" y1="22" x2="4" y2="15"/>
+      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
     </svg>
   );
 }
@@ -270,9 +288,9 @@ function IntakePills({ category, tags }: { category: IntakeCategory; tags: Intak
             <span key={tag} style={{
               display: "inline-flex", alignItems: "center", gap: 4,
               padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 500, whiteSpace: "nowrap",
-              background: isDamage ? "rgba(251,191,36,0.18)" : "rgba(100,116,139,0.08)",
-              color:      isDamage ? "#d97706"               : "#64748b",
-              border:     isDamage ? "1px solid rgba(251,191,36,0.35)" : "1px solid rgba(100,116,139,0.22)",
+              background: isDamage ? "#FEF3C7" : "rgba(100,116,139,0.08)",
+              color:      isDamage ? "#92400E" : "#64748b",
+              border:     isDamage ? "1px solid #FCD34D" : "1px solid rgba(100,116,139,0.22)",
             }}>
               {isDamage ? <FlagIcon /> : (
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -288,29 +306,38 @@ function IntakePills({ category, tags }: { category: IntakeCategory; tags: Intak
   );
 }
 
+/* ─── Warehouse tooltip ──────────────────────────────────────────────────────── */
+function WarehouseTooltip({ warehouse }: { warehouse: string }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <span style={{ position: "relative", display: "inline-flex", marginLeft: 4, verticalAlign: "middle" }}>
+      <button
+        onMouseEnter={() => setVisible(true)}
+        onMouseLeave={() => setVisible(false)}
+        style={{ width: 15, height: 15, borderRadius: "50%", background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))", fontSize: 9, fontWeight: 700, cursor: "help", color: "hsl(var(--muted-foreground))", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
+        ?
+      </button>
+      {visible && (
+        <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", background: "hsl(var(--foreground))", color: "hsl(var(--background))", padding: "5px 10px", borderRadius: 7, fontSize: 11, whiteSpace: "nowrap", zIndex: 500, pointerEvents: "none", boxShadow: "0 2px 10px rgba(0,0,0,0.25)" }}>
+          {warehouse}
+          <div style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "5px solid transparent", borderRight: "5px solid transparent", borderTop: "5px solid hsl(var(--foreground))" }} />
+        </div>
+      )}
+    </span>
+  );
+}
+
 /* ─── Active user lock pill ──────────────────────────────────────────────────── */
 function ActiveUserPill({ user }: { user: ActiveUser }) {
   return (
-    <div style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      marginTop: 5, padding: "3px 8px 3px 5px", borderRadius: 20,
-      background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))",
-      fontSize: 11, fontWeight: 500, color: "hsl(var(--foreground))",
-      whiteSpace: "nowrap",
-    }}>
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 5, padding: "3px 8px 3px 5px", borderRadius: 20, background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))", fontSize: 11, fontWeight: 500, color: "hsl(var(--foreground))", whiteSpace: "nowrap" }}>
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
       </svg>
-      <div style={{
-        width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
-        background: user.color, display: "flex", alignItems: "center",
-        justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#fff",
-        letterSpacing: "-0.02em",
-      }}>
+      <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, background: user.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>
         {user.initials}
       </div>
-      <span style={{ color: "hsl(var(--foreground))", fontSize: 11 }}>{user.name}</span>
+      <span>{user.name}</span>
     </div>
   );
 }
@@ -346,40 +373,96 @@ function ColumnPicker({ visibility, onChange, onClose, onReset }: { visibility: 
   );
 }
 
-/* ─── Comment modal ──────────────────────────────────────────────────────────── */
-function CommentModal({ icNumber, onClose }: { icNumber: string; onClose: () => void }) {
-  const [text, setText] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const handleSubmit = () => { if (!text.trim()) return; setSubmitted(true); setTimeout(onClose, 1200); };
+/* ─── Comment modal — shows comment history + new comment form ───────────────── */
+function CommentModal({ unit, onClose }: { unit: EvaluationUnit; onClose: () => void }) {
+  const [localComments, setLocalComments] = useState<UnitComment[]>(unit.comments);
+  const [newText, setNewText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  const handleSubmit = () => {
+    if (!newText.trim() || submitting) return;
+    setSubmitting(true);
+    const comment: UnitComment = {
+      id: Date.now().toString(),
+      author: "James Mitchell", authorInitials: "JM", authorColor: "#0047BB",
+      timestamp: new Date().toISOString(), text: newText.trim(),
+    };
+    setTimeout(() => {
+      setLocalComments((prev) => [...prev, comment]);
+      setNewText(""); setSubmitting(false);
+      setTimeout(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }); }, 50);
+    }, 350);
+  };
+
   return (
-    <div className="fixed inset-0 z-[500] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 14, width: "100%", maxWidth: 440, margin: "0 16px", padding: 24, boxShadow: "0 20px 48px rgba(0,0,0,0.25)" }}>
-        <div className="flex items-center justify-between mb-4">
+    <div className="fixed inset-0 z-[500] flex items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 14, width: "100%", maxWidth: 500, margin: "0 16px", display: "flex", flexDirection: "column", maxHeight: "85vh", boxShadow: "0 20px 48px rgba(0,0,0,0.25)", overflow: "hidden" }}>
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px 14px", borderBottom: "1px solid hsl(var(--border))", flexShrink: 0 }}>
           <div>
-            <h2 style={{ fontSize: 15, fontWeight: 600, color: "hsl(var(--foreground))" }}>Add Comment</h2>
-            <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>Unit: {icNumber}</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 600, color: "hsl(var(--foreground))" }}>Comments</h2>
+              {localComments.length > 0 && (
+                <span style={{ fontSize: 11, fontWeight: 700, background: "#0047BB", color: "#fff", borderRadius: 99, padding: "1px 7px" }}>{localComments.length}</span>
+              )}
+            </div>
+            <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>Unit {unit.icNumber} · {unit.mfgSerial}</p>
           </div>
-          <button onClick={onClose} style={{ color: "hsl(var(--muted-foreground))", background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+          <button onClick={onClose} style={{ color: "hsl(var(--muted-foreground))", background: "none", border: "none", cursor: "pointer", padding: 4, borderRadius: 6 }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
-        {submitted ? (
-          <div className="flex flex-col items-center py-6 gap-3">
-            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(34,197,94,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+
+        {/* Comment list */}
+        <div ref={listRef} style={{ flex: 1, overflowY: "auto", padding: "0 20px" }}>
+          {localComments.length === 0 ? (
+            <div style={{ padding: "32px 0", textAlign: "center", color: "hsl(var(--muted-foreground))", fontSize: 13 }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 8px", display: "block", opacity: 0.4 }}>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              No comments yet. Be the first to leave one.
             </div>
-            <p style={{ fontSize: 14, fontWeight: 500, color: "hsl(var(--foreground))" }}>Comment saved</p>
+          ) : localComments.map((comment, idx) => (
+            <div key={comment.id} style={{ display: "flex", gap: 10, padding: "14px 0", borderBottom: idx < localComments.length - 1 ? "1px solid hsl(var(--border))" : "none" }}>
+              <div style={{ width: 30, height: 30, borderRadius: "50%", background: comment.authorColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0, marginTop: 1 }}>
+                {comment.authorInitials}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "hsl(var(--foreground))" }}>{comment.author}</span>
+                  <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{formatTimestamp(comment.timestamp)}</span>
+                </div>
+                <p style={{ fontSize: 13, color: "hsl(var(--foreground))", lineHeight: 1.55, margin: 0 }}>{comment.text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* New comment form */}
+        <div style={{ padding: "14px 20px 18px", borderTop: "1px solid hsl(var(--border))", flexShrink: 0 }}>
+          <textarea
+            autoFocus value={newText} onChange={(e) => setNewText(e.target.value)}
+            placeholder="Leave a comment…" rows={3}
+            onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit(); }}
+            style={{ width: "100%", resize: "none", padding: "10px 12px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))", color: "hsl(var(--foreground))", fontSize: 13, outline: "none", lineHeight: 1.6, boxSizing: "border-box", transition: "border-color 0.15s" }}
+            onFocus={(e) => { (e.target as HTMLTextAreaElement).style.borderColor = "#0047BB"; }}
+            onBlur={(e) => { (e.target as HTMLTextAreaElement).style.borderColor = "hsl(var(--border))"; }}
+          />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
+            <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>⌘↵ to submit</span>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={onClose} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent", color: "hsl(var(--muted-foreground))", fontSize: 13, cursor: "pointer" }}>Cancel</button>
+              <button onClick={handleSubmit} disabled={!newText.trim() || submitting}
+                style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: newText.trim() ? "#182557" : "hsl(var(--muted))", color: newText.trim() ? "#fff" : "hsl(var(--muted-foreground))", fontSize: 13, fontWeight: 600, cursor: newText.trim() ? "pointer" : "default", transition: "background 0.15s" }}>
+                {submitting ? "Posting…" : "Post Comment"}
+              </button>
+            </div>
           </div>
-        ) : (
-          <>
-            <textarea autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder="Add your notes about this evaluation unit…" rows={4}
-              style={{ width: "100%", resize: "none", padding: "10px 12px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))", color: "hsl(var(--foreground))", fontSize: 14, outline: "none", lineHeight: 1.6, boxSizing: "border-box" }} />
-            <div className="flex justify-end gap-2 mt-3">
-              <button onClick={onClose} style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent", color: "hsl(var(--muted-foreground))", fontSize: 13, cursor: "pointer" }}>Cancel</button>
-              <button onClick={handleSubmit} disabled={!text.trim()} style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: text.trim() ? "#182557" : "hsl(var(--muted))", color: text.trim() ? "#fff" : "hsl(var(--muted-foreground))", fontSize: 13, fontWeight: 600, cursor: text.trim() ? "pointer" : "default" }}>Save Comment</button>
-            </div>
-          </>
-        )}
+        </div>
       </div>
     </div>
   );
@@ -439,8 +522,6 @@ export default function EvaluationsHistoryPage() {
   const activeFilterCount = countActiveFilters(filters);
   const commentUnit = SEED_UNITS.find((u) => u.id === commentUnitId);
   const show = colVisibility;
-  const visibleColCount = COL_DEFS.filter((c) => show[c.key]).length;
-  const COLSPAN = visibleColCount + 2; // +1 comment, +1 open
 
   const thBase: React.CSSProperties = {
     color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap",
@@ -455,8 +536,8 @@ export default function EvaluationsHistoryPage() {
     : { display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent", color: "hsl(var(--foreground))", fontSize: 13, fontWeight: 500, cursor: "pointer" };
 
   const actionBtnStyle: React.CSSProperties = {
-    display: "flex", alignItems: "center", gap: 6, padding: "7px 14px",
-    borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent",
+    display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8,
+    border: "1px solid hsl(var(--border))", background: "transparent",
     color: "hsl(var(--foreground))", fontSize: 13, fontWeight: 500, cursor: "pointer",
   };
 
@@ -479,8 +560,7 @@ export default function EvaluationsHistoryPage() {
                   <button onClick={() => setFilters(EMPTY_FILTERS)}
                     style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent", color: "hsl(var(--muted-foreground))", fontSize: 13, fontWeight: 500, cursor: "pointer" }}
                     onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "hsl(var(--muted))"; b.style.color = "hsl(var(--foreground))"; }}
-                    onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "transparent"; b.style.color = "hsl(var(--muted-foreground))"; }}
-                    title="Clear all filters">
+                    onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "transparent"; b.style.color = "hsl(var(--muted-foreground))"; }}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                     </svg>
@@ -532,16 +612,8 @@ export default function EvaluationsHistoryPage() {
           {/* ── 2. Filter card ── */}
           {showFilters && (
             <div style={CARD}>
-              {/*
-                Ordered by table column position:
-                Row 1 (5): Date Received · IC# · Manufacturer · Type · KVA
-                Row 2 (4): Intake Type · Warehouse · Status · Site
-                Date Received gets flex:2 since it contains two date pickers.
-              */}
-
-              {/* Row 1 */}
+              {/* Row 1: Date · IC# · Manufacturer · Type · KVA */}
               <div style={{ display: "flex", alignItems: "flex-end", gap: 10, padding: "16px 20px 12px" }}>
-                {/* Date Received — flex:2 to fit two pickers */}
                 <div style={{ flex: 2, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Date Received</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -552,55 +624,39 @@ export default function EvaluationsHistoryPage() {
                       style={{ ...FIELD, flex: 1, minWidth: 0, width: "auto", colorScheme: "inherit" as React.CSSProperties["colorScheme"] }} />
                   </div>
                 </div>
-
-                {/* IC # */}
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>IC #</span>
                   <FInput value={filters.icNumber} onChange={(v) => setFilter("icNumber", v)} placeholder="Search IC number…" />
                 </div>
-
-                {/* Manufacturer */}
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Manufacturer</span>
                   <MultiSelect value={filters.manufacturer} onChange={(v) => setFilter("manufacturer", v)} options={MANUFACTURERS} placeholder="All" style={{ width: "100%" }} />
                 </div>
-
-                {/* Type (locked) */}
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Type</span>
                   <select disabled style={{ ...FIELD, width: "100%", appearance: "none", opacity: 0.5, cursor: "not-allowed", backgroundImage: SELECT_ARROW, backgroundRepeat: "no-repeat", backgroundPosition: "right 9px center", paddingRight: 28 }}>
                     <option>Three-Phase Pad</option>
                   </select>
                 </div>
-
-                {/* KVA */}
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>KVA</span>
                   <MultiSelect value={filters.kva} onChange={(v) => setFilter("kva", v)} options={KVA_VALUES} placeholder="All" style={{ width: "100%" }} />
                 </div>
               </div>
-
-              {/* Row 2 */}
+              {/* Row 2: Intake Type · Warehouse · Status · Site */}
               <div style={{ display: "flex", alignItems: "flex-end", gap: 10, padding: "12px 20px 16px", borderTop: "1px solid hsl(var(--border))" }}>
-                {/* Intake Type */}
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Intake Type</span>
                   <MultiSelect value={filters.intakeCategory} onChange={(v) => setFilter("intakeCategory", v)} options={ALL_CATEGORIES} placeholder="All" style={{ width: "100%" }} />
                 </div>
-
-                {/* Warehouse */}
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Warehouse</span>
                   <MultiSelect value={filters.warehouse} onChange={(v) => setFilter("warehouse", v)} options={WAREHOUSES} placeholder="All" style={{ width: "100%" }} />
                 </div>
-
-                {/* Status */}
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Status</span>
                   <MultiSelect value={filters.status} onChange={(v) => setFilter("status", v)} options={ALL_STATUSES} placeholder="All" style={{ width: "100%" }} />
                 </div>
-
-                {/* Site */}
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Site</span>
                   <MultiSelect value={filters.site} onChange={(v) => setFilter("site", v)} options={SITES} placeholder="All Sites" style={{ width: "100%" }} />
@@ -629,13 +685,12 @@ export default function EvaluationsHistoryPage() {
                       {show.site        && <th style={thBase}>Site</th>}
                       {show.completedOn && <th style={thBase}>Completed On</th>}
                       {show.completedBy && <th style={thBase}>Completed By</th>}
-                      <th style={{ ...thBase, padding: "0 10px" }}></th>
                       <th style={{ ...thBase, padding: "0 16px 0 8px" }}></th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredRows.length === 0 ? (
-                      <tr><td colSpan={COLSPAN}>
+                      <tr><td colSpan={99}>
                         <div className="flex flex-col items-center justify-center py-14 text-center">
                           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 10, opacity: 0.5 }}>
                             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
@@ -649,6 +704,8 @@ export default function EvaluationsHistoryPage() {
                       const isDropdownOpen = openDropdownId === unit.id;
                       const { date, time } = formatDateTime(unit.dateReceived, unit.timeReceived);
                       const site = siteFromWarehouse(unit.warehouse);
+                      const hasComments = unit.comments.length > 0;
+                      const isUnread = unit.hasUnreadComment;
                       return (
                         <tr key={unit.id}
                           style={{ borderBottom: idx < filteredRows.length - 1 ? "1px solid hsl(var(--border))" : undefined, animation: "fadeSlideIn 0.4s ease-out" }}
@@ -668,18 +725,48 @@ export default function EvaluationsHistoryPage() {
                           {show.kva        && <td className="px-4 py-3 font-medium" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.kva.toLocaleString()}</td>}
                           {show.intake     && <td className="px-4 py-3"><IntakePills category={unit.intakeCategory} tags={unit.intakeTags} /></td>}
                           {show.load       && <td className="px-4 py-3 font-mono" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.loadNumber}</td>}
-                          {show.whs        && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", fontSize: 13 }}>{unit.warehouseNumber}</td>}
-                          {show.status     && (
+
+                          {show.whs && (
+                            <td className="px-4 py-3" style={{ whiteSpace: "nowrap" }}>
+                              <span style={{ fontSize: 13, color: "hsl(var(--foreground))" }}>{unit.warehouseNumber}</span>
+                              <WarehouseTooltip warehouse={unit.warehouse} />
+                            </td>
+                          )}
+
+                          {show.status && (
                             <td className="px-4 py-3" style={{ position: "relative" }}>
-                              <div style={{ position: "relative", display: "inline-block" }}>
-                                <StatusBadge status={status} onClick={(e) => { e.stopPropagation(); setOpenDropdownId(isDropdownOpen ? null : unit.id); }} />
-                                {isDropdownOpen && <StatusDropdown current={status} onSelect={(s) => setStatuses((prev) => ({ ...prev, [unit.id]: s }))} onClose={() => setOpenDropdownId(null)} />}
+                              {/* Status badge + comment button side by side */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <div style={{ position: "relative", display: "inline-block" }}>
+                                  <StatusBadge status={status} onClick={(e) => { e.stopPropagation(); setOpenDropdownId(isDropdownOpen ? null : unit.id); }} />
+                                  {isDropdownOpen && <StatusDropdown current={status} onSelect={(s) => setStatuses((prev) => ({ ...prev, [unit.id]: s }))} onClose={() => setOpenDropdownId(null)} />}
+                                </div>
+                                {/* Comment button — orange if unread */}
+                                <button onClick={() => setCommentUnitId(unit.id)} title={isUnread ? "Unread comment" : hasComments ? "View comments" : "Add comment"}
+                                  style={{ position: "relative", width: 28, height: 28, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "background 0.15s, color 0.15s",
+                                    border: isUnread ? "1px solid rgba(234,88,12,0.4)" : "1px solid hsl(var(--border))",
+                                    background: isUnread ? "rgba(234,88,12,0.08)" : "transparent",
+                                    color: isUnread ? "#ea580c" : "hsl(var(--muted-foreground))",
+                                  }}
+                                  onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; if (!isUnread) { b.style.color = "hsl(var(--foreground))"; b.style.background = "hsl(var(--muted))"; } }}
+                                  onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; if (!isUnread) { b.style.color = "hsl(var(--muted-foreground))"; b.style.background = "transparent"; } }}>
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                  </svg>
+                                  {hasComments && (
+                                    <span style={{ position: "absolute", top: -4, right: -4, width: 14, height: 14, borderRadius: "50%", background: isUnread ? "#ea580c" : "#64748b", color: "#fff", fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                      {unit.comments.length}
+                                    </span>
+                                  )}
+                                </button>
                               </div>
+                              {/* Active user pill below */}
                               {unit.activeUser && status === "In Progress" && (
                                 <div><ActiveUserPill user={unit.activeUser} /></div>
                               )}
                             </td>
                           )}
+
                           {show.site        && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", fontSize: 13, whiteSpace: "nowrap" }}>{site}</td>}
                           {show.completedOn && (
                             <td className="px-4 py-3" style={{ color: unit.completedOn ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))", fontSize: 13, whiteSpace: "nowrap" }}>
@@ -691,18 +778,6 @@ export default function EvaluationsHistoryPage() {
                               {unit.completedBy ?? "—"}
                             </td>
                           )}
-
-                          {/* Comment button */}
-                          <td className="px-2 py-3">
-                            <button onClick={() => setCommentUnitId(unit.id)} title="Add comment"
-                              style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid hsl(var(--border))", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "hsl(var(--muted-foreground))" }}
-                              onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.color = "hsl(var(--foreground))"; b.style.background = "hsl(var(--muted))"; }}
-                              onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.color = "hsl(var(--muted-foreground))"; b.style.background = "transparent"; }}>
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                              </svg>
-                            </button>
-                          </td>
 
                           {/* Open button */}
                           <td className="px-3 py-3" style={{ whiteSpace: "nowrap" }}>
@@ -725,7 +800,7 @@ export default function EvaluationsHistoryPage() {
       </div>
 
       {commentUnitId && commentUnit && (
-        <CommentModal icNumber={commentUnit.icNumber} onClose={() => setCommentUnitId(null)} />
+        <CommentModal unit={commentUnit} onClose={() => setCommentUnitId(null)} />
       )}
 
       <style>{`
