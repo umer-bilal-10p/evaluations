@@ -38,6 +38,8 @@ const DEFAULT_COL_VISIBILITY: ColVisibility = {
 };
 
 /* ─── Data model ─────────────────────────────────────────────────────────────── */
+interface ActiveUser { name: string; initials: string; color: string; }
+
 interface EvaluationUnit {
   id: string;
   dateReceived: string;
@@ -55,21 +57,22 @@ interface EvaluationUnit {
   status: EvalStatus;
   completedOn: string | null;
   completedBy: string | null;
+  activeUser: ActiveUser | null;
 }
 
 function siteFromWarehouse(w: string): string { return w.split(" - ")[1] ?? w; }
 
 const SEED_UNITS: EvaluationUnit[] = [
-  { id: "1",  dateReceived: "2024-07-22", timeReceived: "11:28 AM", mfgSerial: "TF-7662-M", icNumber: "185940632", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 1750, intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 194503, warehouseNumber: 18, warehouse: "18 - Houston, TX",  status: "Not Started", completedOn: null, completedBy: null },
-  { id: "2",  dateReceived: "2024-08-20", timeReceived: "9:53 AM",  mfgSerial: "TF-9884-K", icNumber: "221083647", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 250,  intakeCategory: "Recycle", intakeTags: ["NPX: Repair"],                 loadNumber: 425019, warehouseNumber: 55, warehouse: "55 - Dallas, TX",   status: "Not Started", completedOn: null, completedBy: null },
-  { id: "3",  dateReceived: "2024-11-05", timeReceived: "3:21 PM",  mfgSerial: "TF-5540-E", icNumber: "312048756", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 2000, intakeCategory: "Recycle", intakeTags: ["Base Damage", "NPX: Repair"],  loadNumber: 314087, warehouseNumber: 7,  warehouse: "07 - Atlanta, GA", status: "Not Started", completedOn: null, completedBy: null },
-  { id: "4",  dateReceived: "2024-11-18", timeReceived: "2:37 PM",  mfgSerial: "TF-9201-A", icNumber: "098432711", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Recycle", intakeTags: ["NPX: Rewind"],                 loadNumber: 203415, warehouseNumber: 12, warehouse: "12 - Dallas, TX",   status: "Not Started", completedOn: null, completedBy: null },
-  { id: "5",  dateReceived: "2024-07-09", timeReceived: "6:47 PM",  mfgSerial: "TF-6551-N", icNumber: "093284756", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 400,  intakeCategory: "Recycle", intakeTags: ["Base Damage", "NPX: Scrap"],   loadNumber: 362780, warehouseNumber: 31, warehouse: "31 - Phoenix, AZ", status: "In Progress", completedOn: null, completedBy: null },
-  { id: "6",  dateReceived: "2025-01-15", timeReceived: "10:12 AM", mfgSerial: "TF-3371-D", icNumber: "441928573", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 1000, intakeCategory: "Surplus", intakeTags: ["Base Damage"],                 loadNumber: 119204, warehouseNumber: 99, warehouse: "99 - Houston, TX", status: "Not Started", completedOn: null, completedBy: null },
-  { id: "7",  dateReceived: "2025-02-03", timeReceived: "8:05 AM",  mfgSerial: "TF-8831-G", icNumber: "554738201", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 750,  intakeCategory: "Recycle", intakeTags: ["NPX: Rewind", "NPX: Repair"],  loadNumber: 278456, warehouseNumber: 22, warehouse: "22 - Denver, CO",   status: "Not Started", completedOn: null, completedBy: null },
-  { id: "8",  dateReceived: "2025-02-28", timeReceived: "1:44 PM",  mfgSerial: "TF-4492-C", icNumber: "667193845", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 1500, intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 390127, warehouseNumber: 44, warehouse: "44 - Atlanta, GA", status: "Completed",   completedOn: "2025-03-05", completedBy: "Maria Santos" },
-  { id: "9",  dateReceived: "2025-03-14", timeReceived: "4:30 PM",  mfgSerial: "TF-2278-B", icNumber: "789042316", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 3000, intakeCategory: "Recycle", intakeTags: ["NPX: Scrap"],                  loadNumber: 451803, warehouseNumber: 7,  warehouse: "07 - Atlanta, GA", status: "In Progress", completedOn: null, completedBy: null },
-  { id: "10", dateReceived: "2025-04-07", timeReceived: "11:55 AM", mfgSerial: "TF-1045-A", icNumber: "823615490", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Repair"],  loadNumber: 512948, warehouseNumber: 34, warehouse: "34 - Phoenix, AZ", status: "Not Started", completedOn: null, completedBy: null },
+  { id: "1",  dateReceived: "2024-07-22", timeReceived: "11:28 AM", mfgSerial: "TF-7662-M", icNumber: "185940632", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 1750, intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 194503, warehouseNumber: 18, warehouse: "18 - Houston, TX",  status: "Not Started", completedOn: null, completedBy: null, activeUser: null },
+  { id: "2",  dateReceived: "2024-08-20", timeReceived: "9:53 AM",  mfgSerial: "TF-9884-K", icNumber: "221083647", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 250,  intakeCategory: "Recycle", intakeTags: ["NPX: Repair"],                 loadNumber: 425019, warehouseNumber: 55, warehouse: "55 - Dallas, TX",   status: "Not Started", completedOn: null, completedBy: null, activeUser: null },
+  { id: "3",  dateReceived: "2024-11-05", timeReceived: "3:21 PM",  mfgSerial: "TF-5540-E", icNumber: "312048756", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 2000, intakeCategory: "Recycle", intakeTags: ["Base Damage", "NPX: Repair"],  loadNumber: 314087, warehouseNumber: 7,  warehouse: "07 - Atlanta, GA", status: "Not Started", completedOn: null, completedBy: null, activeUser: null },
+  { id: "4",  dateReceived: "2024-11-18", timeReceived: "2:37 PM",  mfgSerial: "TF-9201-A", icNumber: "098432711", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Recycle", intakeTags: ["NPX: Rewind"],                 loadNumber: 203415, warehouseNumber: 12, warehouse: "12 - Dallas, TX",   status: "Not Started", completedOn: null, completedBy: null, activeUser: null },
+  { id: "5",  dateReceived: "2024-07-09", timeReceived: "6:47 PM",  mfgSerial: "TF-6551-N", icNumber: "093284756", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 400,  intakeCategory: "Recycle", intakeTags: ["Base Damage", "NPX: Scrap"],   loadNumber: 362780, warehouseNumber: 31, warehouse: "31 - Phoenix, AZ", status: "In Progress", completedOn: null, completedBy: null, activeUser: { name: "Carlos Rivera", initials: "CR", color: "#0047BB" } },
+  { id: "6",  dateReceived: "2025-01-15", timeReceived: "10:12 AM", mfgSerial: "TF-3371-D", icNumber: "441928573", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 1000, intakeCategory: "Surplus", intakeTags: ["Base Damage"],                 loadNumber: 119204, warehouseNumber: 99, warehouse: "99 - Houston, TX", status: "Not Started", completedOn: null, completedBy: null, activeUser: null },
+  { id: "7",  dateReceived: "2025-02-03", timeReceived: "8:05 AM",  mfgSerial: "TF-8831-G", icNumber: "554738201", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 750,  intakeCategory: "Recycle", intakeTags: ["NPX: Rewind", "NPX: Repair"],  loadNumber: 278456, warehouseNumber: 22, warehouse: "22 - Denver, CO",   status: "Not Started", completedOn: null, completedBy: null, activeUser: null },
+  { id: "8",  dateReceived: "2025-02-28", timeReceived: "1:44 PM",  mfgSerial: "TF-4492-C", icNumber: "667193845", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 1500, intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 390127, warehouseNumber: 44, warehouse: "44 - Atlanta, GA", status: "Completed",   completedOn: "2025-03-05", completedBy: "Maria Santos", activeUser: null },
+  { id: "9",  dateReceived: "2025-03-14", timeReceived: "4:30 PM",  mfgSerial: "TF-2278-B", icNumber: "789042316", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 3000, intakeCategory: "Recycle", intakeTags: ["NPX: Scrap"],                  loadNumber: 451803, warehouseNumber: 7,  warehouse: "07 - Atlanta, GA", status: "In Progress", completedOn: null, completedBy: null, activeUser: { name: "Sarah Chen", initials: "SC", color: "#7c3aed" } },
+  { id: "10", dateReceived: "2025-04-07", timeReceived: "11:55 AM", mfgSerial: "TF-1045-A", icNumber: "823615490", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Repair"],  loadNumber: 512948, warehouseNumber: 34, warehouse: "34 - Phoenix, AZ", status: "Not Started", completedOn: null, completedBy: null, activeUser: null },
 ];
 
 const ROW_INTERVAL_MS = 900;
@@ -285,6 +288,33 @@ function IntakePills({ category, tags }: { category: IntakeCategory; tags: Intak
   );
 }
 
+/* ─── Active user lock pill ──────────────────────────────────────────────────── */
+function ActiveUserPill({ user }: { user: ActiveUser }) {
+  return (
+    <div style={{
+      display: "inline-flex", alignItems: "center", gap: 5,
+      marginTop: 5, padding: "3px 8px 3px 5px", borderRadius: 20,
+      background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))",
+      fontSize: 11, fontWeight: 500, color: "hsl(var(--foreground))",
+      whiteSpace: "nowrap",
+    }}>
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+      <div style={{
+        width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
+        background: user.color, display: "flex", alignItems: "center",
+        justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#fff",
+        letterSpacing: "-0.02em",
+      }}>
+        {user.initials}
+      </div>
+      <span style={{ color: "hsl(var(--foreground))", fontSize: 11 }}>{user.name}</span>
+    </div>
+  );
+}
+
 /* ─── Column picker ──────────────────────────────────────────────────────────── */
 function ColumnPicker({ visibility, onChange, onClose }: { visibility: ColVisibility; onChange: (key: ColKey, val: boolean) => void; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -452,6 +482,19 @@ export default function EvaluationsHistoryPage() {
                   )}
                 </button>
 
+                {activeFilterCount > 0 && (
+                  <button onClick={() => setFilters(EMPTY_FILTERS)}
+                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent", color: "hsl(var(--muted-foreground))", fontSize: 13, fontWeight: 400, cursor: "pointer" }}
+                    onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "hsl(var(--muted))"; b.style.color = "hsl(var(--foreground))"; }}
+                    onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "transparent"; b.style.color = "hsl(var(--muted-foreground))"; }}
+                    title="Clear all filters">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                    Clear filters
+                  </button>
+                )}
+
                 <div style={{ position: "relative" }}>
                   <button onClick={() => setShowColPicker((v) => !v)} style={actionBtnStyle}
                     onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "hsl(var(--muted))"; }}
@@ -606,6 +649,9 @@ export default function EvaluationsHistoryPage() {
                                 <StatusBadge status={status} onClick={(e) => { e.stopPropagation(); setOpenDropdownId(isDropdownOpen ? null : unit.id); }} />
                                 {isDropdownOpen && <StatusDropdown current={status} onSelect={(s) => setStatuses((prev) => ({ ...prev, [unit.id]: s }))} onClose={() => setOpenDropdownId(null)} />}
                               </div>
+                              {unit.activeUser && status === "In Progress" && (
+                                <div><ActiveUserPill user={unit.activeUser} /></div>
+                              )}
                             </td>
                           )}
                           {show.site        && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", fontSize: 13, whiteSpace: "nowrap" }}>{site}</td>}
