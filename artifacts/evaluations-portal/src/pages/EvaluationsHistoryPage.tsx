@@ -475,6 +475,19 @@ export default function EvaluationsHistoryPage() {
                 <p className="mt-0.5 text-sm" style={{ color: "hsl(var(--muted-foreground))" }}>Transformer units received for evaluation, sorted oldest to newest</p>
               </div>
               <div className="flex items-center gap-2">
+                {activeFilterCount > 0 && (
+                  <button onClick={() => setFilters(EMPTY_FILTERS)}
+                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent", color: "hsl(var(--muted-foreground))", fontSize: 13, fontWeight: 500, cursor: "pointer" }}
+                    onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "hsl(var(--muted))"; b.style.color = "hsl(var(--foreground))"; }}
+                    onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "transparent"; b.style.color = "hsl(var(--muted-foreground))"; }}
+                    title="Clear all filters">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                    Clear Filters
+                  </button>
+                )}
+
                 <button onClick={() => { setShowFilters((v) => !v); if (showFilters) setFilters(EMPTY_FILTERS); }} style={filterBtnStyle}
                   onMouseEnter={(e) => { if (!showFilters) (e.currentTarget as HTMLButtonElement).style.background = "hsl(var(--muted))"; }}
                   onMouseLeave={(e) => { if (!showFilters) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
@@ -488,19 +501,6 @@ export default function EvaluationsHistoryPage() {
                     </span>
                   )}
                 </button>
-
-                {activeFilterCount > 0 && (
-                  <button onClick={() => setFilters(EMPTY_FILTERS)}
-                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent", color: "hsl(var(--muted-foreground))", fontSize: 13, fontWeight: 400, cursor: "pointer" }}
-                    onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "hsl(var(--muted))"; b.style.color = "hsl(var(--foreground))"; }}
-                    onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "transparent"; b.style.color = "hsl(var(--muted-foreground))"; }}
-                    title="Clear all filters">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                    Clear filters
-                  </button>
-                )}
 
                 <div style={{ position: "relative" }}>
                   <button onClick={() => setShowColPicker((v) => !v)} style={actionBtnStyle}
