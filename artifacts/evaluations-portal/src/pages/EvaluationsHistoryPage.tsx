@@ -8,8 +8,7 @@ type TransformerType = "Three-Phase Pad" | "Single-Phase Pad" | "Pole Mount";
 type IntakeCategory = "Surplus" | "Recycle";
 type IntakeTag = "Base Damage" | "NPX: Rewind" | "NPX: Repair" | "NPX: Scrap";
 
-const ALL_TYPES: TransformerType[] = ["Three-Phase Pad", "Single-Phase Pad", "Pole Mount"];
-const ALL_STATUSES: EvalStatus[]   = ["Not Started", "In Progress", "Completed", "On Hold"];
+const ALL_STATUSES: EvalStatus[]       = ["Not Started", "In Progress", "Completed", "On Hold"];
 const ALL_CATEGORIES: IntakeCategory[] = ["Surplus", "Recycle"];
 
 /* ─── Data model ─────────────────────────────────────────────────────────────── */
@@ -61,14 +60,8 @@ type Filters = {
 };
 
 const EMPTY_FILTERS: Filters = {
-  dateFrom: "",
-  dateTo: "",
-  icNumber: "",
-  manufacturer: "",
-  kva: "",
-  warehouse: "",
-  intakeCategory: "",
-  status: "",
+  dateFrom: "", dateTo: "", icNumber: "", manufacturer: "",
+  kva: "", warehouse: "", intakeCategory: "", status: "",
 };
 
 function countActiveFilters(f: Filters): number {
@@ -76,10 +69,44 @@ function countActiveFilters(f: Filters): number {
 }
 
 /* ─── Helpers ────────────────────────────────────────────────────────────────── */
-function formatDateTime(iso: string, time: string): string {
+function formatDateTime(iso: string, time: string): { date: string; time: string } {
   const [year, month, day] = iso.split("-");
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  return `${months[Number(month) - 1]} ${Number(day)}, ${year}\n${time}`;
+  return { date: `${months[Number(month) - 1]} ${Number(day)}, ${year}`, time };
+}
+
+/* ─── Shared field styles ────────────────────────────────────────────────────── */
+const FIELD: React.CSSProperties = {
+  height: 34, fontSize: 13, fontWeight: 400, padding: "0 10px",
+  borderRadius: 7, border: "1px solid hsl(var(--border))",
+  background: "hsl(var(--background))", color: "hsl(var(--foreground))",
+  outline: "none", boxSizing: "border-box", lineHeight: "34px",
+};
+const SELECT_ARROW = `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E")`;
+const SELECT: React.CSSProperties = {
+  ...FIELD, appearance: "none", cursor: "pointer",
+  backgroundImage: SELECT_ARROW, backgroundRepeat: "no-repeat",
+  backgroundPosition: "right 9px center", paddingRight: 28,
+};
+const LABEL: React.CSSProperties = {
+  display: "block", fontSize: 10, fontWeight: 600,
+  textTransform: "uppercase", letterSpacing: "0.07em",
+  color: "hsl(var(--muted-foreground))", marginBottom: 4, whiteSpace: "nowrap",
+};
+const DATE_INPUT: React.CSSProperties = {
+  ...FIELD, width: 130, colorScheme: "inherit" as React.CSSProperties["colorScheme"],
+};
+
+function FInput({ value, onChange, placeholder, style }: { value: string; onChange: (v: string) => void; placeholder: string; style?: React.CSSProperties }) {
+  return <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ ...FIELD, ...style }} />;
+}
+function FSelect({ value, onChange, options, placeholder, style }: { value: string; onChange: (v: string) => void; options: string[]; placeholder: string; style?: React.CSSProperties }) {
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} style={{ ...SELECT, ...style }}>
+      <option value="">{placeholder}</option>
+      {options.map((o) => <option key={o} value={o}>{o}</option>)}
+    </select>
+  );
 }
 
 /* ─── Status ─────────────────────────────────────────────────────────────────── */
@@ -137,6 +164,15 @@ function StatusDropdown({ current, onSelect, onClose }: { current: EvalStatus; o
 }
 
 /* ─── Intake pills ───────────────────────────────────────────────────────────── */
+function FlagIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+      <line x1="4" y1="22" x2="4" y2="15"/>
+    </svg>
+  );
+}
+
 function IntakePills({ category, tags }: { category: IntakeCategory; tags: IntakeTag[] }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 140 }}>
@@ -145,20 +181,15 @@ function IntakePills({ category, tags }: { category: IntakeCategory; tags: Intak
         {tags.map((tag) => {
           const isDamage = tag === "Base Damage";
           return (
-            <span key={tag} className="inline-flex items-center gap-1"
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 4,
-                padding: "2px 8px", borderRadius: 20,
-                fontSize: 11, fontWeight: 500, whiteSpace: "nowrap",
-                background: isDamage ? "rgba(251,191,36,0.18)" : "rgba(100,116,139,0.08)",
-                color:      isDamage ? "#d97706"               : "#64748b",
-                border:     isDamage ? "1px solid rgba(251,191,36,0.35)" : "1px solid rgba(100,116,139,0.22)",
-              }}>
-              {isDamage ? (
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                </svg>
-              ) : (
+            <span key={tag} style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              padding: "2px 8px", borderRadius: 20,
+              fontSize: 11, fontWeight: 500, whiteSpace: "nowrap",
+              background: isDamage ? "rgba(251,191,36,0.18)" : "rgba(100,116,139,0.08)",
+              color:      isDamage ? "#d97706"               : "#64748b",
+              border:     isDamage ? "1px solid rgba(251,191,36,0.35)" : "1px solid rgba(100,116,139,0.22)",
+            }}>
+              {isDamage ? <FlagIcon /> : (
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
                 </svg>
@@ -173,7 +204,7 @@ function IntakePills({ category, tags }: { category: IntakeCategory; tags: Intak
 }
 
 /* ─── Comment modal ──────────────────────────────────────────────────────────── */
-function CommentModal({ unitId, icNumber, onClose }: { unitId: string; icNumber: string; onClose: () => void }) {
+function CommentModal({ icNumber, onClose }: { icNumber: string; onClose: () => void }) {
   const [text, setText] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const handleSubmit = () => { if (!text.trim()) return; setSubmitted(true); setTimeout(onClose, 1200); };
@@ -211,47 +242,6 @@ function CommentModal({ unitId, icNumber, onClose }: { unitId: string; icNumber:
   );
 }
 
-/* ─── Shared filter field styles ─────────────────────────────────────────────── */
-const FIELD: React.CSSProperties = {
-  width: "100%",
-  height: 34,
-  fontSize: 13,
-  fontWeight: 400,
-  padding: "0 10px",
-  borderRadius: 7,
-  border: "1px solid hsl(var(--border))",
-  background: "hsl(var(--background))",
-  color: "hsl(var(--foreground))",
-  outline: "none",
-  boxSizing: "border-box",
-  lineHeight: "34px",
-};
-
-const SELECT_ARROW = `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E")`;
-
-const SELECT: React.CSSProperties = {
-  ...FIELD,
-  appearance: "none",
-  cursor: "pointer",
-  backgroundImage: SELECT_ARROW,
-  backgroundRepeat: "no-repeat",
-  backgroundPosition: "right 9px center",
-  paddingRight: 28,
-};
-
-function FInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
-  return <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={FIELD} />;
-}
-
-function FSelect({ value, onChange, options, placeholder }: { value: string; onChange: (v: string) => void; options: string[]; placeholder: string }) {
-  return (
-    <select value={value} onChange={(e) => onChange(e.target.value)} style={SELECT}>
-      <option value="">{placeholder}</option>
-      {options.map((o) => <option key={o} value={o}>{o}</option>)}
-    </select>
-  );
-}
-
 /* ─── Main page ──────────────────────────────────────────────────────────────── */
 export default function EvaluationsHistoryPage() {
   const [visibleCount, setVisibleCount]     = useState(0);
@@ -265,16 +255,12 @@ export default function EvaluationsHistoryPage() {
   const [filters, setFilters]               = useState<Filters>(EMPTY_FILTERS);
 
   const startPopulation = useCallback(() => {
-    setVisibleCount(0);
-    setStarted(false);
+    setVisibleCount(0); setStarted(false);
     const t = setTimeout(() => setStarted(true), 1200);
     return t;
   }, []);
 
-  useEffect(() => {
-    const t = startPopulation();
-    return () => clearTimeout(t);
-  }, [refreshKey, startPopulation]);
+  useEffect(() => { const t = startPopulation(); return () => clearTimeout(t); }, [refreshKey, startPopulation]);
 
   useEffect(() => {
     if (!started || visibleCount >= SEED_UNITS.length) return;
@@ -283,25 +269,20 @@ export default function EvaluationsHistoryPage() {
   }, [started, visibleCount]);
 
   const handleRefresh = () => {
-    setSpinning(true);
-    setStatuses({});
-    setOpenDropdownId(null);
-    setFilters(EMPTY_FILTERS);
-    setRefreshKey((k) => k + 1);
+    setSpinning(true); setStatuses({}); setOpenDropdownId(null);
+    setFilters(EMPTY_FILTERS); setRefreshKey((k) => k + 1);
     setTimeout(() => setSpinning(false), 800);
   };
 
   const setFilter = (key: keyof Filters, value: string) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
 
-  const visibleRows = SEED_UNITS.slice(0, visibleCount);
-
-  const filteredRows = visibleRows.filter((unit) => {
+  const filteredRows = SEED_UNITS.slice(0, visibleCount).filter((unit) => {
     const status: EvalStatus = statuses[unit.id] ?? unit.status;
     return (
       (!filters.dateFrom       || unit.dateReceived >= filters.dateFrom) &&
       (!filters.dateTo         || unit.dateReceived <= filters.dateTo) &&
-      (!filters.icNumber       || unit.icNumber.includes(filters.icNumber) || unit.mfgSerial.toLowerCase().includes(filters.icNumber.toLowerCase())) &&
+      (!filters.icNumber       || unit.icNumber.includes(filters.icNumber)) &&
       (!filters.manufacturer   || unit.manufacturer === filters.manufacturer) &&
       (!filters.kva            || unit.kva === Number(filters.kva)) &&
       (!filters.warehouse      || unit.warehouse === filters.warehouse) &&
@@ -317,37 +298,21 @@ export default function EvaluationsHistoryPage() {
   const COLSPAN = COL_HEADERS.length;
 
   const thBase: React.CSSProperties = {
-    color: "hsl(var(--muted-foreground))",
-    whiteSpace: "nowrap",
-    position: "sticky",
-    top: 0,
-    background: "hsl(var(--card))",
-    zIndex: 10,
-    borderBottom: "1px solid hsl(var(--border))",
-    padding: "0 16px",
-    height: 41,
-    textAlign: "left",
-    fontSize: 11,
-    fontWeight: 600,
-    textTransform: "uppercase",
-    letterSpacing: "0.07em",
+    color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap",
+    position: "sticky", top: 0, background: "hsl(var(--card))", zIndex: 10,
+    borderBottom: "1px solid hsl(var(--border))", padding: "0 16px", height: 41,
+    textAlign: "left", fontSize: 11, fontWeight: 600,
+    textTransform: "uppercase", letterSpacing: "0.07em",
   };
 
-  const LABEL: React.CSSProperties = {
-    display: "block",
-    fontSize: 10,
-    fontWeight: 600,
-    textTransform: "uppercase",
-    letterSpacing: "0.07em",
-    color: "hsl(var(--muted-foreground))",
-    marginBottom: 4,
-    whiteSpace: "nowrap",
-  };
+  /* Active Filters button: solid cobalt blue fill */
+  const filterBtnStyle: React.CSSProperties = showFilters
+    ? { display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1px solid #0047BB", background: "#0047BB", color: "#fff", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "all 0.15s" }
+    : { display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent", color: "hsl(var(--foreground))", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "all 0.15s" };
 
-  const DATE_INPUT: React.CSSProperties = {
-    ...FIELD,
-    width: 130,
-    colorScheme: "inherit" as React.CSSProperties["colorScheme"],
+  const CARD: React.CSSProperties = {
+    background: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
+    borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.07)",
   };
 
   return (
@@ -357,20 +322,20 @@ export default function EvaluationsHistoryPage() {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
 
-        <main className="flex-1 overflow-auto p-6 lg:p-8">
-          <div className="rounded-xl overflow-hidden flex flex-col"
-            style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", boxShadow: "0 1px 3px rgba(0,0,0,0.08)", height: "calc(100vh - 136px)" }}>
+        <main className="flex-1 overflow-auto p-6 lg:p-8" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
-            {/* ── Card header ── */}
-            <div className="flex items-center justify-between px-6 py-5 flex-shrink-0" style={{ borderBottom: "1px solid hsl(var(--border))" }}>
+          {/* ── 1. Header card ── */}
+          <div style={CARD}>
+            <div className="flex items-center justify-between px-6 py-4">
               <div>
                 <h1 className="text-xl font-semibold" style={{ color: "hsl(var(--foreground))" }}>Evaluation History</h1>
                 <p className="mt-0.5 text-sm" style={{ color: "hsl(var(--muted-foreground))" }}>Transformer units received for evaluation, sorted oldest to newest</p>
               </div>
               <div className="flex items-center gap-2">
-                {/* Filter toggle */}
-                <button onClick={() => { setShowFilters((v) => !v); if (showFilters) setFilters(EMPTY_FILTERS); }}
-                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: showFilters ? "1px solid #5b9cf6" : "1px solid hsl(var(--border))", background: showFilters ? "rgba(91,156,246,0.10)" : "transparent", color: showFilters ? "#5b9cf6" : "hsl(var(--foreground))", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "all 0.15s" }}
+                {/* Filter toggle — solid blue when active */}
+                <button
+                  onClick={() => { setShowFilters((v) => !v); if (showFilters) setFilters(EMPTY_FILTERS); }}
+                  style={filterBtnStyle}
                   onMouseEnter={(e) => { if (!showFilters) (e.currentTarget as HTMLButtonElement).style.background = "hsl(var(--muted))"; }}
                   onMouseLeave={(e) => { if (!showFilters) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
@@ -378,7 +343,7 @@ export default function EvaluationsHistoryPage() {
                   </svg>
                   Filters
                   {activeFilterCount > 0 && (
-                    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, borderRadius: "50%", background: "#5b9cf6", color: "#fff", fontSize: 10, fontWeight: 700 }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, borderRadius: "50%", background: showFilters ? "rgba(255,255,255,0.25)" : "#0047BB", color: "#fff", fontSize: 10, fontWeight: 700 }}>
                       {activeFilterCount}
                     </span>
                   )}
@@ -396,80 +361,76 @@ export default function EvaluationsHistoryPage() {
                 </button>
               </div>
             </div>
+          </div>
 
-            {/* ── Filter bar ── */}
-            {showFilters && (
-              <div style={{ flexShrink: 0, borderBottom: "1px solid hsl(var(--border))", padding: "12px 20px", display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap", background: "hsl(var(--card))" }}>
-
-                {/* Date Received range */}
+          {/* ── 2. Filter card (separate block, 2-row layout) ── */}
+          {showFilters && (
+            <div style={CARD}>
+              {/* Row 1: Date range, IC #, Manufacturer, Type (locked), Intake Type */}
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 12, padding: "16px 20px 12px", flexWrap: "wrap" }}>
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Date Received</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                    <input type="date" value={filters.dateFrom} onChange={(e) => setFilter("dateFrom", e.target.value)}
-                      style={{ ...DATE_INPUT, width: 130 }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <input type="date" value={filters.dateFrom} onChange={(e) => setFilter("dateFrom", e.target.value)} style={DATE_INPUT} />
                     <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>–</span>
-                    <input type="date" value={filters.dateTo} onChange={(e) => setFilter("dateTo", e.target.value)}
-                      style={{ ...DATE_INPUT, width: 130 }} />
+                    <input type="date" value={filters.dateTo} onChange={(e) => setFilter("dateTo", e.target.value)} style={DATE_INPUT} />
                   </div>
                 </div>
 
-                {/* IC / MFG search */}
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={LABEL}>IC / MFG #</span>
-                  <FInput value={filters.icNumber} onChange={(v) => setFilter("icNumber", v)} placeholder="Search…" />
+                <div style={{ display: "flex", flexDirection: "column", minWidth: 140 }}>
+                  <span style={LABEL}>IC #</span>
+                  <FInput value={filters.icNumber} onChange={(v) => setFilter("icNumber", v)} placeholder="Search IC number…" style={{ width: 160 }} />
                 </div>
 
-                {/* Manufacturer */}
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Manufacturer</span>
-                  <FSelect value={filters.manufacturer} onChange={(v) => setFilter("manufacturer", v)} options={MANUFACTURERS} placeholder="All" />
+                  <FSelect value={filters.manufacturer} onChange={(v) => setFilter("manufacturer", v)} options={MANUFACTURERS} placeholder="All" style={{ minWidth: 130 }} />
                 </div>
 
-                {/* Type — locked */}
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Type</span>
-                  <select disabled style={{ ...SELECT, opacity: 0.5, cursor: "not-allowed", minWidth: 140 }}>
+                  <select disabled style={{ ...SELECT, opacity: 0.5, cursor: "not-allowed", minWidth: 148 }}>
                     <option>Three-Phase Pad</option>
                   </select>
                 </div>
 
-                {/* Intake Type */}
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Intake Type</span>
-                  <FSelect value={filters.intakeCategory} onChange={(v) => setFilter("intakeCategory", v)} options={ALL_CATEGORIES} placeholder="All" />
+                  <FSelect value={filters.intakeCategory} onChange={(v) => setFilter("intakeCategory", v)} options={ALL_CATEGORIES} placeholder="All" style={{ minWidth: 120 }} />
                 </div>
+              </div>
 
-                {/* KVA */}
+              {/* Row 2: KVA, Warehouse, Status, Clear all */}
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 12, padding: "0 20px 16px", flexWrap: "wrap", borderTop: "1px solid hsl(var(--border))", paddingTop: 12 }}>
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>KVA</span>
-                  <FSelect value={filters.kva} onChange={(v) => setFilter("kva", v)} options={KVA_VALUES.map(String)} placeholder="All" />
+                  <FSelect value={filters.kva} onChange={(v) => setFilter("kva", v)} options={KVA_VALUES.map(String)} placeholder="All" style={{ minWidth: 100 }} />
                 </div>
 
-                {/* Warehouse */}
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Warehouse</span>
-                  <FSelect value={filters.warehouse} onChange={(v) => setFilter("warehouse", v)} options={WAREHOUSES} placeholder="All" />
+                  <FSelect value={filters.warehouse} onChange={(v) => setFilter("warehouse", v)} options={WAREHOUSES} placeholder="All" style={{ minWidth: 180 }} />
                 </div>
 
-                {/* Status */}
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Status</span>
-                  <FSelect value={filters.status} onChange={(v) => setFilter("status", v)} options={ALL_STATUSES} placeholder="All" />
+                  <FSelect value={filters.status} onChange={(v) => setFilter("status", v)} options={ALL_STATUSES} placeholder="All" style={{ minWidth: 140 }} />
                 </div>
 
-                {/* Clear all */}
                 {activeFilterCount > 0 && (
                   <button onClick={() => setFilters(EMPTY_FILTERS)}
-                    style={{ alignSelf: "flex-end", marginBottom: 1, fontSize: 12, color: "#5b9cf6", background: "none", border: "none", cursor: "pointer", whiteSpace: "nowrap", padding: "0 4px", fontWeight: 500, height: 34 }}>
+                    style={{ alignSelf: "flex-end", marginBottom: 1, fontSize: 12, color: "#0047BB", background: "none", border: "none", cursor: "pointer", whiteSpace: "nowrap", padding: "0 4px", fontWeight: 500, height: 34 }}>
                     Clear all
                   </button>
                 )}
               </div>
-            )}
+            </div>
+          )}
 
-            {/* ── Table ── */}
-            <div className="flex-1 overflow-auto" style={{ position: "relative" }}>
-              {visibleCount === 0 ? <EmptyState /> : (
+          {/* ── 3. Table card (flex-1, scrollable) ── */}
+          <div style={{ ...CARD, flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            {visibleCount === 0 ? <EmptyState /> : (
+              <div style={{ flex: 1, overflowY: "auto" }}>
                 <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
                   <thead>
                     <tr>
@@ -478,7 +439,6 @@ export default function EvaluationsHistoryPage() {
                       ))}
                     </tr>
                   </thead>
-
                   <tbody>
                     {filteredRows.length === 0 ? (
                       <tr><td colSpan={COLSPAN}>
@@ -487,52 +447,37 @@ export default function EvaluationsHistoryPage() {
                             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
                           </svg>
                           <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 13 }}>No results match the active filters.</p>
-                          <button onClick={() => setFilters(EMPTY_FILTERS)} style={{ marginTop: 8, fontSize: 12, color: "#5b9cf6", background: "none", border: "none", cursor: "pointer" }}>Clear filters</button>
+                          <button onClick={() => setFilters(EMPTY_FILTERS)} style={{ marginTop: 8, fontSize: 12, color: "#0047BB", background: "none", border: "none", cursor: "pointer" }}>Clear filters</button>
                         </div>
                       </td></tr>
                     ) : filteredRows.map((unit, idx) => {
                       const status: EvalStatus = statuses[unit.id] ?? unit.status;
                       const isDropdownOpen = openDropdownId === unit.id;
-                      const [datePart, timePart] = formatDateTime(unit.dateReceived, unit.timeReceived).split("\n");
+                      const { date, time } = formatDateTime(unit.dateReceived, unit.timeReceived);
                       return (
                         <tr key={unit.id}
                           style={{ borderBottom: idx < filteredRows.length - 1 ? "1px solid hsl(var(--border))" : undefined, animation: "fadeSlideIn 0.4s ease-out" }}
                           onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "hsl(var(--muted) / 0.4)"; }}
                           onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "transparent"; }}>
 
-                          {/* Date & Time */}
                           <td className="px-4 py-3" style={{ whiteSpace: "nowrap" }}>
-                            <div style={{ fontSize: 13, color: "hsl(var(--foreground))" }}>{datePart}</div>
-                            <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 1 }}>{timePart}</div>
+                            <div style={{ fontSize: 13, color: "hsl(var(--foreground))" }}>{date}</div>
+                            <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 1 }}>{time}</div>
                           </td>
 
-                          {/* MFG S# */}
                           <td className="px-4 py-3 font-mono font-semibold" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.mfgSerial}</td>
-
-                          {/* IC# */}
                           <td className="px-4 py-3 font-mono" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.icNumber}</td>
-
-                          {/* MFR */}
                           <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", fontSize: 13 }}>{unit.manufacturer}</td>
-
-                          {/* Type */}
                           <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.transformerType}</td>
-
-                          {/* KVA */}
                           <td className="px-4 py-3 font-medium" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.kva.toLocaleString()}</td>
 
-                          {/* Intake Type */}
                           <td className="px-4 py-3">
                             <IntakePills category={unit.intakeCategory} tags={unit.intakeTags} />
                           </td>
 
-                          {/* Load # */}
                           <td className="px-4 py-3 font-mono" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.loadNumber.toLocaleString()}</td>
-
-                          {/* WHS */}
                           <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", fontSize: 13 }}>{unit.warehouseNumber}</td>
 
-                          {/* Status */}
                           <td className="px-4 py-3" style={{ position: "relative" }}>
                             <div style={{ position: "relative", display: "inline-block" }}>
                               <StatusBadge status={status} onClick={(e) => { e.stopPropagation(); setOpenDropdownId(isDropdownOpen ? null : unit.id); }} />
@@ -540,10 +485,9 @@ export default function EvaluationsHistoryPage() {
                             </div>
                           </td>
 
-                          {/* Action — comment button */}
-                          <td className="px-3 py-3" style={{ whiteSpace: "nowrap" }}>
+                          <td className="px-3 py-3">
                             <button onClick={() => setCommentUnitId(unit.id)} title="Add comment"
-                              style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid hsl(var(--border))", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "hsl(var(--muted-foreground))", transition: "color 0.15s, background 0.15s", flexShrink: 0 }}
+                              style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid hsl(var(--border))", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "hsl(var(--muted-foreground))", transition: "color 0.15s, background 0.15s" }}
                               onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.color = "hsl(var(--foreground))"; b.style.background = "hsl(var(--muted))"; }}
                               onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.color = "hsl(var(--muted-foreground))"; b.style.background = "transparent"; }}>
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -556,14 +500,14 @@ export default function EvaluationsHistoryPage() {
                     })}
                   </tbody>
                 </table>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </main>
       </div>
 
       {commentUnitId && commentUnit && (
-        <CommentModal unitId={commentUnitId} icNumber={commentUnit.icNumber} onClose={() => setCommentUnitId(null)} />
+        <CommentModal icNumber={commentUnit.icNumber} onClose={() => setCommentUnitId(null)} />
       )}
 
       <style>{`
