@@ -354,9 +354,9 @@ function ColumnPicker({ visibility, onChange, onClose, onReset }: { visibility: 
     <div ref={ref} style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 300, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.18)", minWidth: 210, overflow: "hidden", padding: "6px 0" }}>
       <div style={{ padding: "8px 14px 6px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "hsl(var(--muted-foreground))" }}>Columns</span>
-        <button onClick={onReset} style={{ fontSize: 11, fontWeight: 500, color: "hsl(var(--muted-foreground))", background: "none", border: "none", cursor: "pointer", padding: "1px 4px", borderRadius: 4, textTransform: "uppercase", letterSpacing: "0.07em" }}
-          onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "hsl(var(--muted))"; b.style.color = "hsl(var(--foreground))"; }}
-          onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "none"; b.style.color = "hsl(var(--muted-foreground))"; }}>
+        <button onClick={onReset} style={{ fontSize: 11, fontWeight: 600, color: "#0047BB", background: "none", border: "none", cursor: "pointer", padding: "1px 4px", borderRadius: 4, textTransform: "uppercase", letterSpacing: "0.07em" }}
+          onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "rgba(0,71,187,0.08)"; }}
+          onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "none"; }}>
           Reset
         </button>
       </div>
