@@ -489,6 +489,7 @@ export default function EvaluationsHistoryPage() {
   const [filters, setFilters]               = useState<Filters>(EMPTY_FILTERS);
   const [colVisibility, setColVisibility]   = useState<ColVisibility>(DEFAULT_COL_VISIBILITY);
   const [showColPicker, setShowColPicker]   = useState(false);
+  const [loadSort, setLoadSort]             = useState<"asc" | "desc" | null>(null);
 
   const startPopulation = useCallback(() => {
     setVisibleCount(0); setStarted(false);
@@ -512,6 +513,8 @@ export default function EvaluationsHistoryPage() {
   const setFilter = <K extends keyof Filters>(key: K, value: Filters[K]) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
 
+  const STATUS_ORDER: Record<EvalStatus, number> = { "Not Started": 0, "In Progress": 1, "Completed": 2 };
+
   const filteredRows = SEED_UNITS.slice(0, visibleCount).filter((unit) => {
     const status: EvalStatus = statuses[unit.id] ?? unit.status;
     return (
@@ -526,6 +529,15 @@ export default function EvaluationsHistoryPage() {
       (!filters.site.length       || filters.site.includes(siteFromWarehouse(unit.warehouse)))
     );
   });
+
+  const sortedRows = loadSort
+    ? [...filteredRows].sort((a, b) => loadSort === "asc" ? a.loadNumber - b.loadNumber : b.loadNumber - a.loadNumber)
+    : [...filteredRows].sort((a, b) => {
+        const aStatus = statuses[a.id] ?? a.status;
+        const bStatus = statuses[b.id] ?? b.status;
+        const diff = STATUS_ORDER[aStatus] - STATUS_ORDER[bStatus];
+        return diff !== 0 ? diff : a.dateReceived.localeCompare(b.dateReceived);
+      });
 
   const activeFilterCount = countActiveFilters(filters);
   const commentUnit = SEED_UNITS.find((u) => u.id === commentUnitId);
@@ -687,7 +699,23 @@ export default function EvaluationsHistoryPage() {
                       {show.type        && <th style={thBase}>Type</th>}
                       {show.kva         && <th style={thBase}>KVA</th>}
                       {show.intake      && <th style={thBase}>Intake Type</th>}
-                      {show.load        && <th style={thBase}>Load #</th>}
+                      {show.load && (
+                        <th style={{ ...thBase, cursor: "pointer", userSelect: "none" }}
+                          onClick={() => setLoadSort((s) => s === "asc" ? "desc" : s === "desc" ? null : "asc")}
+                          title="Sort by Load #">
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            Load #
+                            <span style={{ display: "inline-flex", flexDirection: "column", gap: 1, lineHeight: 1 }}>
+                              <svg width="8" height="5" viewBox="0 0 8 5" fill="none">
+                                <path d="M4 0L7.5 5H0.5L4 0Z" fill={loadSort === "asc" ? "hsl(var(--foreground))" : "hsl(var(--border))"} />
+                              </svg>
+                              <svg width="8" height="5" viewBox="0 0 8 5" fill="none">
+                                <path d="M4 5L0.5 0H7.5L4 5Z" fill={loadSort === "desc" ? "hsl(var(--foreground))" : "hsl(var(--border))"} />
+                              </svg>
+                            </span>
+                          </span>
+                        </th>
+                      )}
                       {show.whs         && <th style={thBase}>WHS</th>}
                       {show.status      && <th style={thBase}>Status</th>}
                       {show.site        && <th style={thBase}>Site</th>}
@@ -697,7 +725,7 @@ export default function EvaluationsHistoryPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredRows.length === 0 ? (
+                    {sortedRows.length === 0 ? (
                       <tr><td colSpan={99}>
                         <div className="flex flex-col items-center justify-center py-14 text-center">
                           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 10, opacity: 0.5 }}>
@@ -707,7 +735,7 @@ export default function EvaluationsHistoryPage() {
                           <button onClick={() => setFilters(EMPTY_FILTERS)} style={{ marginTop: 8, fontSize: 12, color: "#0047BB", background: "none", border: "none", cursor: "pointer" }}>Clear filters</button>
                         </div>
                       </td></tr>
-                    ) : filteredRows.map((unit, idx) => {
+                    ) : sortedRows.map((unit, idx) => {
                       const status: EvalStatus = statuses[unit.id] ?? unit.status;
                       const isDropdownOpen = openDropdownId === unit.id;
                       const { date, time } = formatDateTime(unit.dateReceived, unit.timeReceived);
@@ -716,7 +744,7 @@ export default function EvaluationsHistoryPage() {
                       const isUnread = unit.hasUnreadComment;
                       return (
                         <tr key={unit.id}
-                          style={{ borderBottom: idx < filteredRows.length - 1 ? "1px solid hsl(var(--border))" : undefined, animation: "fadeSlideIn 0.4s ease-out" }}
+                          style={{ borderBottom: idx < sortedRows.length - 1 ? "1px solid hsl(var(--border))" : undefined, animation: "fadeSlideIn 0.4s ease-out" }}
                           onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "hsl(var(--muted) / 0.4)"; }}
                           onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "transparent"; }}>
 
@@ -787,14 +815,24 @@ export default function EvaluationsHistoryPage() {
                             </td>
                           )}
 
-                          {/* Open button */}
+                          {/* Open / Locked button */}
                           <td className="px-3 py-3" style={{ whiteSpace: "nowrap" }}>
-                            <button
-                              style={{ padding: "5px 14px", borderRadius: 7, border: "1px solid #0047BB", background: "transparent", color: "#0047BB", fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "background 0.15s, color 0.15s" }}
-                              onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "#0047BB"; b.style.color = "#fff"; }}
-                              onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "transparent"; b.style.color = "#0047BB"; }}>
-                              Open
-                            </button>
+                            {unit.activeUser && status === "In Progress" ? (
+                              <span title={`Locked — ${unit.activeUser.name} is working on this evaluation`}
+                                style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 7, border: "1px solid hsl(var(--border))", background: "hsl(var(--muted))", color: "hsl(var(--muted-foreground))", fontSize: 12, fontWeight: 500, cursor: "not-allowed", userSelect: "none" }}>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                </svg>
+                                Locked
+                              </span>
+                            ) : (
+                              <button
+                                style={{ padding: "5px 14px", borderRadius: 7, border: "1px solid #0047BB", background: "transparent", color: "#0047BB", fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "background 0.15s, color 0.15s" }}
+                                onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "#0047BB"; b.style.color = "#fff"; }}
+                                onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "transparent"; b.style.color = "#0047BB"; }}>
+                                Open
+                              </button>
+                            )}
                           </td>
                         </tr>
                       );
