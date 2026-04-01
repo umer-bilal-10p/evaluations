@@ -13,16 +13,19 @@ const ALL_CATEGORIES: IntakeCategory[] = ["Surplus", "Recycle"];
 
 /* ─── Column definitions ─────────────────────────────────────────────────────── */
 const COL_DEFS = [
-  { key: "date",    label: "Date & Time Received" },
-  { key: "mfgSerial", label: "MFG S#" },
-  { key: "icNumber",  label: "IC#" },
-  { key: "mfr",    label: "MFR" },
-  { key: "type",   label: "Type" },
-  { key: "kva",    label: "KVA" },
-  { key: "intake", label: "Intake Type" },
-  { key: "load",   label: "Load #" },
-  { key: "whs",    label: "WHS" },
-  { key: "status", label: "Status" },
+  { key: "date",        label: "Date & Time Received" },
+  { key: "mfgSerial",  label: "MFG S#" },
+  { key: "icNumber",   label: "IC#" },
+  { key: "mfr",        label: "MFR" },
+  { key: "type",       label: "Type" },
+  { key: "kva",        label: "KVA" },
+  { key: "intake",     label: "Intake Type" },
+  { key: "load",       label: "Load #" },
+  { key: "whs",        label: "WHS" },
+  { key: "status",     label: "Status" },
+  { key: "site",       label: "Site" },
+  { key: "completedOn", label: "Completed On" },
+  { key: "completedBy", label: "Completed By" },
 ] as const;
 
 type ColKey = typeof COL_DEFS[number]["key"];
@@ -31,6 +34,7 @@ type ColVisibility = Record<ColKey, boolean>;
 const DEFAULT_COL_VISIBILITY: ColVisibility = {
   date: true, mfgSerial: true, icNumber: true, mfr: true, type: true,
   kva: true, intake: true, load: true, whs: true, status: true,
+  site: true, completedOn: true, completedBy: true,
 };
 
 /* ─── Data model ─────────────────────────────────────────────────────────────── */
@@ -49,52 +53,61 @@ interface EvaluationUnit {
   warehouseNumber: number;
   warehouse: string;
   status: EvalStatus;
+  completedOn: string | null;
+  completedBy: string | null;
 }
 
-function siteFromWarehouse(warehouse: string): string {
-  return warehouse.split(" - ")[1] ?? warehouse;
-}
+function siteFromWarehouse(w: string): string { return w.split(" - ")[1] ?? w; }
 
 const SEED_UNITS: EvaluationUnit[] = [
-  { id: "1",  dateReceived: "2024-07-22", timeReceived: "11:28 AM", mfgSerial: "TF-7662-M", icNumber: "185940632", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 1750, intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 194503, warehouseNumber: 18, warehouse: "18 - Houston, TX",  status: "Not Started" },
-  { id: "2",  dateReceived: "2024-08-20", timeReceived: "9:53 AM",  mfgSerial: "TF-9884-K", icNumber: "221083647", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 250,  intakeCategory: "Recycle", intakeTags: ["NPX: Repair"],                 loadNumber: 425019, warehouseNumber: 55, warehouse: "55 - Dallas, TX",   status: "Not Started" },
-  { id: "3",  dateReceived: "2024-11-05", timeReceived: "3:21 PM",  mfgSerial: "TF-5540-E", icNumber: "312048756", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 2000, intakeCategory: "Recycle", intakeTags: ["Base Damage", "NPX: Repair"],  loadNumber: 314087, warehouseNumber: 7,  warehouse: "07 - Atlanta, GA", status: "Not Started" },
-  { id: "4",  dateReceived: "2024-11-18", timeReceived: "2:37 PM",  mfgSerial: "TF-9201-A", icNumber: "098432711", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Recycle", intakeTags: ["NPX: Rewind"],                 loadNumber: 203415, warehouseNumber: 12, warehouse: "12 - Dallas, TX",   status: "Not Started" },
-  { id: "5",  dateReceived: "2024-07-09", timeReceived: "6:47 PM",  mfgSerial: "TF-6551-N", icNumber: "093284756", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 400,  intakeCategory: "Recycle", intakeTags: ["Base Damage", "NPX: Scrap"],   loadNumber: 362780, warehouseNumber: 31, warehouse: "31 - Phoenix, AZ", status: "In Progress" },
-  { id: "6",  dateReceived: "2025-01-15", timeReceived: "10:12 AM", mfgSerial: "TF-3371-D", icNumber: "441928573", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 1000, intakeCategory: "Surplus", intakeTags: ["Base Damage"],                 loadNumber: 119204, warehouseNumber: 99, warehouse: "99 - Houston, TX", status: "Not Started" },
-  { id: "7",  dateReceived: "2025-02-03", timeReceived: "8:05 AM",  mfgSerial: "TF-8831-G", icNumber: "554738201", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 750,  intakeCategory: "Recycle", intakeTags: ["NPX: Rewind", "NPX: Repair"],  loadNumber: 278456, warehouseNumber: 22, warehouse: "22 - Denver, CO",   status: "Not Started" },
-  { id: "8",  dateReceived: "2025-02-28", timeReceived: "1:44 PM",  mfgSerial: "TF-4492-C", icNumber: "667193845", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 1500, intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 390127, warehouseNumber: 44, warehouse: "44 - Atlanta, GA", status: "Completed" },
-  { id: "9",  dateReceived: "2025-03-14", timeReceived: "4:30 PM",  mfgSerial: "TF-2278-B", icNumber: "789042316", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 3000, intakeCategory: "Recycle", intakeTags: ["NPX: Scrap"],                  loadNumber: 451803, warehouseNumber: 7,  warehouse: "07 - Atlanta, GA", status: "In Progress" },
-  { id: "10", dateReceived: "2025-04-07", timeReceived: "11:55 AM", mfgSerial: "TF-1045-A", icNumber: "823615490", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Repair"],  loadNumber: 512948, warehouseNumber: 34, warehouse: "34 - Phoenix, AZ", status: "Not Started" },
+  { id: "1",  dateReceived: "2024-07-22", timeReceived: "11:28 AM", mfgSerial: "TF-7662-M", icNumber: "185940632", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 1750, intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 194503, warehouseNumber: 18, warehouse: "18 - Houston, TX",  status: "Not Started", completedOn: null, completedBy: null },
+  { id: "2",  dateReceived: "2024-08-20", timeReceived: "9:53 AM",  mfgSerial: "TF-9884-K", icNumber: "221083647", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 250,  intakeCategory: "Recycle", intakeTags: ["NPX: Repair"],                 loadNumber: 425019, warehouseNumber: 55, warehouse: "55 - Dallas, TX",   status: "Not Started", completedOn: null, completedBy: null },
+  { id: "3",  dateReceived: "2024-11-05", timeReceived: "3:21 PM",  mfgSerial: "TF-5540-E", icNumber: "312048756", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 2000, intakeCategory: "Recycle", intakeTags: ["Base Damage", "NPX: Repair"],  loadNumber: 314087, warehouseNumber: 7,  warehouse: "07 - Atlanta, GA", status: "Not Started", completedOn: null, completedBy: null },
+  { id: "4",  dateReceived: "2024-11-18", timeReceived: "2:37 PM",  mfgSerial: "TF-9201-A", icNumber: "098432711", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Recycle", intakeTags: ["NPX: Rewind"],                 loadNumber: 203415, warehouseNumber: 12, warehouse: "12 - Dallas, TX",   status: "Not Started", completedOn: null, completedBy: null },
+  { id: "5",  dateReceived: "2024-07-09", timeReceived: "6:47 PM",  mfgSerial: "TF-6551-N", icNumber: "093284756", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 400,  intakeCategory: "Recycle", intakeTags: ["Base Damage", "NPX: Scrap"],   loadNumber: 362780, warehouseNumber: 31, warehouse: "31 - Phoenix, AZ", status: "In Progress", completedOn: null, completedBy: null },
+  { id: "6",  dateReceived: "2025-01-15", timeReceived: "10:12 AM", mfgSerial: "TF-3371-D", icNumber: "441928573", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 1000, intakeCategory: "Surplus", intakeTags: ["Base Damage"],                 loadNumber: 119204, warehouseNumber: 99, warehouse: "99 - Houston, TX", status: "Not Started", completedOn: null, completedBy: null },
+  { id: "7",  dateReceived: "2025-02-03", timeReceived: "8:05 AM",  mfgSerial: "TF-8831-G", icNumber: "554738201", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 750,  intakeCategory: "Recycle", intakeTags: ["NPX: Rewind", "NPX: Repair"],  loadNumber: 278456, warehouseNumber: 22, warehouse: "22 - Denver, CO",   status: "Not Started", completedOn: null, completedBy: null },
+  { id: "8",  dateReceived: "2025-02-28", timeReceived: "1:44 PM",  mfgSerial: "TF-4492-C", icNumber: "667193845", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 1500, intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 390127, warehouseNumber: 44, warehouse: "44 - Atlanta, GA", status: "Completed",   completedOn: "2025-03-05", completedBy: "Maria Santos" },
+  { id: "9",  dateReceived: "2025-03-14", timeReceived: "4:30 PM",  mfgSerial: "TF-2278-B", icNumber: "789042316", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 3000, intakeCategory: "Recycle", intakeTags: ["NPX: Scrap"],                  loadNumber: 451803, warehouseNumber: 7,  warehouse: "07 - Atlanta, GA", status: "In Progress", completedOn: null, completedBy: null },
+  { id: "10", dateReceived: "2025-04-07", timeReceived: "11:55 AM", mfgSerial: "TF-1045-A", icNumber: "823615490", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Repair"],  loadNumber: 512948, warehouseNumber: 34, warehouse: "34 - Phoenix, AZ", status: "Not Started", completedOn: null, completedBy: null },
 ];
 
 const ROW_INTERVAL_MS = 900;
 const MANUFACTURERS  = [...new Set(SEED_UNITS.map((u) => u.manufacturer))].sort();
 const WAREHOUSES     = [...new Set(SEED_UNITS.map((u) => u.warehouse))].sort();
-const KVA_VALUES     = [...new Set(SEED_UNITS.map((u) => u.kva))].sort((a, b) => a - b);
+const KVA_VALUES     = [...new Set(SEED_UNITS.map((u) => u.kva))].sort((a, b) => a - b).map(String);
 const SITES          = [...new Set(SEED_UNITS.map((u) => siteFromWarehouse(u.warehouse)))].sort();
 
 /* ─── Filters ────────────────────────────────────────────────────────────────── */
 type Filters = {
   dateFrom: string; dateTo: string; icNumber: string;
-  manufacturer: string; kva: string; warehouse: string;
-  intakeCategory: string; status: string; site: string;
+  manufacturer: string[]; kva: string[]; warehouse: string[];
+  intakeCategory: string[]; status: string[]; site: string[];
 };
 
 const EMPTY_FILTERS: Filters = {
-  dateFrom: "", dateTo: "", icNumber: "", manufacturer: "",
-  kva: "", warehouse: "", intakeCategory: "", status: "", site: "",
+  dateFrom: "", dateTo: "", icNumber: "",
+  manufacturer: [], kva: [], warehouse: [],
+  intakeCategory: [], status: [], site: [],
 };
 
 function countActiveFilters(f: Filters): number {
-  return Object.values(f).filter((v) => v !== "").length;
+  let n = 0;
+  if (f.dateFrom) n++; if (f.dateTo) n++; if (f.icNumber) n++;
+  if (f.manufacturer.length) n++; if (f.kva.length) n++;
+  if (f.warehouse.length) n++; if (f.intakeCategory.length) n++;
+  if (f.status.length) n++; if (f.site.length) n++;
+  return n;
 }
 
 /* ─── Helpers ────────────────────────────────────────────────────────────────── */
-function formatDateTime(iso: string, time: string): { date: string; time: string } {
+function formatDate(iso: string): string {
   const [year, month, day] = iso.split("-");
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  return { date: `${months[Number(month) - 1]} ${Number(day)}, ${year}`, time };
+  return `${months[Number(month) - 1]} ${Number(day)}, ${year}`;
+}
+function formatDateTime(iso: string, time: string): { date: string; time: string } {
+  return { date: formatDate(iso), time };
 }
 
 /* ─── Shared field styles ────────────────────────────────────────────────────── */
@@ -102,14 +115,9 @@ const FIELD: React.CSSProperties = {
   height: 34, fontSize: 13, fontWeight: 400, padding: "0 10px",
   borderRadius: 7, border: "1px solid hsl(var(--border))",
   background: "hsl(var(--background))", color: "hsl(var(--foreground))",
-  outline: "none", boxSizing: "border-box", lineHeight: "34px",
+  outline: "none", boxSizing: "border-box", lineHeight: "34px", width: "100%",
 };
 const SELECT_ARROW = `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E")`;
-const SELECT: React.CSSProperties = {
-  ...FIELD, appearance: "none", cursor: "pointer",
-  backgroundImage: SELECT_ARROW, backgroundRepeat: "no-repeat",
-  backgroundPosition: "right 9px center", paddingRight: 28,
-};
 const LABEL: React.CSSProperties = {
   display: "block", fontSize: 10, fontWeight: 600,
   textTransform: "uppercase", letterSpacing: "0.07em",
@@ -118,16 +126,71 @@ const LABEL: React.CSSProperties = {
 const DATE_INPUT: React.CSSProperties = {
   ...FIELD, width: 130, colorScheme: "inherit" as React.CSSProperties["colorScheme"],
 };
+const CARD: React.CSSProperties = {
+  background: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
+  borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.07)",
+};
 
 function FInput({ value, onChange, placeholder, style }: { value: string; onChange: (v: string) => void; placeholder: string; style?: React.CSSProperties }) {
   return <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ ...FIELD, ...style }} />;
 }
-function FSelect({ value, onChange, options, placeholder, style }: { value: string; onChange: (v: string) => void; options: string[]; placeholder: string; style?: React.CSSProperties }) {
+
+/* ─── Multi-select dropdown ──────────────────────────────────────────────────── */
+function MultiSelect({ value, onChange, options, placeholder, style }: {
+  value: string[]; onChange: (v: string[]) => void;
+  options: string[]; placeholder: string; style?: React.CSSProperties;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
+  const toggle = (opt: string) =>
+    onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt]);
+
+  const displayText = value.length === 0
+    ? placeholder
+    : value.length === 1 ? value[0] : `${value.length} selected`;
+
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value)} style={{ ...SELECT, ...style }}>
-      <option value="">{placeholder}</option>
-      {options.map((o) => <option key={o} value={o}>{o}</option>)}
-    </select>
+    <div ref={ref} style={{ position: "relative", ...style }}>
+      <button onClick={() => setOpen((v) => !v)} style={{
+        ...FIELD, display: "flex", alignItems: "center", cursor: "pointer",
+        backgroundImage: SELECT_ARROW, backgroundRepeat: "no-repeat",
+        backgroundPosition: "right 9px center", paddingRight: 28, textAlign: "left",
+        color: value.length > 0 ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))",
+        border: open ? "1px solid #0047BB" : "1px solid hsl(var(--border))",
+      }}>
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{displayText}</span>
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 400,
+          background: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
+          borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.14)",
+          minWidth: "100%", maxHeight: 220, overflowY: "auto", padding: "4px 0",
+        }}>
+          {options.map((opt) => (
+            <label key={opt} style={{
+              display: "flex", alignItems: "center", gap: 9,
+              padding: "7px 12px", cursor: "pointer", fontSize: 13,
+              color: "hsl(var(--foreground))", userSelect: "none",
+              background: value.includes(opt) ? "rgba(0,71,187,0.06)" : "transparent",
+            }}
+              onMouseEnter={(e) => { if (!value.includes(opt)) (e.currentTarget as HTMLLabelElement).style.background = "hsl(var(--muted))"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLLabelElement).style.background = value.includes(opt) ? "rgba(0,71,187,0.06)" : "transparent"; }}>
+              <input type="checkbox" checked={value.includes(opt)} onChange={() => toggle(opt)}
+                style={{ width: 14, height: 14, accentColor: "#0047BB", cursor: "pointer", flexShrink: 0 }} />
+              {opt}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -171,7 +234,7 @@ function StatusDropdown({ current, onSelect, onClose }: { current: EvalStatus; o
         const st = STATUS_STYLES[s];
         return (
           <button key={s} onClick={() => { onSelect(s); onClose(); }}
-            style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: s === current ? st.bg : "transparent", border: "none", cursor: "pointer", textAlign: "left", color: s === current ? st.color : "hsl(var(--foreground))", fontSize: 13, fontWeight: s === current ? 600 : 400, transition: "background 0.1s" }}
+            style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: s === current ? st.bg : "transparent", border: "none", cursor: "pointer", textAlign: "left", color: s === current ? st.color : "hsl(var(--foreground))", fontSize: 13, fontWeight: s === current ? 600 : 400 }}
             onMouseEnter={(e) => { if (s !== current) (e.currentTarget as HTMLButtonElement).style.background = "hsl(var(--muted))"; }}
             onMouseLeave={(e) => { if (s !== current) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
             <span style={{ color: st.color }}><StatusIcon status={s} /></span>{s}
@@ -231,10 +294,8 @@ function ColumnPicker({ visibility, onChange, onClose }: { visibility: ColVisibi
     return () => document.removeEventListener("mousedown", h);
   }, [onClose]);
   return (
-    <div ref={ref} style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 300, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.18)", minWidth: 200, overflow: "hidden", padding: "6px 0" }}>
-      <div style={{ padding: "8px 14px 6px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "hsl(var(--muted-foreground))" }}>
-        Columns
-      </div>
+    <div ref={ref} style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 300, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.18)", minWidth: 210, overflow: "hidden", padding: "6px 0" }}>
+      <div style={{ padding: "8px 14px 6px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "hsl(var(--muted-foreground))" }}>Columns</div>
       {COL_DEFS.map(({ key, label }) => (
         <label key={key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 14px", cursor: "pointer", fontSize: 13, color: "hsl(var(--foreground))" }}
           onMouseEnter={(e) => { (e.currentTarget as HTMLLabelElement).style.background = "hsl(var(--muted))"; }}
@@ -320,28 +381,29 @@ export default function EvaluationsHistoryPage() {
     setTimeout(() => setSpinning(false), 800);
   };
 
-  const setFilter = (key: keyof Filters, value: string) =>
+  const setFilter = <K extends keyof Filters>(key: K, value: Filters[K]) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
 
   const filteredRows = SEED_UNITS.slice(0, visibleCount).filter((unit) => {
     const status: EvalStatus = statuses[unit.id] ?? unit.status;
     return (
-      (!filters.dateFrom       || unit.dateReceived >= filters.dateFrom) &&
-      (!filters.dateTo         || unit.dateReceived <= filters.dateTo) &&
-      (!filters.icNumber       || unit.icNumber.includes(filters.icNumber)) &&
-      (!filters.manufacturer   || unit.manufacturer === filters.manufacturer) &&
-      (!filters.kva            || unit.kva === Number(filters.kva)) &&
-      (!filters.warehouse      || unit.warehouse === filters.warehouse) &&
-      (!filters.intakeCategory || unit.intakeCategory === filters.intakeCategory) &&
-      (!filters.status         || status === filters.status) &&
-      (!filters.site           || siteFromWarehouse(unit.warehouse) === filters.site)
+      (!filters.dateFrom          || unit.dateReceived >= filters.dateFrom) &&
+      (!filters.dateTo            || unit.dateReceived <= filters.dateTo) &&
+      (!filters.icNumber          || unit.icNumber.includes(filters.icNumber)) &&
+      (!filters.manufacturer.length || filters.manufacturer.includes(unit.manufacturer)) &&
+      (!filters.kva.length        || filters.kva.includes(String(unit.kva))) &&
+      (!filters.warehouse.length  || filters.warehouse.includes(unit.warehouse)) &&
+      (!filters.intakeCategory.length || filters.intakeCategory.includes(unit.intakeCategory)) &&
+      (!filters.status.length     || filters.status.includes(status)) &&
+      (!filters.site.length       || filters.site.includes(siteFromWarehouse(unit.warehouse)))
     );
   });
 
   const activeFilterCount = countActiveFilters(filters);
   const commentUnit = SEED_UNITS.find((u) => u.id === commentUnitId);
-  const visibleColDefs = COL_DEFS.filter((c) => colVisibility[c.key]);
-  const COLSPAN = visibleColDefs.length + 1; // +1 for action column
+  const show = colVisibility;
+  const visibleColCount = COL_DEFS.filter((c) => show[c.key]).length;
+  const COLSPAN = visibleColCount + 2; // +1 comment, +1 open
 
   const thBase: React.CSSProperties = {
     color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap",
@@ -356,14 +418,9 @@ export default function EvaluationsHistoryPage() {
     : { display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent", color: "hsl(var(--foreground))", fontSize: 13, fontWeight: 500, cursor: "pointer" };
 
   const actionBtnStyle: React.CSSProperties = {
-    display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8,
-    border: "1px solid hsl(var(--border))", background: "transparent",
-    color: "hsl(var(--foreground))", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "background 0.15s",
-  };
-
-  const CARD: React.CSSProperties = {
-    background: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
-    borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.07)",
+    display: "flex", alignItems: "center", gap: 6, padding: "7px 14px",
+    borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent",
+    color: "hsl(var(--foreground))", fontSize: 13, fontWeight: 500, cursor: "pointer",
   };
 
   return (
@@ -381,7 +438,6 @@ export default function EvaluationsHistoryPage() {
                 <p className="mt-0.5 text-sm" style={{ color: "hsl(var(--muted-foreground))" }}>Transformer units received for evaluation, sorted oldest to newest</p>
               </div>
               <div className="flex items-center gap-2">
-                {/* Filters */}
                 <button onClick={() => { setShowFilters((v) => !v); if (showFilters) setFilters(EMPTY_FILTERS); }} style={filterBtnStyle}
                   onMouseEnter={(e) => { if (!showFilters) (e.currentTarget as HTMLButtonElement).style.background = "hsl(var(--muted))"; }}
                   onMouseLeave={(e) => { if (!showFilters) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
@@ -396,7 +452,6 @@ export default function EvaluationsHistoryPage() {
                   )}
                 </button>
 
-                {/* Columns */}
                 <div style={{ position: "relative" }}>
                   <button onClick={() => setShowColPicker((v) => !v)} style={actionBtnStyle}
                     onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "hsl(var(--muted))"; }}
@@ -411,7 +466,6 @@ export default function EvaluationsHistoryPage() {
                   )}
                 </div>
 
-                {/* Refresh */}
                 <button onClick={handleRefresh} title="Refresh" style={actionBtnStyle}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "hsl(var(--muted))"; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
@@ -425,10 +479,10 @@ export default function EvaluationsHistoryPage() {
             </div>
           </div>
 
-          {/* ── 2. Filter card (2-row layout) ── */}
+          {/* ── 2. Filter card ── */}
           {showFilters && (
             <div style={CARD}>
-              {/* Row 1: Date, IC#, Manufacturer, Type, Intake Type, Site */}
+              {/* Row 1 */}
               <div style={{ display: "flex", alignItems: "flex-end", gap: 12, padding: "16px 20px 12px", flexWrap: "wrap" }}>
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Date Received</span>
@@ -444,37 +498,37 @@ export default function EvaluationsHistoryPage() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Manufacturer</span>
-                  <FSelect value={filters.manufacturer} onChange={(v) => setFilter("manufacturer", v)} options={MANUFACTURERS} placeholder="All" style={{ minWidth: 130 }} />
+                  <MultiSelect value={filters.manufacturer} onChange={(v) => setFilter("manufacturer", v)} options={MANUFACTURERS} placeholder="All" style={{ width: 140 }} />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Type</span>
-                  <select disabled style={{ ...SELECT, opacity: 0.5, cursor: "not-allowed", minWidth: 148 }}>
+                  <select disabled style={{ ...FIELD, appearance: "none", opacity: 0.5, cursor: "not-allowed", width: 148, backgroundImage: SELECT_ARROW, backgroundRepeat: "no-repeat", backgroundPosition: "right 9px center", paddingRight: 28 }}>
                     <option>Three-Phase Pad</option>
                   </select>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Intake Type</span>
-                  <FSelect value={filters.intakeCategory} onChange={(v) => setFilter("intakeCategory", v)} options={ALL_CATEGORIES} placeholder="All" style={{ minWidth: 120 }} />
+                  <MultiSelect value={filters.intakeCategory} onChange={(v) => setFilter("intakeCategory", v)} options={ALL_CATEGORIES} placeholder="All" style={{ width: 130 }} />
                 </div>
               </div>
 
-              {/* Row 2: KVA, Warehouse, Status, Site, Clear all */}
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 12, padding: "0 20px 16px", paddingTop: 12, flexWrap: "wrap", borderTop: "1px solid hsl(var(--border))" }}>
+              {/* Row 2 */}
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 12, padding: "12px 20px 16px", flexWrap: "wrap", borderTop: "1px solid hsl(var(--border))" }}>
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Site</span>
-                  <FSelect value={filters.site} onChange={(v) => setFilter("site", v)} options={SITES} placeholder="All Sites" style={{ minWidth: 150 }} />
+                  <MultiSelect value={filters.site} onChange={(v) => setFilter("site", v)} options={SITES} placeholder="All Sites" style={{ width: 160 }} />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Warehouse</span>
-                  <FSelect value={filters.warehouse} onChange={(v) => setFilter("warehouse", v)} options={WAREHOUSES} placeholder="All" style={{ minWidth: 180 }} />
+                  <MultiSelect value={filters.warehouse} onChange={(v) => setFilter("warehouse", v)} options={WAREHOUSES} placeholder="All" style={{ width: 190 }} />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>KVA</span>
-                  <FSelect value={filters.kva} onChange={(v) => setFilter("kva", v)} options={KVA_VALUES.map(String)} placeholder="All" style={{ minWidth: 100 }} />
+                  <MultiSelect value={filters.kva} onChange={(v) => setFilter("kva", v)} options={KVA_VALUES} placeholder="All" style={{ width: 110 }} />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Status</span>
-                  <FSelect value={filters.status} onChange={(v) => setFilter("status", v)} options={ALL_STATUSES} placeholder="All" style={{ minWidth: 140 }} />
+                  <MultiSelect value={filters.status} onChange={(v) => setFilter("status", v)} options={ALL_STATUSES} placeholder="All" style={{ width: 150 }} />
                 </div>
                 {activeFilterCount > 0 && (
                   <button onClick={() => setFilters(EMPTY_FILTERS)}
@@ -493,10 +547,21 @@ export default function EvaluationsHistoryPage() {
                 <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
                   <thead>
                     <tr>
-                      {visibleColDefs.map((col) => (
-                        <th key={col.key} style={thBase}>{col.label}</th>
-                      ))}
-                      <th style={{ ...thBase, padding: "0 12px" }}></th>
+                      {show.date        && <th style={thBase}>Date & Time Received</th>}
+                      {show.mfgSerial   && <th style={thBase}>MFG S#</th>}
+                      {show.icNumber    && <th style={thBase}>IC#</th>}
+                      {show.mfr         && <th style={thBase}>MFR</th>}
+                      {show.type        && <th style={thBase}>Type</th>}
+                      {show.kva         && <th style={thBase}>KVA</th>}
+                      {show.intake      && <th style={thBase}>Intake Type</th>}
+                      {show.load        && <th style={thBase}>Load #</th>}
+                      {show.whs         && <th style={thBase}>WHS</th>}
+                      {show.status      && <th style={thBase}>Status</th>}
+                      {show.site        && <th style={thBase}>Site</th>}
+                      {show.completedOn && <th style={thBase}>Completed On</th>}
+                      {show.completedBy && <th style={thBase}>Completed By</th>}
+                      <th style={{ ...thBase, padding: "0 10px" }}></th>
+                      <th style={{ ...thBase, padding: "0 16px 0 8px" }}></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -514,27 +579,28 @@ export default function EvaluationsHistoryPage() {
                       const status: EvalStatus = statuses[unit.id] ?? unit.status;
                       const isDropdownOpen = openDropdownId === unit.id;
                       const { date, time } = formatDateTime(unit.dateReceived, unit.timeReceived);
-                      const show = colVisibility;
+                      const site = siteFromWarehouse(unit.warehouse);
                       return (
                         <tr key={unit.id}
                           style={{ borderBottom: idx < filteredRows.length - 1 ? "1px solid hsl(var(--border))" : undefined, animation: "fadeSlideIn 0.4s ease-out" }}
                           onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "hsl(var(--muted) / 0.4)"; }}
                           onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "transparent"; }}>
+
                           {show.date && (
                             <td className="px-4 py-3" style={{ whiteSpace: "nowrap" }}>
                               <div style={{ fontSize: 13, color: "hsl(var(--foreground))" }}>{date}</div>
                               <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 1 }}>{time}</div>
                             </td>
                           )}
-                          {show.mfgSerial && <td className="px-4 py-3 font-mono font-semibold" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.mfgSerial}</td>}
-                          {show.icNumber  && <td className="px-4 py-3 font-mono" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.icNumber}</td>}
-                          {show.mfr      && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", fontSize: 13 }}>{unit.manufacturer}</td>}
-                          {show.type     && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.transformerType}</td>}
-                          {show.kva      && <td className="px-4 py-3 font-medium" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.kva.toLocaleString()}</td>}
-                          {show.intake   && <td className="px-4 py-3"><IntakePills category={unit.intakeCategory} tags={unit.intakeTags} /></td>}
-                          {show.load     && <td className="px-4 py-3 font-mono" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.loadNumber}</td>}
-                          {show.whs      && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", fontSize: 13 }}>{unit.warehouseNumber}</td>}
-                          {show.status   && (
+                          {show.mfgSerial  && <td className="px-4 py-3 font-mono font-semibold" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.mfgSerial}</td>}
+                          {show.icNumber   && <td className="px-4 py-3 font-mono" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.icNumber}</td>}
+                          {show.mfr        && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", fontSize: 13 }}>{unit.manufacturer}</td>}
+                          {show.type       && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.transformerType}</td>}
+                          {show.kva        && <td className="px-4 py-3 font-medium" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.kva.toLocaleString()}</td>}
+                          {show.intake     && <td className="px-4 py-3"><IntakePills category={unit.intakeCategory} tags={unit.intakeTags} /></td>}
+                          {show.load       && <td className="px-4 py-3 font-mono" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.loadNumber}</td>}
+                          {show.whs        && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", fontSize: 13 }}>{unit.warehouseNumber}</td>}
+                          {show.status     && (
                             <td className="px-4 py-3" style={{ position: "relative" }}>
                               <div style={{ position: "relative", display: "inline-block" }}>
                                 <StatusBadge status={status} onClick={(e) => { e.stopPropagation(); setOpenDropdownId(isDropdownOpen ? null : unit.id); }} />
@@ -542,14 +608,37 @@ export default function EvaluationsHistoryPage() {
                               </div>
                             </td>
                           )}
-                          <td className="px-3 py-3">
+                          {show.site        && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", fontSize: 13, whiteSpace: "nowrap" }}>{site}</td>}
+                          {show.completedOn && (
+                            <td className="px-4 py-3" style={{ color: unit.completedOn ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))", fontSize: 13, whiteSpace: "nowrap" }}>
+                              {unit.completedOn ? formatDate(unit.completedOn) : "—"}
+                            </td>
+                          )}
+                          {show.completedBy && (
+                            <td className="px-4 py-3" style={{ color: unit.completedBy ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))", fontSize: 13, whiteSpace: "nowrap" }}>
+                              {unit.completedBy ?? "—"}
+                            </td>
+                          )}
+
+                          {/* Comment button */}
+                          <td className="px-2 py-3">
                             <button onClick={() => setCommentUnitId(unit.id)} title="Add comment"
-                              style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid hsl(var(--border))", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "hsl(var(--muted-foreground))", transition: "color 0.15s, background 0.15s" }}
+                              style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid hsl(var(--border))", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "hsl(var(--muted-foreground))" }}
                               onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.color = "hsl(var(--foreground))"; b.style.background = "hsl(var(--muted))"; }}
                               onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.color = "hsl(var(--muted-foreground))"; b.style.background = "transparent"; }}>
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                               </svg>
+                            </button>
+                          </td>
+
+                          {/* Open button */}
+                          <td className="px-3 py-3" style={{ whiteSpace: "nowrap" }}>
+                            <button
+                              style={{ padding: "5px 14px", borderRadius: 7, border: "1px solid #0047BB", background: "transparent", color: "#0047BB", fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "background 0.15s, color 0.15s" }}
+                              onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "#0047BB"; b.style.color = "#fff"; }}
+                              onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "transparent"; b.style.color = "#0047BB"; }}>
+                              Open
                             </button>
                           </td>
                         </tr>
