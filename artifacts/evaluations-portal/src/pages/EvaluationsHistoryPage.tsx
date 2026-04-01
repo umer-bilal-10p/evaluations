@@ -78,6 +78,7 @@ const C = (id: string, author: string, initials: string, color: string, timestam
   ({ id, author, authorInitials: initials, authorColor: color, timestamp, text });
 
 const SEED_UNITS: EvaluationUnit[] = [
+  /* ── Active / Pending ──────────────────────────────────────────────────────── */
   { id: "1",  dateReceived: "2024-07-22", timeReceived: "11:28 AM", mfgSerial: "TF-7662-M", icNumber: "185940632", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 1750, intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 194503, warehouseNumber: 18, warehouse: "18 - Houston, TX",  status: "Not Started", completedOn: null, completedBy: null, activeUser: null, hasUnreadComment: true,  comments: [
     C("c1a", "Maria Santos",  "MS", "#7c3aed", "2024-07-24T09:15:00Z", "Tank exterior shows impact damage on the south panel. Flagged for structural review before proceeding."),
     C("c1b", "Carlos Rivera", "CR", "#0047BB", "2024-07-25T14:32:00Z", "Noted — holding intake until structural team signs off. Will update."),
@@ -94,19 +95,63 @@ const SEED_UNITS: EvaluationUnit[] = [
     C("c6a", "Maria Santos",  "MS", "#7c3aed", "2025-01-17T08:45:00Z", "Please prioritize this unit — customer is waiting on evaluation results before making a purchase decision."),
   ]},
   { id: "7",  dateReceived: "2025-02-03", timeReceived: "8:05 AM",  mfgSerial: "TF-8831-G", icNumber: "554738201", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 750,  intakeCategory: "Recycle", intakeTags: ["NPX: Rewind", "NPX: Repair"],  loadNumber: 278456, warehouseNumber: 22, warehouse: "22 - Denver, CO",   status: "Not Started", completedOn: null, completedBy: null, activeUser: null, hasUnreadComment: false, comments: [] },
-  { id: "8",  dateReceived: "2025-02-28", timeReceived: "1:44 PM",  mfgSerial: "TF-4492-C", icNumber: "667193845", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 1500, intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 390127, warehouseNumber: 44, warehouse: "44 - Atlanta, GA", status: "Completed",   completedOn: "2025-03-05", completedBy: "Maria Santos", activeUser: null, hasUnreadComment: false, comments: [
-    C("c8a", "James Mitchell", "JM", "#0047BB", "2025-03-01T09:00:00Z", "Inspection complete. All components within spec. Recommending for surplus resale."),
-    C("c8b", "Maria Santos",  "MS", "#7c3aed", "2025-03-05T15:10:00Z", "Evaluation finalized and closed. Documentation submitted to logistics."),
-  ]},
   { id: "9",  dateReceived: "2025-03-14", timeReceived: "4:30 PM",  mfgSerial: "TF-2278-B", icNumber: "789042316", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 3000, intakeCategory: "Recycle", intakeTags: ["NPX: Scrap"],                  loadNumber: 451803, warehouseNumber: 7,  warehouse: "07 - Atlanta, GA", status: "In Progress", completedOn: null, completedBy: null, activeUser: { name: "Sarah Chen", initials: "SC", color: "#7c3aed" }, hasUnreadComment: false, comments: [
     C("c9a", "Sarah Chen",    "SC", "#7c3aed", "2025-03-15T13:30:00Z", "Initial assessment done. Unit is a strong scrap candidate — oil contaminated, core delaminated."),
     C("c9b", "James Mitchell","JM", "#0047BB", "2025-03-16T09:45:00Z", "Understood. Proceed with scrap evaluation pathway and document weight and materials."),
     C("c9c", "Sarah Chen",    "SC", "#7c3aed", "2025-03-17T11:00:00Z", "Materials documented. Awaiting final sign-off to proceed."),
   ]},
   { id: "10", dateReceived: "2025-04-07", timeReceived: "11:55 AM", mfgSerial: "TF-1045-A", icNumber: "823615490", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Repair"],  loadNumber: 512948, warehouseNumber: 34, warehouse: "34 - Phoenix, AZ", status: "Not Started", completedOn: null, completedBy: null, activeUser: null, hasUnreadComment: false, comments: [] },
+
+  /* ── Completed ─────────────────────────────────────────────────────────────── */
+  { id: "8",  dateReceived: "2023-02-14", timeReceived: "9:10 AM",  mfgSerial: "TF-1183-D", icNumber: "104837265", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Surplus", intakeTags: ["NPX: Repair"],                 loadNumber: 138204, warehouseNumber: 18, warehouse: "18 - Houston, TX",  status: "Completed", completedOn: "2023-03-01", completedBy: "Carlos Rivera",  activeUser: null, hasUnreadComment: false, comments: [
+    C("c8a",  "Carlos Rivera", "CR", "#0047BB", "2023-02-20T08:30:00Z", "Unit passed full dielectric test. Recommended for repair and resale."),
+  ]},
+  { id: "11", dateReceived: "2023-03-08", timeReceived: "2:45 PM",  mfgSerial: "TF-3318-K", icNumber: "213904856", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 1000, intakeCategory: "Recycle", intakeTags: ["NPX: Scrap"],                  loadNumber: 247830, warehouseNumber: 55, warehouse: "55 - Dallas, TX",   status: "Completed", completedOn: "2023-03-22", completedBy: "Maria Santos",   activeUser: null, hasUnreadComment: false, comments: [] },
+  { id: "12", dateReceived: "2023-04-19", timeReceived: "10:30 AM", mfgSerial: "TF-8820-R", icNumber: "329847102", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 750,  intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 361509, warehouseNumber: 44, warehouse: "44 - Atlanta, GA", status: "Completed", completedOn: "2023-05-04", completedBy: "James Mitchell",  activeUser: null, hasUnreadComment: false, comments: [
+    C("c12a", "James Mitchell","JM", "#0047BB", "2023-04-25T14:00:00Z", "Rewind inspection complete — core in good condition. Cleared for surplus inventory."),
+    C("c12b", "Maria Santos",  "MS", "#7c3aed", "2023-05-04T09:30:00Z", "Documentation closed out and unit transferred to surplus yard."),
+  ]},
+  { id: "13", dateReceived: "2023-05-30", timeReceived: "8:20 AM",  mfgSerial: "TF-2245-F", icNumber: "448203917", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 250,  intakeCategory: "Recycle", intakeTags: ["NPX: Repair"],                 loadNumber: 175092, warehouseNumber: 31, warehouse: "31 - Phoenix, AZ", status: "Completed", completedOn: "2023-06-12", completedBy: "Sarah Chen",    activeUser: null, hasUnreadComment: false, comments: [] },
+  { id: "14", dateReceived: "2023-07-11", timeReceived: "3:50 PM",  mfgSerial: "TF-5567-P", icNumber: "561029384", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 2000, intakeCategory: "Surplus", intakeTags: ["Base Damage"],                 loadNumber: 408317, warehouseNumber: 12, warehouse: "12 - Dallas, TX",   status: "Completed", completedOn: "2023-07-28", completedBy: "David Park",     activeUser: null, hasUnreadComment: false, comments: [
+    C("c14a", "David Park",    "DP", "#059669", "2023-07-18T11:45:00Z", "Base frame damage noted but contained to mounting skids only. Transformer internals unaffected."),
+  ]},
+  { id: "15", dateReceived: "2023-08-24", timeReceived: "1:15 PM",  mfgSerial: "TF-9912-Q", icNumber: "672841053", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 1500, intakeCategory: "Recycle", intakeTags: ["NPX: Scrap"],                  loadNumber: 293748, warehouseNumber: 22, warehouse: "22 - Denver, CO",   status: "Completed", completedOn: "2023-09-10", completedBy: "Linda Torres",   activeUser: null, hasUnreadComment: false, comments: [] },
+  { id: "16", dateReceived: "2023-10-03", timeReceived: "9:40 AM",  mfgSerial: "TF-4481-T", icNumber: "784930261", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 400,  intakeCategory: "Surplus", intakeTags: ["NPX: Rewind"],                 loadNumber: 520671, warehouseNumber: 7,  warehouse: "07 - Atlanta, GA", status: "Completed", completedOn: "2023-10-19", completedBy: "Carlos Rivera",  activeUser: null, hasUnreadComment: false, comments: [
+    C("c16a", "Carlos Rivera", "CR", "#0047BB", "2023-10-10T10:15:00Z", "Rewind evaluation complete. LV winding shows minimal degradation. Surplus eligible."),
+  ]},
+  { id: "17", dateReceived: "2023-11-14", timeReceived: "11:05 AM", mfgSerial: "TF-7730-H", icNumber: "895014372", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 3000, intakeCategory: "Recycle", intakeTags: ["Base Damage", "NPX: Scrap"],   loadNumber: 147863, warehouseNumber: 99, warehouse: "99 - Houston, TX", status: "Completed", completedOn: "2023-11-30", completedBy: "Maria Santos",   activeUser: null, hasUnreadComment: false, comments: [
+    C("c17a", "Maria Santos",  "MS", "#7c3aed", "2023-11-20T16:00:00Z", "Heavy base damage and severe oil contamination. Scrap designation confirmed."),
+    C("c17b", "James Mitchell","JM", "#0047BB", "2023-11-30T08:00:00Z", "Scrap weight and materials list filed. Closed."),
+  ]},
+  { id: "18", dateReceived: "2023-12-20", timeReceived: "2:00 PM",  mfgSerial: "TF-6659-W", icNumber: "901283647", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 750,  intakeCategory: "Surplus", intakeTags: ["NPX: Repair"],                 loadNumber: 334510, warehouseNumber: 34, warehouse: "34 - Phoenix, AZ", status: "Completed", completedOn: "2024-01-08", completedBy: "James Mitchell",  activeUser: null, hasUnreadComment: false, comments: [] },
+  { id: "19", dateReceived: "2024-01-29", timeReceived: "10:55 AM", mfgSerial: "TF-1124-Z", icNumber: "012947385", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Recycle", intakeTags: ["NPX: Rewind"],                 loadNumber: 481927, warehouseNumber: 18, warehouse: "18 - Houston, TX",  status: "Completed", completedOn: "2024-02-14", completedBy: "Sarah Chen",    activeUser: null, hasUnreadComment: false, comments: [
+    C("c19a", "Sarah Chen",    "SC", "#7c3aed", "2024-02-05T09:00:00Z", "Rewind pathways checked. Minor insulation wear noted but within tolerance. Surplus approved."),
+  ]},
+  { id: "20", dateReceived: "2024-02-15", timeReceived: "4:10 PM",  mfgSerial: "TF-8843-V", icNumber: "123048576", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 1000, intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Repair"],  loadNumber: 209384, warehouseNumber: 55, warehouse: "55 - Dallas, TX",   status: "Completed", completedOn: "2024-03-01", completedBy: "David Park",     activeUser: null, hasUnreadComment: false, comments: [] },
+  { id: "21", dateReceived: "2024-03-22", timeReceived: "8:30 AM",  mfgSerial: "TF-3302-S", icNumber: "234159687", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 1750, intakeCategory: "Recycle", intakeTags: ["NPX: Scrap"],                  loadNumber: 563071, warehouseNumber: 44, warehouse: "44 - Atlanta, GA", status: "Completed", completedOn: "2024-04-05", completedBy: "Linda Torres",   activeUser: null, hasUnreadComment: false, comments: [
+    C("c21a", "Linda Torres",  "LT", "#b45309", "2024-03-29T14:30:00Z", "Core and windings confirmed non-recoverable. Scrap disposition approved."),
+  ]},
+  { id: "22", dateReceived: "2024-04-30", timeReceived: "1:20 PM",  mfgSerial: "TF-5571-L", icNumber: "345267890", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 250,  intakeCategory: "Surplus", intakeTags: ["NPX: Repair"],                 loadNumber: 128745, warehouseNumber: 31, warehouse: "31 - Phoenix, AZ", status: "Completed", completedOn: "2024-05-14", completedBy: "Carlos Rivera",  activeUser: null, hasUnreadComment: false, comments: [] },
+  { id: "23", dateReceived: "2024-05-17", timeReceived: "3:00 PM",  mfgSerial: "TF-7748-X", icNumber: "456380912", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 2000, intakeCategory: "Recycle", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 397264, warehouseNumber: 12, warehouse: "12 - Dallas, TX",   status: "Completed", completedOn: "2024-06-02", completedBy: "Maria Santos",   activeUser: null, hasUnreadComment: false, comments: [
+    C("c23a", "Maria Santos",  "MS", "#7c3aed", "2024-05-24T10:00:00Z", "HV winding rewind assessment complete. Recommending for full rewind and surplus re-listing."),
+    C("c23b", "Carlos Rivera", "CR", "#0047BB", "2024-06-02T13:00:00Z", "Rewind cleared. Unit re-tagged and moved to surplus staging."),
+  ]},
+  { id: "24", dateReceived: "2024-06-25", timeReceived: "9:00 AM",  mfgSerial: "TF-2291-C", icNumber: "567491023", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 400,  intakeCategory: "Surplus", intakeTags: ["NPX: Rewind", "NPX: Repair"],  loadNumber: 442183, warehouseNumber: 22, warehouse: "22 - Denver, CO",   status: "Completed", completedOn: "2024-07-10", completedBy: "James Mitchell",  activeUser: null, hasUnreadComment: false, comments: [] },
+  { id: "25", dateReceived: "2024-08-06", timeReceived: "11:30 AM", mfgSerial: "TF-9927-Y", icNumber: "678502134", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 1500, intakeCategory: "Recycle", intakeTags: ["NPX: Scrap"],                  loadNumber: 315847, warehouseNumber: 7,  warehouse: "07 - Atlanta, GA", status: "Completed", completedOn: "2024-08-22", completedBy: "Sarah Chen",    activeUser: null, hasUnreadComment: false, comments: [
+    C("c25a", "Sarah Chen",    "SC", "#7c3aed", "2024-08-14T15:00:00Z", "Severe corrosion throughout. Insulation failure on all three phases. Scrap confirmed."),
+  ]},
+  { id: "26", dateReceived: "2024-09-10", timeReceived: "2:50 PM",  mfgSerial: "TF-4460-B", icNumber: "789613245", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 750,  intakeCategory: "Surplus", intakeTags: ["Base Damage"],                 loadNumber: 271039, warehouseNumber: 99, warehouse: "99 - Houston, TX", status: "Completed", completedOn: "2024-09-25", completedBy: "David Park",     activeUser: null, hasUnreadComment: false, comments: [] },
+  { id: "27", dateReceived: "2024-10-22", timeReceived: "8:15 AM",  mfgSerial: "TF-6614-J", icNumber: "890724356", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 3000, intakeCategory: "Recycle", intakeTags: ["NPX: Repair"],                 loadNumber: 504921, warehouseNumber: 34, warehouse: "34 - Phoenix, AZ", status: "Completed", completedOn: "2024-11-07", completedBy: "Linda Torres",   activeUser: null, hasUnreadComment: false, comments: [
+    C("c27a", "Linda Torres",  "LT", "#b45309", "2024-10-30T09:15:00Z", "Winding resistance tests passed. Tap changer serviced. Ready for surplus."),
+    C("c27b", "David Park",    "DP", "#059669", "2024-11-07T14:00:00Z", "Final documentation complete. Unit released to surplus yard."),
+  ]},
+  { id: "28", dateReceived: "2025-02-28", timeReceived: "1:44 PM",  mfgSerial: "TF-4492-C", icNumber: "667193845", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 1500, intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 390127, warehouseNumber: 44, warehouse: "44 - Atlanta, GA", status: "Completed", completedOn: "2025-03-05", completedBy: "Maria Santos",   activeUser: null, hasUnreadComment: false, comments: [
+    C("c28a", "James Mitchell","JM", "#0047BB", "2025-03-01T09:00:00Z", "Inspection complete. All components within spec. Recommending for surplus resale."),
+    C("c28b", "Maria Santos",  "MS", "#7c3aed", "2025-03-05T15:10:00Z", "Evaluation finalized and closed. Documentation submitted to logistics."),
+  ]},
 ];
 
-const ROW_INTERVAL_MS = 900;
+const ROW_INTERVAL_MS = 280;
 const MANUFACTURERS  = [...new Set(SEED_UNITS.map((u) => u.manufacturer))].sort();
 const WAREHOUSES     = [...new Set(SEED_UNITS.map((u) => u.warehouse))].sort();
 const KVA_VALUES     = [...new Set(SEED_UNITS.map((u) => u.kva))].sort((a, b) => a - b).map(String);
@@ -573,7 +618,7 @@ export default function EvaluationsHistoryPage() {
             <div className="flex items-center justify-between px-6 py-4">
               <div>
                 <h1 className="text-xl font-semibold" style={{ color: "hsl(var(--foreground))" }}>Evaluation History</h1>
-                <p className="mt-0.5 text-sm" style={{ color: "hsl(var(--muted-foreground))" }}>Transformer units received for evaluation, sorted oldest to newest</p>
+                <p className="mt-0.5 text-sm" style={{ color: "hsl(var(--muted-foreground))" }}>Transformer units received for evaluation — pending first, completed history below</p>
               </div>
               <div className="flex items-center gap-2">
                 {activeFilterCount > 0 && (
