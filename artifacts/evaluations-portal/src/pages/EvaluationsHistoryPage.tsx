@@ -3,13 +3,35 @@ import { PortalHeader } from "@/components/PortalHeader";
 import { Sidebar } from "@/components/Sidebar";
 
 /* ─── Types ──────────────────────────────────────────────────────────────────── */
-type EvalStatus = "Not Started" | "In Progress" | "Completed" | "On Hold";
+type EvalStatus = "Not Started" | "In Progress" | "Completed";
 type TransformerType = "Three-Phase Pad" | "Single-Phase Pad" | "Pole Mount";
 type IntakeCategory = "Surplus" | "Recycle";
 type IntakeTag = "Base Damage" | "NPX: Rewind" | "NPX: Repair" | "NPX: Scrap";
 
-const ALL_STATUSES: EvalStatus[]       = ["Not Started", "In Progress", "Completed", "On Hold"];
+const ALL_STATUSES: EvalStatus[]       = ["Not Started", "In Progress", "Completed"];
 const ALL_CATEGORIES: IntakeCategory[] = ["Surplus", "Recycle"];
+
+/* ─── Column definitions ─────────────────────────────────────────────────────── */
+const COL_DEFS = [
+  { key: "date",    label: "Date & Time Received" },
+  { key: "mfgSerial", label: "MFG S#" },
+  { key: "icNumber",  label: "IC#" },
+  { key: "mfr",    label: "MFR" },
+  { key: "type",   label: "Type" },
+  { key: "kva",    label: "KVA" },
+  { key: "intake", label: "Intake Type" },
+  { key: "load",   label: "Load #" },
+  { key: "whs",    label: "WHS" },
+  { key: "status", label: "Status" },
+] as const;
+
+type ColKey = typeof COL_DEFS[number]["key"];
+type ColVisibility = Record<ColKey, boolean>;
+
+const DEFAULT_COL_VISIBILITY: ColVisibility = {
+  date: true, mfgSerial: true, icNumber: true, mfr: true, type: true,
+  kva: true, intake: true, load: true, whs: true, status: true,
+};
 
 /* ─── Data model ─────────────────────────────────────────────────────────────── */
 interface EvaluationUnit {
@@ -29,6 +51,10 @@ interface EvaluationUnit {
   status: EvalStatus;
 }
 
+function siteFromWarehouse(warehouse: string): string {
+  return warehouse.split(" - ")[1] ?? warehouse;
+}
+
 const SEED_UNITS: EvaluationUnit[] = [
   { id: "1",  dateReceived: "2024-07-22", timeReceived: "11:28 AM", mfgSerial: "TF-7662-M", icNumber: "185940632", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 1750, intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 194503, warehouseNumber: 18, warehouse: "18 - Houston, TX",  status: "Not Started" },
   { id: "2",  dateReceived: "2024-08-20", timeReceived: "9:53 AM",  mfgSerial: "TF-9884-K", icNumber: "221083647", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 250,  intakeCategory: "Recycle", intakeTags: ["NPX: Repair"],                 loadNumber: 425019, warehouseNumber: 55, warehouse: "55 - Dallas, TX",   status: "Not Started" },
@@ -39,29 +65,25 @@ const SEED_UNITS: EvaluationUnit[] = [
   { id: "7",  dateReceived: "2025-02-03", timeReceived: "8:05 AM",  mfgSerial: "TF-8831-G", icNumber: "554738201", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 750,  intakeCategory: "Recycle", intakeTags: ["NPX: Rewind", "NPX: Repair"],  loadNumber: 278456, warehouseNumber: 22, warehouse: "22 - Denver, CO",   status: "Not Started" },
   { id: "8",  dateReceived: "2025-02-28", timeReceived: "1:44 PM",  mfgSerial: "TF-4492-C", icNumber: "667193845", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 1500, intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Rewind"],  loadNumber: 390127, warehouseNumber: 44, warehouse: "44 - Atlanta, GA", status: "Completed" },
   { id: "9",  dateReceived: "2025-03-14", timeReceived: "4:30 PM",  mfgSerial: "TF-2278-B", icNumber: "789042316", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 3000, intakeCategory: "Recycle", intakeTags: ["NPX: Scrap"],                  loadNumber: 451803, warehouseNumber: 7,  warehouse: "07 - Atlanta, GA", status: "In Progress" },
-  { id: "10", dateReceived: "2025-04-07", timeReceived: "11:55 AM", mfgSerial: "TF-1045-A", icNumber: "823615490", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Repair"],  loadNumber: 512948, warehouseNumber: 34, warehouse: "34 - Phoenix, AZ", status: "On Hold" },
+  { id: "10", dateReceived: "2025-04-07", timeReceived: "11:55 AM", mfgSerial: "TF-1045-A", icNumber: "823615490", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Surplus", intakeTags: ["Base Damage", "NPX: Repair"],  loadNumber: 512948, warehouseNumber: 34, warehouse: "34 - Phoenix, AZ", status: "Not Started" },
 ];
 
 const ROW_INTERVAL_MS = 900;
 const MANUFACTURERS  = [...new Set(SEED_UNITS.map((u) => u.manufacturer))].sort();
 const WAREHOUSES     = [...new Set(SEED_UNITS.map((u) => u.warehouse))].sort();
 const KVA_VALUES     = [...new Set(SEED_UNITS.map((u) => u.kva))].sort((a, b) => a - b);
+const SITES          = [...new Set(SEED_UNITS.map((u) => siteFromWarehouse(u.warehouse)))].sort();
 
 /* ─── Filters ────────────────────────────────────────────────────────────────── */
 type Filters = {
-  dateFrom: string;
-  dateTo: string;
-  icNumber: string;
-  manufacturer: string;
-  kva: string;
-  warehouse: string;
-  intakeCategory: string;
-  status: string;
+  dateFrom: string; dateTo: string; icNumber: string;
+  manufacturer: string; kva: string; warehouse: string;
+  intakeCategory: string; status: string; site: string;
 };
 
 const EMPTY_FILTERS: Filters = {
   dateFrom: "", dateTo: "", icNumber: "", manufacturer: "",
-  kva: "", warehouse: "", intakeCategory: "", status: "",
+  kva: "", warehouse: "", intakeCategory: "", status: "", site: "",
 };
 
 function countActiveFilters(f: Filters): number {
@@ -114,14 +136,12 @@ const STATUS_STYLES: Record<EvalStatus, { bg: string; color: string; borderColor
   "Not Started": { bg: "rgba(100,116,139,0.08)",  color: "#64748b", borderColor: "rgba(100,116,139,0.28)" },
   "In Progress": { bg: "rgba(59,130,246,0.10)",   color: "#3b82f6", borderColor: "rgba(59,130,246,0.30)" },
   "Completed":   { bg: "rgba(34,197,94,0.10)",    color: "#16a34a", borderColor: "rgba(34,197,94,0.30)"  },
-  "On Hold":     { bg: "rgba(239,68,68,0.10)",    color: "#dc2626", borderColor: "rgba(239,68,68,0.30)"  },
 };
 
 function StatusIcon({ status }: { status: EvalStatus }) {
   const p = { width: 13, height: 13, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.25, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   if (status === "Completed")   return <svg {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
   if (status === "In Progress") return <svg {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
-  if (status === "On Hold")     return <svg {...p}><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>;
   return <svg {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
 }
 
@@ -183,8 +203,7 @@ function IntakePills({ category, tags }: { category: IntakeCategory; tags: Intak
           return (
             <span key={tag} style={{
               display: "inline-flex", alignItems: "center", gap: 4,
-              padding: "2px 8px", borderRadius: 20,
-              fontSize: 11, fontWeight: 500, whiteSpace: "nowrap",
+              padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 500, whiteSpace: "nowrap",
               background: isDamage ? "rgba(251,191,36,0.18)" : "rgba(100,116,139,0.08)",
               color:      isDamage ? "#d97706"               : "#64748b",
               border:     isDamage ? "1px solid rgba(251,191,36,0.35)" : "1px solid rgba(100,116,139,0.22)",
@@ -203,6 +222,32 @@ function IntakePills({ category, tags }: { category: IntakeCategory; tags: Intak
   );
 }
 
+/* ─── Column picker ──────────────────────────────────────────────────────────── */
+function ColumnPicker({ visibility, onChange, onClose }: { visibility: ColVisibility; onChange: (key: ColKey, val: boolean) => void; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [onClose]);
+  return (
+    <div ref={ref} style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 300, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.18)", minWidth: 200, overflow: "hidden", padding: "6px 0" }}>
+      <div style={{ padding: "8px 14px 6px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "hsl(var(--muted-foreground))" }}>
+        Columns
+      </div>
+      {COL_DEFS.map(({ key, label }) => (
+        <label key={key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 14px", cursor: "pointer", fontSize: 13, color: "hsl(var(--foreground))" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLLabelElement).style.background = "hsl(var(--muted))"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLLabelElement).style.background = "transparent"; }}>
+          <input type="checkbox" checked={visibility[key]} onChange={(e) => onChange(key, e.target.checked)}
+            style={{ width: 15, height: 15, accentColor: "#0047BB", cursor: "pointer", flexShrink: 0 }} />
+          {label}
+        </label>
+      ))}
+    </div>
+  );
+}
+
 /* ─── Comment modal ──────────────────────────────────────────────────────────── */
 function CommentModal({ icNumber, onClose }: { icNumber: string; onClose: () => void }) {
   const [text, setText] = useState("");
@@ -217,13 +262,13 @@ function CommentModal({ icNumber, onClose }: { icNumber: string; onClose: () => 
             <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>Unit: {icNumber}</p>
           </div>
           <button onClick={onClose} style={{ color: "hsl(var(--muted-foreground))", background: "none", border: "none", cursor: "pointer", padding: 4 }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
         {submitted ? (
           <div className="flex flex-col items-center py-6 gap-3">
             <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(34,197,94,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
             <p style={{ fontSize: 14, fontWeight: 500, color: "hsl(var(--foreground))" }}>Comment saved</p>
           </div>
@@ -233,7 +278,7 @@ function CommentModal({ icNumber, onClose }: { icNumber: string; onClose: () => 
               style={{ width: "100%", resize: "none", padding: "10px 12px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))", color: "hsl(var(--foreground))", fontSize: 14, outline: "none", lineHeight: 1.6, boxSizing: "border-box" }} />
             <div className="flex justify-end gap-2 mt-3">
               <button onClick={onClose} style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent", color: "hsl(var(--muted-foreground))", fontSize: 13, cursor: "pointer" }}>Cancel</button>
-              <button onClick={handleSubmit} disabled={!text.trim()} style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: text.trim() ? "#182557" : "hsl(var(--muted))", color: text.trim() ? "#fff" : "hsl(var(--muted-foreground))", fontSize: 13, fontWeight: 600, cursor: text.trim() ? "pointer" : "default", transition: "background 0.15s" }}>Save Comment</button>
+              <button onClick={handleSubmit} disabled={!text.trim()} style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: text.trim() ? "#182557" : "hsl(var(--muted))", color: text.trim() ? "#fff" : "hsl(var(--muted-foreground))", fontSize: 13, fontWeight: 600, cursor: text.trim() ? "pointer" : "default" }}>Save Comment</button>
             </div>
           </>
         )}
@@ -253,6 +298,8 @@ export default function EvaluationsHistoryPage() {
   const [spinning, setSpinning]             = useState(false);
   const [showFilters, setShowFilters]       = useState(true);
   const [filters, setFilters]               = useState<Filters>(EMPTY_FILTERS);
+  const [colVisibility, setColVisibility]   = useState<ColVisibility>(DEFAULT_COL_VISIBILITY);
+  const [showColPicker, setShowColPicker]   = useState(false);
 
   const startPopulation = useCallback(() => {
     setVisibleCount(0); setStarted(false);
@@ -261,7 +308,6 @@ export default function EvaluationsHistoryPage() {
   }, []);
 
   useEffect(() => { const t = startPopulation(); return () => clearTimeout(t); }, [refreshKey, startPopulation]);
-
   useEffect(() => {
     if (!started || visibleCount >= SEED_UNITS.length) return;
     const t = setTimeout(() => setVisibleCount((c) => c + 1), ROW_INTERVAL_MS);
@@ -287,15 +333,15 @@ export default function EvaluationsHistoryPage() {
       (!filters.kva            || unit.kva === Number(filters.kva)) &&
       (!filters.warehouse      || unit.warehouse === filters.warehouse) &&
       (!filters.intakeCategory || unit.intakeCategory === filters.intakeCategory) &&
-      (!filters.status         || status === filters.status)
+      (!filters.status         || status === filters.status) &&
+      (!filters.site           || siteFromWarehouse(unit.warehouse) === filters.site)
     );
   });
 
   const activeFilterCount = countActiveFilters(filters);
   const commentUnit = SEED_UNITS.find((u) => u.id === commentUnitId);
-
-  const COL_HEADERS = ["Date & Time Received", "MFG S#", "IC#", "MFR", "Type", "KVA", "Intake Type", "Load #", "WHS", "Status", ""];
-  const COLSPAN = COL_HEADERS.length;
+  const visibleColDefs = COL_DEFS.filter((c) => colVisibility[c.key]);
+  const COLSPAN = visibleColDefs.length + 1; // +1 for action column
 
   const thBase: React.CSSProperties = {
     color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap",
@@ -305,10 +351,15 @@ export default function EvaluationsHistoryPage() {
     textTransform: "uppercase", letterSpacing: "0.07em",
   };
 
-  /* Active Filters button: solid cobalt blue fill */
   const filterBtnStyle: React.CSSProperties = showFilters
-    ? { display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1px solid #0047BB", background: "#0047BB", color: "#fff", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "all 0.15s" }
-    : { display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent", color: "hsl(var(--foreground))", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "all 0.15s" };
+    ? { display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1px solid #0047BB", background: "#0047BB", color: "#fff", fontSize: 13, fontWeight: 500, cursor: "pointer" }
+    : { display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent", color: "hsl(var(--foreground))", fontSize: 13, fontWeight: 500, cursor: "pointer" };
+
+  const actionBtnStyle: React.CSSProperties = {
+    display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8,
+    border: "1px solid hsl(var(--border))", background: "transparent",
+    color: "hsl(var(--foreground))", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "background 0.15s",
+  };
 
   const CARD: React.CSSProperties = {
     background: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
@@ -318,10 +369,8 @@ export default function EvaluationsHistoryPage() {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "hsl(var(--background))", color: "hsl(var(--foreground))" }}>
       <PortalHeader />
-
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-
         <main className="flex-1 overflow-auto p-6 lg:p-8" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
           {/* ── 1. Header card ── */}
@@ -332,10 +381,8 @@ export default function EvaluationsHistoryPage() {
                 <p className="mt-0.5 text-sm" style={{ color: "hsl(var(--muted-foreground))" }}>Transformer units received for evaluation, sorted oldest to newest</p>
               </div>
               <div className="flex items-center gap-2">
-                {/* Filter toggle — solid blue when active */}
-                <button
-                  onClick={() => { setShowFilters((v) => !v); if (showFilters) setFilters(EMPTY_FILTERS); }}
-                  style={filterBtnStyle}
+                {/* Filters */}
+                <button onClick={() => { setShowFilters((v) => !v); if (showFilters) setFilters(EMPTY_FILTERS); }} style={filterBtnStyle}
                   onMouseEnter={(e) => { if (!showFilters) (e.currentTarget as HTMLButtonElement).style.background = "hsl(var(--muted))"; }}
                   onMouseLeave={(e) => { if (!showFilters) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
@@ -348,14 +395,29 @@ export default function EvaluationsHistoryPage() {
                     </span>
                   )}
                 </button>
+
+                {/* Columns */}
+                <div style={{ position: "relative" }}>
+                  <button onClick={() => setShowColPicker((v) => !v)} style={actionBtnStyle}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "hsl(var(--muted))"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    Columns
+                  </button>
+                  {showColPicker && (
+                    <ColumnPicker visibility={colVisibility} onChange={(key, val) => setColVisibility((prev) => ({ ...prev, [key]: val }))} onClose={() => setShowColPicker(false)} />
+                  )}
+                </div>
+
                 {/* Refresh */}
-                <button onClick={handleRefresh} title="Refresh"
-                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent", color: "hsl(var(--foreground))", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "background 0.15s" }}
+                <button onClick={handleRefresh} title="Refresh" style={actionBtnStyle}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "hsl(var(--muted))"; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"
                     style={{ transition: "transform 0.6s ease", transform: spinning ? "rotate(360deg)" : "rotate(0deg)" }}>
-                    <polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-.04-6.5" />
+                    <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.04-6.5"/>
                   </svg>
                   Refresh
                 </button>
@@ -363,10 +425,10 @@ export default function EvaluationsHistoryPage() {
             </div>
           </div>
 
-          {/* ── 2. Filter card (separate block, 2-row layout) ── */}
+          {/* ── 2. Filter card (2-row layout) ── */}
           {showFilters && (
             <div style={CARD}>
-              {/* Row 1: Date range, IC #, Manufacturer, Type (locked), Intake Type */}
+              {/* Row 1: Date, IC#, Manufacturer, Type, Intake Type, Site */}
               <div style={{ display: "flex", alignItems: "flex-end", gap: 12, padding: "16px 20px 12px", flexWrap: "wrap" }}>
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Date Received</span>
@@ -376,47 +438,44 @@ export default function EvaluationsHistoryPage() {
                     <input type="date" value={filters.dateTo} onChange={(e) => setFilter("dateTo", e.target.value)} style={DATE_INPUT} />
                   </div>
                 </div>
-
-                <div style={{ display: "flex", flexDirection: "column", minWidth: 140 }}>
+                <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>IC #</span>
                   <FInput value={filters.icNumber} onChange={(v) => setFilter("icNumber", v)} placeholder="Search IC number…" style={{ width: 160 }} />
                 </div>
-
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Manufacturer</span>
                   <FSelect value={filters.manufacturer} onChange={(v) => setFilter("manufacturer", v)} options={MANUFACTURERS} placeholder="All" style={{ minWidth: 130 }} />
                 </div>
-
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Type</span>
                   <select disabled style={{ ...SELECT, opacity: 0.5, cursor: "not-allowed", minWidth: 148 }}>
                     <option>Three-Phase Pad</option>
                   </select>
                 </div>
-
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Intake Type</span>
                   <FSelect value={filters.intakeCategory} onChange={(v) => setFilter("intakeCategory", v)} options={ALL_CATEGORIES} placeholder="All" style={{ minWidth: 120 }} />
                 </div>
               </div>
 
-              {/* Row 2: KVA, Warehouse, Status, Clear all */}
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 12, padding: "0 20px 16px", flexWrap: "wrap", borderTop: "1px solid hsl(var(--border))", paddingTop: 12 }}>
+              {/* Row 2: KVA, Warehouse, Status, Site, Clear all */}
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 12, padding: "0 20px 16px", paddingTop: 12, flexWrap: "wrap", borderTop: "1px solid hsl(var(--border))" }}>
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={LABEL}>KVA</span>
-                  <FSelect value={filters.kva} onChange={(v) => setFilter("kva", v)} options={KVA_VALUES.map(String)} placeholder="All" style={{ minWidth: 100 }} />
+                  <span style={LABEL}>Site</span>
+                  <FSelect value={filters.site} onChange={(v) => setFilter("site", v)} options={SITES} placeholder="All Sites" style={{ minWidth: 150 }} />
                 </div>
-
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Warehouse</span>
                   <FSelect value={filters.warehouse} onChange={(v) => setFilter("warehouse", v)} options={WAREHOUSES} placeholder="All" style={{ minWidth: 180 }} />
                 </div>
-
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={LABEL}>KVA</span>
+                  <FSelect value={filters.kva} onChange={(v) => setFilter("kva", v)} options={KVA_VALUES.map(String)} placeholder="All" style={{ minWidth: 100 }} />
+                </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Status</span>
                   <FSelect value={filters.status} onChange={(v) => setFilter("status", v)} options={ALL_STATUSES} placeholder="All" style={{ minWidth: 140 }} />
                 </div>
-
                 {activeFilterCount > 0 && (
                   <button onClick={() => setFilters(EMPTY_FILTERS)}
                     style={{ alignSelf: "flex-end", marginBottom: 1, fontSize: 12, color: "#0047BB", background: "none", border: "none", cursor: "pointer", whiteSpace: "nowrap", padding: "0 4px", fontWeight: 500, height: 34 }}>
@@ -427,16 +486,17 @@ export default function EvaluationsHistoryPage() {
             </div>
           )}
 
-          {/* ── 3. Table card (flex-1, scrollable) ── */}
+          {/* ── 3. Table card ── */}
           <div style={{ ...CARD, flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             {visibleCount === 0 ? <EmptyState /> : (
               <div style={{ flex: 1, overflowY: "auto" }}>
                 <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
                   <thead>
                     <tr>
-                      {COL_HEADERS.map((col, i) => (
-                        <th key={i} style={{ ...thBase, padding: i === COLSPAN - 1 ? "0 12px" : "0 16px" }}>{col}</th>
+                      {visibleColDefs.map((col) => (
+                        <th key={col.key} style={thBase}>{col.label}</th>
                       ))}
+                      <th style={{ ...thBase, padding: "0 12px" }}></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -454,44 +514,41 @@ export default function EvaluationsHistoryPage() {
                       const status: EvalStatus = statuses[unit.id] ?? unit.status;
                       const isDropdownOpen = openDropdownId === unit.id;
                       const { date, time } = formatDateTime(unit.dateReceived, unit.timeReceived);
+                      const show = colVisibility;
                       return (
                         <tr key={unit.id}
                           style={{ borderBottom: idx < filteredRows.length - 1 ? "1px solid hsl(var(--border))" : undefined, animation: "fadeSlideIn 0.4s ease-out" }}
                           onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "hsl(var(--muted) / 0.4)"; }}
                           onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "transparent"; }}>
-
-                          <td className="px-4 py-3" style={{ whiteSpace: "nowrap" }}>
-                            <div style={{ fontSize: 13, color: "hsl(var(--foreground))" }}>{date}</div>
-                            <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 1 }}>{time}</div>
-                          </td>
-
-                          <td className="px-4 py-3 font-mono font-semibold" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.mfgSerial}</td>
-                          <td className="px-4 py-3 font-mono" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.icNumber}</td>
-                          <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", fontSize: 13 }}>{unit.manufacturer}</td>
-                          <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.transformerType}</td>
-                          <td className="px-4 py-3 font-medium" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.kva.toLocaleString()}</td>
-
-                          <td className="px-4 py-3">
-                            <IntakePills category={unit.intakeCategory} tags={unit.intakeTags} />
-                          </td>
-
-                          <td className="px-4 py-3 font-mono" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.loadNumber.toLocaleString()}</td>
-                          <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", fontSize: 13 }}>{unit.warehouseNumber}</td>
-
-                          <td className="px-4 py-3" style={{ position: "relative" }}>
-                            <div style={{ position: "relative", display: "inline-block" }}>
-                              <StatusBadge status={status} onClick={(e) => { e.stopPropagation(); setOpenDropdownId(isDropdownOpen ? null : unit.id); }} />
-                              {isDropdownOpen && <StatusDropdown current={status} onSelect={(s) => setStatuses((prev) => ({ ...prev, [unit.id]: s }))} onClose={() => setOpenDropdownId(null)} />}
-                            </div>
-                          </td>
-
+                          {show.date && (
+                            <td className="px-4 py-3" style={{ whiteSpace: "nowrap" }}>
+                              <div style={{ fontSize: 13, color: "hsl(var(--foreground))" }}>{date}</div>
+                              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 1 }}>{time}</div>
+                            </td>
+                          )}
+                          {show.mfgSerial && <td className="px-4 py-3 font-mono font-semibold" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.mfgSerial}</td>}
+                          {show.icNumber  && <td className="px-4 py-3 font-mono" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.icNumber}</td>}
+                          {show.mfr      && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", fontSize: 13 }}>{unit.manufacturer}</td>}
+                          {show.type     && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.transformerType}</td>}
+                          {show.kva      && <td className="px-4 py-3 font-medium" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.kva.toLocaleString()}</td>}
+                          {show.intake   && <td className="px-4 py-3"><IntakePills category={unit.intakeCategory} tags={unit.intakeTags} /></td>}
+                          {show.load     && <td className="px-4 py-3 font-mono" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.loadNumber}</td>}
+                          {show.whs      && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", fontSize: 13 }}>{unit.warehouseNumber}</td>}
+                          {show.status   && (
+                            <td className="px-4 py-3" style={{ position: "relative" }}>
+                              <div style={{ position: "relative", display: "inline-block" }}>
+                                <StatusBadge status={status} onClick={(e) => { e.stopPropagation(); setOpenDropdownId(isDropdownOpen ? null : unit.id); }} />
+                                {isDropdownOpen && <StatusDropdown current={status} onSelect={(s) => setStatuses((prev) => ({ ...prev, [unit.id]: s }))} onClose={() => setOpenDropdownId(null)} />}
+                              </div>
+                            </td>
+                          )}
                           <td className="px-3 py-3">
                             <button onClick={() => setCommentUnitId(unit.id)} title="Add comment"
                               style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid hsl(var(--border))", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "hsl(var(--muted-foreground))", transition: "color 0.15s, background 0.15s" }}
                               onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.color = "hsl(var(--foreground))"; b.style.background = "hsl(var(--muted))"; }}
                               onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.color = "hsl(var(--muted-foreground))"; b.style.background = "transparent"; }}>
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                               </svg>
                             </button>
                           </td>
@@ -525,7 +582,7 @@ function EmptyState() {
     <div className="flex flex-col items-center justify-center py-20 px-6 text-center" style={{ minHeight: 280 }}>
       <div className="rounded-full flex items-center justify-center mb-4" style={{ width: 52, height: 52, background: "hsl(var(--muted))" }}>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
         </svg>
       </div>
       <p className="font-medium mb-1" style={{ color: "hsl(var(--foreground))", fontSize: 15 }}>No units currently awaiting evaluation.</p>
