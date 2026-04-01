@@ -330,8 +330,8 @@ function WarehouseTooltip({ warehouse }: { warehouse: string }) {
 /* ─── Active user lock pill ──────────────────────────────────────────────────── */
 function ActiveUserPill({ user }: { user: ActiveUser }) {
   return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 5, padding: "3px 8px 3px 5px", borderRadius: 20, background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))", fontSize: 11, fontWeight: 500, color: "hsl(var(--foreground))", whiteSpace: "nowrap" }}>
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 5, padding: "3px 8px 3px 5px", borderRadius: 20, background: "#F0F8FF", border: "1px solid #C7DFFE", fontSize: 11, fontWeight: 500, color: "#2563EB", whiteSpace: "nowrap" }}>
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#93C5FD" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
       </svg>
       <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, background: user.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>
