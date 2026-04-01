@@ -316,7 +316,7 @@ function ActiveUserPill({ user }: { user: ActiveUser }) {
 }
 
 /* ─── Column picker ──────────────────────────────────────────────────────────── */
-function ColumnPicker({ visibility, onChange, onClose }: { visibility: ColVisibility; onChange: (key: ColKey, val: boolean) => void; onClose: () => void }) {
+function ColumnPicker({ visibility, onChange, onClose, onReset }: { visibility: ColVisibility; onChange: (key: ColKey, val: boolean) => void; onClose: () => void; onReset: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
@@ -325,7 +325,14 @@ function ColumnPicker({ visibility, onChange, onClose }: { visibility: ColVisibi
   }, [onClose]);
   return (
     <div ref={ref} style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 300, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.18)", minWidth: 210, overflow: "hidden", padding: "6px 0" }}>
-      <div style={{ padding: "8px 14px 6px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "hsl(var(--muted-foreground))" }}>Columns</div>
+      <div style={{ padding: "8px 14px 6px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "hsl(var(--muted-foreground))" }}>Columns</span>
+        <button onClick={onReset} style={{ fontSize: 11, fontWeight: 500, color: "#0047BB", background: "none", border: "none", cursor: "pointer", padding: "1px 4px", borderRadius: 4 }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,71,187,0.08)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}>
+          Reset
+        </button>
+      </div>
       {COL_DEFS.map(({ key, label }) => (
         <label key={key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 14px", cursor: "pointer", fontSize: 13, color: "hsl(var(--foreground))" }}
           onMouseEnter={(e) => { (e.currentTarget as HTMLLabelElement).style.background = "hsl(var(--muted))"; }}
@@ -505,7 +512,7 @@ export default function EvaluationsHistoryPage() {
                     Columns
                   </button>
                   {showColPicker && (
-                    <ColumnPicker visibility={colVisibility} onChange={(key, val) => setColVisibility((prev) => ({ ...prev, [key]: val }))} onClose={() => setShowColPicker(false)} />
+                    <ColumnPicker visibility={colVisibility} onChange={(key, val) => setColVisibility((prev) => ({ ...prev, [key]: val }))} onClose={() => setShowColPicker(false)} onReset={() => setColVisibility(DEFAULT_COL_VISIBILITY)} />
                   )}
                 </div>
 
