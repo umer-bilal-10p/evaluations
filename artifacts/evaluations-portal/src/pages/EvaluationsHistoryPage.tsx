@@ -159,18 +159,18 @@ const SITES          = ["ALEL", "CABA", "COGJ", "KSOC", "KSSO", "PASH", "TNDE", 
 
 /* ─── Filters ────────────────────────────────────────────────────────────────── */
 type Filters = {
-  dateFrom: string; dateTo: string; icNumber: string;
+  dateFrom: string; dateTo: string; icNumber: string; loadNumber: string;
   manufacturer: string[]; kva: string[]; warehouse: string[];
   intakeCategory: string[]; status: string[]; site: string[];
 };
 const EMPTY_FILTERS: Filters = {
-  dateFrom: "", dateTo: "", icNumber: "",
+  dateFrom: "", dateTo: "", icNumber: "", loadNumber: "",
   manufacturer: [], kva: [], warehouse: [],
   intakeCategory: [], status: [], site: [],
 };
 function countActiveFilters(f: Filters): number {
   let n = 0;
-  if (f.dateFrom) n++; if (f.dateTo) n++; if (f.icNumber) n++;
+  if (f.dateFrom) n++; if (f.dateTo) n++; if (f.icNumber) n++; if (f.loadNumber) n++;
   if (f.manufacturer.length) n++; if (f.kva.length) n++;
   if (f.warehouse.length) n++; if (f.intakeCategory.length) n++;
   if (f.status.length) n++; if (f.site.length) n++;
@@ -566,6 +566,7 @@ export default function EvaluationsHistoryPage() {
       (!filters.dateFrom          || unit.dateReceived >= filters.dateFrom) &&
       (!filters.dateTo            || unit.dateReceived <= filters.dateTo) &&
       (!filters.icNumber          || unit.icNumber.includes(filters.icNumber)) &&
+      (!filters.loadNumber        || String(unit.loadNumber).includes(filters.loadNumber)) &&
       (!filters.manufacturer.length || filters.manufacturer.includes(unit.manufacturer)) &&
       (!filters.kva.length        || filters.kva.includes(String(unit.kva))) &&
       (!filters.warehouse.length  || filters.warehouse.includes(unit.warehouse)) &&
@@ -708,11 +709,15 @@ export default function EvaluationsHistoryPage() {
                   <MultiSelect value={filters.kva} onChange={(v) => setFilter("kva", v)} options={KVA_VALUES} placeholder="All" style={{ width: "100%" }} />
                 </div>
               </div>
-              {/* Row 2: Intake Type · Warehouse · Status · Site */}
+              {/* Row 2: Intake Type · Load # · Warehouse · Status · Site */}
               <div style={{ display: "flex", alignItems: "flex-end", gap: 10, padding: "12px 20px 16px", borderTop: "1px solid hsl(var(--border))" }}>
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Intake Type</span>
                   <MultiSelect value={filters.intakeCategory} onChange={(v) => setFilter("intakeCategory", v)} options={ALL_CATEGORIES} placeholder="All" style={{ width: "100%" }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                  <span style={LABEL}>Load #</span>
+                  <FInput value={filters.loadNumber} onChange={(v) => setFilter("loadNumber", v)} placeholder="Search load number…" />
                 </div>
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Warehouse</span>
