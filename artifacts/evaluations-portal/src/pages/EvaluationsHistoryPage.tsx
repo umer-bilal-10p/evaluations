@@ -223,18 +223,46 @@ function MultiSelect({ value, onChange, options, placeholder, style }: {
     return () => document.removeEventListener("mousedown", h);
   }, []);
   const toggle = (opt: string) => onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt]);
-  const displayText = value.length === 0 ? placeholder : value.length === 1 ? value[0] : `${value.length} selected`;
+  const remove = (e: React.MouseEvent, opt: string) => { e.stopPropagation(); onChange(value.filter((v) => v !== opt)); };
   return (
     <div ref={ref} style={{ position: "relative", ...style }}>
-      <button onClick={() => setOpen((v) => !v)} style={{
-        ...FIELD, display: "flex", alignItems: "center", cursor: "pointer",
-        backgroundImage: SELECT_ARROW, backgroundRepeat: "no-repeat",
-        backgroundPosition: "right 9px center", paddingRight: 28, textAlign: "left",
-        color: value.length > 0 ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))",
+      {/* Trigger: pill container */}
+      <div onClick={() => setOpen((v) => !v)} style={{
+        ...FIELD, height: "auto", minHeight: 34, display: "flex", flexWrap: "wrap",
+        alignItems: "center", gap: 4, padding: value.length > 0 ? "4px 28px 4px 5px" : "0 28px 0 10px",
+        cursor: "pointer", boxSizing: "border-box",
         border: open ? "1px solid #0047BB" : "1px solid hsl(var(--border))",
       }}>
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{displayText}</span>
-      </button>
+        {value.length === 0 ? (
+          <span style={{ color: "hsl(var(--muted-foreground))", fontSize: 13, lineHeight: "24px", userSelect: "none" }}>{placeholder}</span>
+        ) : value.map((opt) => (
+          <span key={opt} style={{
+            display: "inline-flex", alignItems: "center", gap: 4,
+            background: "rgba(0,71,187,0.09)", color: "#0047BB",
+            border: "1px solid rgba(0,71,187,0.22)", borderRadius: 5,
+            fontSize: 12, fontWeight: 500, padding: "1px 5px 1px 7px",
+            lineHeight: "20px", whiteSpace: "nowrap", userSelect: "none",
+          }}>
+            {opt}
+            <span onClick={(e) => remove(e, opt)} style={{
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              width: 14, height: 14, borderRadius: 3, cursor: "pointer",
+              color: "#0047BB", opacity: 0.7, fontSize: 14, lineHeight: 1,
+              flexShrink: 0,
+            }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLSpanElement).style.opacity = "1"; (e.currentTarget as HTMLSpanElement).style.background = "rgba(0,71,187,0.15)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLSpanElement).style.opacity = "0.7"; (e.currentTarget as HTMLSpanElement).style.background = "transparent"; }}
+            >×</span>
+          </span>
+        ))}
+      </div>
+      {/* Chevron arrow */}
+      <span style={{ position: "absolute", right: 9, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", display: "flex", alignItems: "center" }}>
+        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1 1l4 4 4-4" stroke="#888" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </span>
+      {/* Dropdown */}
       {open && (
         <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 400, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.14)", minWidth: "100%", maxHeight: 220, overflowY: "auto", padding: "4px 0" }}>
           {options.map((opt) => (
