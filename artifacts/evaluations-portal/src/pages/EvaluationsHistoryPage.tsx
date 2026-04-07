@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useDemoContext } from "@/context/DemoContext";
 
 /* ─── Types ──────────────────────────────────────────────────────────────────── */
 type EvalStatus = "Not Started" | "In Progress" | "Completed";
@@ -549,6 +550,7 @@ function CommentModal({ unit, onClose }: { unit: EvaluationUnit; onClose: () => 
 
 /* ─── Main page ──────────────────────────────────────────────────────────────── */
 export default function EvaluationsHistoryPage() {
+  const { setCurrentPage, setSelectedUnit } = useDemoContext();
   const [visibleCount, setVisibleCount]     = useState(0);
   const [started, setStarted]               = useState(false);
   const [statuses, setStatuses]             = useState<Record<string, EvalStatus>>({});
@@ -927,6 +929,20 @@ export default function EvaluationsHistoryPage() {
                               </span>
                             ) : (
                               <button
+                                onClick={() => {
+                                  setSelectedUnit({
+                                    id: unit.id,
+                                    manufacturer: unit.manufacturer,
+                                    icNumber: unit.icNumber,
+                                    mfgSerial: unit.mfgSerial,
+                                    kva: unit.kva,
+                                    site: unit.site,
+                                    hasBaseDamage: unit.intakeTags.includes("Base Damage"),
+                                    loadNumber: String(unit.loadNumber),
+                                    transformerType: unit.transformerType,
+                                  });
+                                  setCurrentPage("nameplate");
+                                }}
                                 style={{ padding: "5px 14px", borderRadius: 7, border: "1px solid #0047BB", background: "transparent", color: "#0047BB", fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "background 0.15s, color 0.15s" }}
                                 onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "#0047BB"; b.style.color = "#fff"; }}
                                 onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.background = "transparent"; b.style.color = "#0047BB"; }}>

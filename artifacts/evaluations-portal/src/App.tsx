@@ -9,6 +9,7 @@ import { DemoNav } from "@/components/DemoNav";
 import LoginPage from "@/pages/LoginPage";
 import HomePage from "@/pages/HomePage";
 import EvaluationsHistoryPage from "@/pages/EvaluationsHistoryPage";
+import NameplatePage from "@/pages/NameplatePage";
 
 const queryClient = new QueryClient();
 const msalInstance = new PublicClientApplication(msalConfig);
@@ -21,6 +22,7 @@ function AppContent() {
       {currentPage === "login" && <LoginPage />}
       {currentPage === "home" && <HomePage />}
       {currentPage === "evaluations-history" && <EvaluationsHistoryPage />}
+      {currentPage === "nameplate" && <NameplatePage />}
       <DemoNav />
     </>
   );

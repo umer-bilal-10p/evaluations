@@ -40,6 +40,8 @@ export function Sidebar() {
   const { currentPage, setCurrentPage } = useDemoContext();
   const [expanded, setExpanded] = useState(false);
 
+  const isNameplate = currentPage === "nameplate";
+
   return (
     <div
       className="relative flex-shrink-0"
@@ -64,7 +66,7 @@ export function Sidebar() {
       >
         <div style={{ padding: "12px 8px", width: EXPANDED_W }}>
           {NAV_ITEMS.map((item) => {
-            const isActive = currentPage === item.id;
+            const isActive = currentPage === item.id || (item.id === "evaluations-history" && isNameplate);
             return (
               <button
                 key={item.id}

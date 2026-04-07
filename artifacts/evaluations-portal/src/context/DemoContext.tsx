@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
-export type DemoPage = "login" | "home" | "evaluations-history";
+export type DemoPage = "login" | "home" | "evaluations-history" | "nameplate";
 
 export interface DemoPageDef {
   id: DemoPage;
@@ -11,7 +11,20 @@ export const DEMO_PAGES: DemoPageDef[] = [
   { id: "login", label: "Login" },
   { id: "home", label: "Home" },
   { id: "evaluations-history", label: "Evaluations History" },
+  { id: "nameplate", label: "Nameplate" },
 ];
+
+export interface SelectedUnitInfo {
+  id: string;
+  manufacturer: string;
+  icNumber: string;
+  mfgSerial: string;
+  kva: number;
+  site: string;
+  hasBaseDamage: boolean;
+  loadNumber: string;
+  transformerType: string;
+}
 
 const DEMO_USER = {
   name: "James Mitchell",
@@ -28,12 +41,15 @@ interface DemoContextType {
   user: typeof DEMO_USER;
   isDark: boolean;
   toggleDark: () => void;
+  selectedUnit: SelectedUnitInfo | null;
+  setSelectedUnit: (unit: SelectedUnitInfo | null) => void;
 }
 
 const DemoContext = createContext<DemoContextType | null>(null);
 
 export function DemoProvider({ children }: { children: ReactNode }) {
   const [currentPage, setCurrentPage] = useState<DemoPage>("login");
+  const [selectedUnit, setSelectedUnit] = useState<SelectedUnitInfo | null>(null);
 
   const [isDark, setIsDark] = useState<boolean>(() => {
     try {
@@ -59,7 +75,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
 
   return (
     <DemoContext.Provider
-      value={{ currentPage, setCurrentPage, user: DEMO_USER, isDark, toggleDark }}
+      value={{ currentPage, setCurrentPage, user: DEMO_USER, isDark, toggleDark, selectedUnit, setSelectedUnit }}
     >
       {children}
     </DemoContext.Provider>
