@@ -217,7 +217,7 @@ function MsLogoHeader() {
         <rect x="0" y="11" width="10" height="10" fill="#00a4ef" />
         <rect x="11" y="11" width="10" height="10" fill="#ffb900" />
       </svg>
-      <span style={{ fontFamily: "'Segoe UI', sans-serif", fontSize: 18, fontWeight: 300, color: "#737373", letterSpacing: "-0.01em" }}>Microsoft</span>
+      <span style={{ fontSize: 18, fontWeight: 300, color: "#737373", letterSpacing: "-0.01em" }}>Microsoft</span>
     </div>
   );
 }

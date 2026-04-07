@@ -195,7 +195,7 @@ const FIELD: React.CSSProperties = {
   height: 34, fontSize: 13, padding: "0 10px", borderRadius: 7,
   border: "1px solid hsl(var(--border))", background: "hsl(var(--background))",
   color: "hsl(var(--foreground))", outline: "none", boxSizing: "border-box",
-  lineHeight: "34px", width: "100%",
+  lineHeight: "34px", width: "100%", fontFamily: "inherit",
 };
 const SELECT_ARROW = `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E")`;
 const LABEL: React.CSSProperties = {
@@ -529,16 +529,16 @@ function CommentModal({ unit, onClose }: { unit: EvaluationUnit; onClose: () => 
             autoFocus value={newText} onChange={(e) => setNewText(e.target.value)}
             placeholder="Leave a comment…" rows={3}
             onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit(); }}
-            style={{ width: "100%", resize: "none", padding: "10px 12px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))", color: "hsl(var(--foreground))", fontSize: 13, outline: "none", lineHeight: 1.6, boxSizing: "border-box", transition: "border-color 0.15s" }}
+            style={{ width: "100%", resize: "none", padding: "10px 12px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))", color: "hsl(var(--foreground))", fontSize: 13, outline: "none", lineHeight: 1.6, boxSizing: "border-box", transition: "border-color 0.15s", fontFamily: "inherit" }}
             onFocus={(e) => { (e.target as HTMLTextAreaElement).style.borderColor = "#0047BB"; }}
             onBlur={(e) => { (e.target as HTMLTextAreaElement).style.borderColor = "hsl(var(--border))"; }}
           />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
             <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>⌘↵ to submit</span>
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={onClose} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent", color: "hsl(var(--muted-foreground))", fontSize: 13, cursor: "pointer" }}>Cancel</button>
+              <button onClick={onClose} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "transparent", color: "hsl(var(--muted-foreground))", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
               <button onClick={handleSubmit} disabled={!newText.trim() || submitting}
-                style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: newText.trim() ? "#182557" : "hsl(var(--muted))", color: newText.trim() ? "#fff" : "hsl(var(--muted-foreground))", fontSize: 13, fontWeight: 600, cursor: newText.trim() ? "pointer" : "default", transition: "background 0.15s" }}>
+                style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: newText.trim() ? "#182557" : "hsl(var(--muted))", color: newText.trim() ? "#fff" : "hsl(var(--muted-foreground))", fontSize: 13, fontWeight: 600, cursor: newText.trim() ? "pointer" : "default", transition: "background 0.15s", fontFamily: "inherit" }}>
                 {submitting ? "Posting…" : "Post Comment"}
               </button>
             </div>
