@@ -126,7 +126,7 @@ function MsEmailStep({ email, setEmail, error, onNext, onKeyDown, onCancel }: { 
       <h1 className="mt-4 text-[1.4rem] font-semibold text-[#1b1b1b] leading-tight">Sign in</h1>
       <div className="mt-6">
         <input autoFocus type="email" placeholder="Email, phone, or Skype" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={onKeyDown}
-          className={`w-full border-b-2 ${error ? "border-[#a80000]" : "border-[#666]"} focus:border-[#182557] outline-none py-2 text-[15px] text-[#1b1b1b] bg-transparent transition-colors placeholder:text-[#666]`} />
+          className={`w-full border-b-2 font-sans ${error ? "border-[#a80000]" : "border-[#666]"} focus:border-[#182557] outline-none py-2 text-[15px] text-[#1b1b1b] bg-transparent transition-colors placeholder:text-[#666]`} />
         {error && (
           <div className="mt-2 flex items-start gap-1.5">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="shrink-0 mt-px">
@@ -158,7 +158,7 @@ function MsPasswordStep({ email, password, setPassword, error, onSignIn, onKeyDo
       <h1 className="mt-3 text-[1.4rem] font-semibold text-[#1b1b1b] leading-tight">Enter password</h1>
       <div className="mt-6">
         <input autoFocus type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={onKeyDown}
-          className={`w-full border-b-2 ${error ? "border-[#a80000]" : "border-[#666]"} focus:border-[#182557] outline-none py-2 text-[15px] text-[#1b1b1b] bg-transparent transition-colors placeholder:text-[#666]`} />
+          className={`w-full border-b-2 font-sans ${error ? "border-[#a80000]" : "border-[#666]"} focus:border-[#182557] outline-none py-2 text-[15px] text-[#1b1b1b] bg-transparent transition-colors placeholder:text-[#666]`} />
         {error && (
           <div className="mt-2 flex items-start gap-1.5">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="shrink-0 mt-px">

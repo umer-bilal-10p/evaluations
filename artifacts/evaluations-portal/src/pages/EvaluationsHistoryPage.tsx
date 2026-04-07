@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { PortalHeader } from "@/components/PortalHeader";
 import { Sidebar } from "@/components/Sidebar";
+import { Input } from "@/components/ui/input";
 
 /* ─── Types ──────────────────────────────────────────────────────────────────── */
 type EvalStatus = "Not Started" | "In Progress" | "Completed";
@@ -197,10 +198,10 @@ const FIELD: React.CSSProperties = {
   color: "hsl(var(--foreground))", outline: "none", boxSizing: "border-box",
   lineHeight: "34px", width: "100%", fontFamily: "inherit",
 };
-const SELECT_ARROW = `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E")`;
 const LABEL: React.CSSProperties = {
   display: "block", fontSize: 10, fontWeight: 600, textTransform: "uppercase",
   letterSpacing: "0.07em", color: "hsl(var(--muted-foreground))", marginBottom: 4, whiteSpace: "nowrap",
+  fontFamily: "inherit",
 };
 const CARD: React.CSSProperties = {
   background: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
@@ -208,7 +209,15 @@ const CARD: React.CSSProperties = {
 };
 
 function FInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
-  return <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={FIELD} />;
+  return (
+    <Input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="h-[34px] text-[13px] rounded-[7px] font-sans"
+    />
+  );
 }
 
 /* ─── Multi-select ───────────────────────────────────────────────────────────── */
@@ -711,11 +720,13 @@ export default function EvaluationsHistoryPage() {
                 <div style={{ flex: 2, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Date Received</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                    <input type="date" value={filters.dateFrom} onChange={(e) => setFilter("dateFrom", e.target.value)}
-                      style={{ ...FIELD, flex: 1, minWidth: 0, width: "auto", colorScheme: "inherit" as React.CSSProperties["colorScheme"] }} />
+                    <Input type="date" value={filters.dateFrom} onChange={(e) => setFilter("dateFrom", e.target.value)}
+                      className="h-[34px] text-[13px] rounded-[7px] font-sans flex-1 min-w-0 w-auto"
+                      style={{ colorScheme: "inherit" as React.CSSProperties["colorScheme"] }} />
                     <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", flexShrink: 0 }}>–</span>
-                    <input type="date" value={filters.dateTo} onChange={(e) => setFilter("dateTo", e.target.value)}
-                      style={{ ...FIELD, flex: 1, minWidth: 0, width: "auto", colorScheme: "inherit" as React.CSSProperties["colorScheme"] }} />
+                    <Input type="date" value={filters.dateTo} onChange={(e) => setFilter("dateTo", e.target.value)}
+                      className="h-[34px] text-[13px] rounded-[7px] font-sans flex-1 min-w-0 w-auto"
+                      style={{ colorScheme: "inherit" as React.CSSProperties["colorScheme"] }} />
                   </div>
                 </div>
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
@@ -728,9 +739,17 @@ export default function EvaluationsHistoryPage() {
                 </div>
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Type</span>
-                  <select disabled style={{ ...FIELD, width: "100%", appearance: "none", opacity: 0.5, cursor: "not-allowed", backgroundImage: SELECT_ARROW, backgroundRepeat: "no-repeat", backgroundPosition: "right 9px center", paddingRight: 28 }}>
-                    <option>Three-Phase Pad</option>
-                  </select>
+                  <div style={{ position: "relative" }}>
+                    <Input
+                      readOnly disabled value="Three-Phase Pad"
+                      className="h-[34px] text-[13px] rounded-[7px] font-sans w-full pr-7 opacity-50 cursor-not-allowed"
+                    />
+                    <span style={{ position: "absolute", right: 9, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", display: "flex", alignItems: "center" }}>
+                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1 1l4 4 4-4" stroke="#888" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </span>
+                  </div>
                 </div>
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>KVA</span>
