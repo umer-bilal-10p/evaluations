@@ -3,7 +3,6 @@ import { PortalHeader } from "@/components/PortalHeader";
 import { Sidebar } from "@/components/Sidebar";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 
 /* ─── Types ──────────────────────────────────────────────────────────────────── */
 type EvalStatus = "Not Started" | "In Progress" | "Completed";
@@ -217,7 +216,7 @@ function FInput({ value, onChange, placeholder }: { value: string; onChange: (v:
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="h-[34px] text-[13px] rounded-[7px] font-sans"
+      className="h-[34px] text-[13px] rounded-[7px] font-sans bg-background"
     />
   );
 }
@@ -729,11 +728,11 @@ export default function EvaluationsHistoryPage() {
                   <span style={LABEL}>Date Received</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                     <Input type="date" value={filters.dateFrom} onChange={(e) => setFilter("dateFrom", e.target.value)}
-                      className="h-[34px] text-[13px] rounded-[7px] font-sans flex-1 min-w-0 w-auto"
+                      className="h-[34px] text-[13px] rounded-[7px] font-sans flex-1 min-w-0 w-auto bg-background"
                       style={{ colorScheme: "inherit" as React.CSSProperties["colorScheme"] }} />
                     <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", flexShrink: 0 }}>–</span>
                     <Input type="date" value={filters.dateTo} onChange={(e) => setFilter("dateTo", e.target.value)}
-                      className="h-[34px] text-[13px] rounded-[7px] font-sans flex-1 min-w-0 w-auto"
+                      className="h-[34px] text-[13px] rounded-[7px] font-sans flex-1 min-w-0 w-auto bg-background"
                       style={{ colorScheme: "inherit" as React.CSSProperties["colorScheme"] }} />
                   </div>
                 </div>
@@ -750,7 +749,7 @@ export default function EvaluationsHistoryPage() {
                   <div style={{ position: "relative" }}>
                     <Input
                       readOnly disabled value="Three-Phase Pad"
-                      className="h-[34px] text-[13px] rounded-[7px] font-sans w-full pr-7 opacity-50 cursor-not-allowed"
+                      className="h-[34px] text-[13px] rounded-[7px] font-sans w-full pr-7 bg-muted text-muted-foreground cursor-not-allowed disabled:opacity-100"
                     />
                     <span style={{ position: "absolute", right: 9, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", display: "flex", alignItems: "center" }}>
                       <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -859,13 +858,13 @@ export default function EvaluationsHistoryPage() {
                               <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 1 }}>{time}</div>
                             </td>
                           )}
-                          {show.mfgSerial  && <td className="px-4 py-3 whitespace-nowrap"><Badge variant="outline" className="font-sans font-semibold text-[12px] tracking-wide">{unit.mfgSerial}</Badge></td>}
-                          {show.icNumber   && <td className="px-4 py-3 whitespace-nowrap"><Badge variant="outline" className="font-sans font-medium text-[12px] tracking-wide">{unit.icNumber}</Badge></td>}
+                          {show.mfgSerial  && <td className="px-4 py-3 whitespace-nowrap font-semibold" style={{ color: "hsl(var(--foreground))", fontSize: 13 }}>{unit.mfgSerial}</td>}
+                          {show.icNumber   && <td className="px-4 py-3 whitespace-nowrap" style={{ color: "hsl(var(--foreground))", fontSize: 13 }}>{unit.icNumber}</td>}
                           {show.mfr        && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", fontSize: 13 }}>{unit.manufacturer}</td>}
                           {show.type       && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.transformerType}</td>}
                           {show.kva        && <td className="px-4 py-3 font-medium" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.kva.toLocaleString()}</td>}
                           {show.intake     && <td className="px-4 py-3"><IntakePills category={unit.intakeCategory} tags={unit.intakeTags} /></td>}
-                          {show.load       && <td className="px-4 py-3 whitespace-nowrap"><Badge variant="outline" className="font-sans font-medium text-[12px]">{unit.loadNumber}</Badge></td>}
+                          {show.load       && <td className="px-4 py-3 whitespace-nowrap" style={{ color: "hsl(var(--foreground))", fontSize: 13 }}>{unit.loadNumber}</td>}
 
                           {show.whs && (
                             <td className="px-4 py-3" style={{ whiteSpace: "nowrap" }}>
