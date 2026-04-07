@@ -1,8 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, forwardRef } from "react";
 import { PortalHeader } from "@/components/PortalHeader";
 import { Sidebar } from "@/components/Sidebar";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 /* ─── Types ──────────────────────────────────────────────────────────────────── */
 type EvalStatus = "Not Started" | "In Progress" | "Completed";
@@ -226,55 +229,54 @@ function MultiSelect({ value, onChange, options, placeholder, style }: {
   value: string[]; onChange: (v: string[]) => void; options: string[]; placeholder: string; style?: React.CSSProperties;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, []);
   const toggle = (opt: string) => onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt]);
   const remove = (e: React.MouseEvent, opt: string) => { e.stopPropagation(); onChange(value.filter((v) => v !== opt)); };
   return (
-    <div ref={ref} style={{ position: "relative", ...style }}>
-      {/* Trigger: pill container */}
-      <div onClick={() => setOpen((v) => !v)} style={{
-        ...FIELD, height: "auto", minHeight: 34, display: "flex", flexWrap: "wrap",
-        alignItems: "center", gap: 4, padding: value.length > 0 ? "4px 28px 4px 5px" : "0 28px 0 10px",
-        cursor: "pointer", boxSizing: "border-box",
-        border: open ? "1px solid #0047BB" : "1px solid hsl(var(--border))",
-      }}>
-        {value.length === 0 ? (
-          <span style={{ color: "hsl(var(--muted-foreground))", fontSize: 13, lineHeight: "24px", userSelect: "none" }}>{placeholder}</span>
-        ) : value.map((opt) => (
-          <span key={opt} style={{
-            display: "inline-flex", alignItems: "center", gap: 4,
-            background: "rgba(0,71,187,0.09)", color: "#0047BB",
-            border: "1px solid rgba(0,71,187,0.22)", borderRadius: 5,
-            fontSize: 12, fontWeight: 500, padding: "1px 5px 1px 7px",
-            lineHeight: "20px", whiteSpace: "nowrap", userSelect: "none",
+    <div style={{ position: "relative", ...style }}>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <div style={{
+            ...FIELD, position: "relative", height: "auto", minHeight: 34, display: "flex", flexWrap: "wrap",
+            alignItems: "center", gap: 4, padding: value.length > 0 ? "4px 28px 4px 5px" : "0 28px 0 10px",
+            cursor: "pointer", boxSizing: "border-box",
+            border: open ? "1px solid #0047BB" : "1px solid hsl(var(--border))",
           }}>
-            {opt}
-            <span onClick={(e) => remove(e, opt)} style={{
-              display: "inline-flex", alignItems: "center", justifyContent: "center",
-              width: 14, height: 14, borderRadius: 3, cursor: "pointer",
-              color: "#0047BB", opacity: 0.7, fontSize: 14, lineHeight: 1,
-              flexShrink: 0,
-            }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLSpanElement).style.opacity = "1"; (e.currentTarget as HTMLSpanElement).style.background = "rgba(0,71,187,0.15)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLSpanElement).style.opacity = "0.7"; (e.currentTarget as HTMLSpanElement).style.background = "transparent"; }}
-            >×</span>
-          </span>
-        ))}
-      </div>
-      {/* Chevron arrow */}
-      <span style={{ position: "absolute", right: 9, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", display: "flex", alignItems: "center" }}>
-        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1 1l4 4 4-4" stroke="#888" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </span>
-      {/* Dropdown */}
-      {open && (
-        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 400, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.14)", minWidth: "100%", maxHeight: 220, overflowY: "auto", padding: "4px 0" }}>
+            {value.length === 0 ? (
+              <span style={{ color: "hsl(var(--muted-foreground))", fontSize: 13, lineHeight: "24px", userSelect: "none" }}>{placeholder}</span>
+            ) : value.map((opt) => (
+              <span key={opt} style={{
+                display: "inline-flex", alignItems: "center", gap: 4,
+                background: "rgba(0,71,187,0.09)", color: "#0047BB",
+                border: "1px solid rgba(0,71,187,0.22)", borderRadius: 5,
+                fontSize: 12, fontWeight: 500, padding: "1px 5px 1px 7px",
+                lineHeight: "20px", whiteSpace: "nowrap", userSelect: "none",
+              }}>
+                {opt}
+                <span onClick={(e) => remove(e, opt)} style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 14, height: 14, borderRadius: 3, cursor: "pointer",
+                  color: "#0047BB", opacity: 0.7, fontSize: 14, lineHeight: 1,
+                  flexShrink: 0,
+                }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLSpanElement).style.opacity = "1"; (e.currentTarget as HTMLSpanElement).style.background = "rgba(0,71,187,0.15)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLSpanElement).style.opacity = "0.7"; (e.currentTarget as HTMLSpanElement).style.background = "transparent"; }}
+                >×</span>
+              </span>
+            ))}
+            {/* Chevron arrow */}
+            <span style={{ position: "absolute", right: 9, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", display: "flex", alignItems: "center" }}>
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 1l4 4 4-4" stroke="#888" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </span>
+          </div>
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          sideOffset={4}
+          className="p-0 max-h-[220px] overflow-y-auto"
+          style={{ width: "var(--radix-popover-trigger-width)" }}
+        >
           {options.map((opt) => (
             <div key={opt}
               onClick={() => toggle(opt)}
@@ -290,8 +292,8 @@ function MultiSelect({ value, onChange, options, placeholder, style }: {
               {opt}
             </div>
           ))}
-        </div>
-      )}
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
@@ -315,43 +317,23 @@ function StatusIcon({ status }: { status: EvalStatus }) {
   return <svg {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
 }
 
-function StatusBadge({ status, onClick }: { status: EvalStatus; onClick: (e: React.MouseEvent) => void }) {
-  const s = STATUS_STYLES[status];
-  return (
-    <button onClick={onClick} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
-      style={{ background: s.bg, color: s.color, border: `1px solid ${s.borderColor}`, cursor: "pointer", whiteSpace: "nowrap" }} title="Click to change status">
-      <StatusIcon status={status} />{status}
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
-        <polyline points="6 9 12 15 18 9" />
-      </svg>
-    </button>
-  );
-}
-
-function StatusDropdown({ current, onSelect, onClose }: { current: EvalStatus; onSelect: (s: EvalStatus) => void; onClose: () => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, [onClose]);
-  return (
-    <div ref={ref} style={{ position: "absolute", zIndex: 200, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.18)", minWidth: 160, overflow: "hidden", marginTop: 4 }}>
-      {ALL_STATUSES.map((s) => {
-        const st = STATUS_STYLES[s];
-        return (
-          <button key={s} onClick={() => { onSelect(s); onClose(); }}
-            style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: s === current ? st.bg : "transparent", border: "none", cursor: "pointer", textAlign: "left", color: s === current ? st.color : "hsl(var(--foreground))", fontSize: 13, fontWeight: s === current ? 600 : 400 }}
-            onMouseEnter={(e) => { if (s !== current) (e.currentTarget as HTMLButtonElement).style.background = "hsl(var(--muted))"; }}
-            onMouseLeave={(e) => { if (s !== current) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
-            <span style={{ color: st.color }}><StatusIcon status={s} /></span>{s}
-            {s === current && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ marginLeft: "auto", color: st.color }}><polyline points="20 6 9 17 4 12" /></svg>}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+const StatusBadge = forwardRef<HTMLButtonElement, { status: EvalStatus } & React.ButtonHTMLAttributes<HTMLButtonElement>>(
+  ({ status, ...props }, ref) => {
+    const s = STATUS_STYLES[status];
+    return (
+      <button ref={ref} {...props}
+        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
+        style={{ background: s.bg, color: s.color, border: `1px solid ${s.borderColor}`, cursor: "pointer", whiteSpace: "nowrap" }}
+        title="Click to change status">
+        <StatusIcon status={status} />{status}
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+    );
+  }
+);
+StatusBadge.displayName = "StatusBadge";
 
 /* ─── Intake pills
  *  Colors extracted from tablet app screenshot:
@@ -570,7 +552,6 @@ export default function EvaluationsHistoryPage() {
   const [visibleCount, setVisibleCount]     = useState(0);
   const [started, setStarted]               = useState(false);
   const [statuses, setStatuses]             = useState<Record<string, EvalStatus>>({});
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [commentUnitId, setCommentUnitId]   = useState<string | null>(null);
   const [refreshKey, setRefreshKey]         = useState(0);
   const [spinning, setSpinning]             = useState(false);
@@ -841,7 +822,6 @@ export default function EvaluationsHistoryPage() {
                       </td></tr>
                     ) : sortedRows.map((unit, idx) => {
                       const status: EvalStatus = statuses[unit.id] ?? unit.status;
-                      const isDropdownOpen = openDropdownId === unit.id;
                       const { date, time } = formatDateTime(unit.dateReceived, unit.timeReceived);
                       const site = unit.site;
                       const hasComments = unit.comments.length > 0;
@@ -877,10 +857,26 @@ export default function EvaluationsHistoryPage() {
                             <td className="px-4 py-3" style={{ position: "relative" }}>
                               {/* Status badge + comment button side by side */}
                               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                <div style={{ position: "relative", display: "inline-block" }}>
-                                  <StatusBadge status={status} onClick={(e) => { e.stopPropagation(); setOpenDropdownId(isDropdownOpen ? null : unit.id); }} />
-                                  {isDropdownOpen && <StatusDropdown current={status} onSelect={(s) => setStatuses((prev) => ({ ...prev, [unit.id]: s }))} onClose={() => setOpenDropdownId(null)} />}
-                                </div>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <StatusBadge status={status} />
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="start" className="min-w-[160px]">
+                                    {ALL_STATUSES.map((s) => {
+                                      const st = STATUS_STYLES[s];
+                                      return (
+                                        <DropdownMenuItem key={s}
+                                          onClick={() => setStatuses((prev) => ({ ...prev, [unit.id]: s }))}
+                                          className={cn("text-[13px] cursor-pointer gap-2", s === status ? "font-semibold" : "font-normal")}
+                                          style={{ color: s === status ? st.color : undefined }}>
+                                          <span style={{ color: st.color }}><StatusIcon status={s} /></span>
+                                          {s}
+                                          {s === status && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ marginLeft: "auto", color: st.color }}><polyline points="20 6 9 17 4 12" /></svg>}
+                                        </DropdownMenuItem>
+                                      );
+                                    })}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                                 {/* Comment button — orange if unread */}
                                 <button onClick={() => setCommentUnitId(unit.id)} title={isUnread ? "Unread comment" : hasComments ? "View comments" : "Add comment"}
                                   style={{ position: "relative", width: 28, height: 28, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "background 0.15s, color 0.15s",
