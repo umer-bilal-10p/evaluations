@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { PortalHeader } from "@/components/PortalHeader";
 import { Sidebar } from "@/components/Sidebar";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 
 /* ─── Types ──────────────────────────────────────────────────────────────────── */
 type EvalStatus = "Not Started" | "In Progress" | "Completed";
@@ -275,13 +277,19 @@ function MultiSelect({ value, onChange, options, placeholder, style }: {
       {open && (
         <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 400, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.14)", minWidth: "100%", maxHeight: 220, overflowY: "auto", padding: "4px 0" }}>
           {options.map((opt) => (
-            <label key={opt} style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 12px", cursor: "pointer", fontSize: 13, color: "hsl(var(--foreground))", userSelect: "none", background: value.includes(opt) ? "rgba(0,71,187,0.06)" : "transparent" }}
-              onMouseEnter={(e) => { if (!value.includes(opt)) (e.currentTarget as HTMLLabelElement).style.background = "hsl(var(--muted))"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLLabelElement).style.background = value.includes(opt) ? "rgba(0,71,187,0.06)" : "transparent"; }}>
-              <input type="checkbox" checked={value.includes(opt)} onChange={() => toggle(opt)}
-                style={{ width: 14, height: 14, accentColor: "#0047BB", cursor: "pointer", flexShrink: 0 }} />
+            <div key={opt}
+              onClick={() => toggle(opt)}
+              style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 12px", cursor: "pointer", fontSize: 13, fontFamily: "inherit", color: "hsl(var(--foreground))", userSelect: "none", background: value.includes(opt) ? "rgba(0,71,187,0.06)" : "transparent" }}
+              onMouseEnter={(e) => { if (!value.includes(opt)) (e.currentTarget as HTMLDivElement).style.background = "hsl(var(--muted))"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = value.includes(opt) ? "rgba(0,71,187,0.06)" : "transparent"; }}>
+              <Checkbox
+                checked={value.includes(opt)}
+                onCheckedChange={() => {}}
+                tabIndex={-1}
+                className="h-[14px] w-[14px] shrink-0 rounded-[3px] border-[#0047BB] data-[state=checked]:bg-[#0047BB] data-[state=checked]:border-[#0047BB] pointer-events-none"
+              />
               {opt}
-            </label>
+            </div>
           ))}
         </div>
       )}
@@ -851,13 +859,13 @@ export default function EvaluationsHistoryPage() {
                               <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 1 }}>{time}</div>
                             </td>
                           )}
-                          {show.mfgSerial  && <td className="px-4 py-3 font-mono font-semibold" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.mfgSerial}</td>}
-                          {show.icNumber   && <td className="px-4 py-3 font-mono" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.icNumber}</td>}
+                          {show.mfgSerial  && <td className="px-4 py-3 whitespace-nowrap"><Badge variant="outline" className="font-sans font-semibold text-[12px] tracking-wide">{unit.mfgSerial}</Badge></td>}
+                          {show.icNumber   && <td className="px-4 py-3 whitespace-nowrap"><Badge variant="outline" className="font-sans font-medium text-[12px] tracking-wide">{unit.icNumber}</Badge></td>}
                           {show.mfr        && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", fontSize: 13 }}>{unit.manufacturer}</td>}
                           {show.type       && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.transformerType}</td>}
                           {show.kva        && <td className="px-4 py-3 font-medium" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.kva.toLocaleString()}</td>}
                           {show.intake     && <td className="px-4 py-3"><IntakePills category={unit.intakeCategory} tags={unit.intakeTags} /></td>}
-                          {show.load       && <td className="px-4 py-3 font-mono" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.loadNumber}</td>}
+                          {show.load       && <td className="px-4 py-3 whitespace-nowrap"><Badge variant="outline" className="font-sans font-medium text-[12px]">{unit.loadNumber}</Badge></td>}
 
                           {show.whs && (
                             <td className="px-4 py-3" style={{ whiteSpace: "nowrap" }}>
