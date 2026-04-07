@@ -940,6 +940,7 @@ export default function EvaluationsHistoryPage() {
                                     hasBaseDamage: unit.intakeTags.includes("Base Damage"),
                                     loadNumber: String(unit.loadNumber),
                                     transformerType: unit.transformerType,
+                                    intakeTags: unit.intakeTags.filter((t: string) => !t.includes("Base Damage")),
                                   });
                                   setCurrentPage("nameplate");
                                 }}

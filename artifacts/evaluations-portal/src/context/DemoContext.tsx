@@ -24,6 +24,7 @@ export interface SelectedUnitInfo {
   hasBaseDamage: boolean;
   loadNumber: string;
   transformerType: string;
+  intakeTags: string[];
 }
 
 const DEMO_USER = {

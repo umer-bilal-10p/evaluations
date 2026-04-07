@@ -18,6 +18,7 @@ const DEFAULT_NAMEPLATE = {
   loadNumber: "LN-4821",
   transformerType: "Three-Phase Pad",
   hasBaseDamage: true,
+  intakeTags: ["NPX: Rewind"],
 };
 
 const IDENTIFICATION = {
@@ -564,6 +565,15 @@ export default function NameplatePage() {
                   Base Damage
                 </span>
               )}
+              {(unit.intakeTags ?? []).map((tag: string) => (
+                <span key={tag} style={{
+                  fontSize: 11, fontWeight: 600, color: "#E0F2FE",
+                  background: "rgba(14,165,233,0.18)", border: "1px solid rgba(14,165,233,0.35)",
+                  borderRadius: 6, padding: "2px 9px",
+                }}>
+                  {tag}
+                </span>
+              ))}
             </div>
 
             {/* Edit / Done button */}
