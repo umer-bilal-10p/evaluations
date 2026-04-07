@@ -703,8 +703,7 @@ export default function NameplatePage() {
                   />
 
                   <div>
-                    <FieldLabel label="Serial Number" required />
-                    <Field label="" value={IDENTIFICATION.serialNumber} editMode={editMode} required />
+                    <Field label="Serial Number" value={IDENTIFICATION.serialNumber} editMode={editMode} required />
                     <AiChip label={IDENTIFICATION.aiSerial} />
                   </div>
 
@@ -795,10 +794,10 @@ export default function NameplatePage() {
                     required
                     options={["Delta", "Wye", "Delta/Wye"]}
                   />
-                  <Field label="HV 1 Configuration" value={HV.hv1Config} editMode={false} required />
+                  <Field label="HV 1 Configuration" value={HV.hv1Config} editMode={editMode} required />
 
                   <Field label="HV 1 Delta" value={HV.hv1Delta} editMode={editMode} required />
-                  <Field label="HV 3 Configuration" value={HV.hv3Config} editMode={false} required />
+                  <Field label="HV 3 Configuration" value={HV.hv3Config} editMode={editMode} required />
                   <Field label="HV 2 Delta" value={HV.hv2Delta} editMode={editMode} required />
 
                   <Field label="HV 2 Wye" value={HV.hv2Wye} editMode={editMode} required />
@@ -847,11 +846,11 @@ export default function NameplatePage() {
                     required
                     options={[LV.nominalVoltage, "208Y/120", "480Y/277", "240/120"]}
                   />
-                  <Field label="LV 1 Configuration" value={LV.lv1Config} editMode={false} required />
+                  <Field label="LV 1 Configuration" value={LV.lv1Config} editMode={editMode} required />
                   <Field label="LV1 Delta" value={LV.lv1Delta} editMode={editMode} required />
 
                   <Field label="LV 1 Wye" value={LV.lv1Wye} editMode={editMode} required />
-                  <Field label="LV 2 Configuration" value={LV.lv2Config} editMode={false} required />
+                  <Field label="LV 2 Configuration" value={LV.lv2Config} editMode={editMode} required />
                   <Field label="LV 2 Delta" value={LV.lv2Delta} editMode={editMode} required />
 
                   <Field label="LV 2 Wye" value={LV.lv2Wye} editMode={editMode} required />
