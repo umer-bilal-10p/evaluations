@@ -120,9 +120,6 @@ function SectionHeader({ title, confidence }: { title: string; confidence: numbe
         <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "hsl(var(--foreground))" }}>
           {title}
         </span>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "hsl(var(--muted-foreground))", opacity: 0.6 }}>
-          <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-        </svg>
       </div>
       <ConfidenceBadge pct={confidence} />
     </div>
@@ -133,20 +130,6 @@ function FieldLabel({ label, required }: { label: string; required?: boolean }) 
   return (
     <div style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--muted-foreground))", marginBottom: 5, letterSpacing: "0.02em" }}>
       {label}{required && <span style={{ color: "#DC2626", marginLeft: 2 }}>*</span>}
-    </div>
-  );
-}
-
-function ReadVal({ value, muted, error }: { value: string; muted?: boolean; error?: boolean }) {
-  return (
-    <div style={{
-      height: 36, borderRadius: 7, border: `1px solid ${error ? "#FCA5A5" : "hsl(var(--border))"}`,
-      background: muted ? "hsl(var(--muted))" : error ? "#FFF1F2" : "hsl(var(--muted))",
-      padding: "0 12px", display: "flex", alignItems: "center",
-      fontSize: 13, color: value ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))",
-      fontFamily: "inherit",
-    }}>
-      {value || "—"}
     </div>
   );
 }
@@ -175,7 +158,94 @@ function ErrorMsg({ msg }: { msg: string }) {
   );
 }
 
-function SwitchField({ label, value, editMode, onChange }: { label: string; value: boolean; editMode: boolean; onChange?: (v: boolean) => void; }) {
+/* ─── Unified Field — shadcn Input in readOnly or editable state ──────────── */
+function Field({
+  label,
+  value,
+  editMode,
+  required,
+  error,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  editMode: boolean;
+  required?: boolean;
+  error?: boolean;
+  placeholder?: string;
+}) {
+  return (
+    <div>
+      <FieldLabel label={label} required={required} />
+      <Input
+        defaultValue={value}
+        readOnly={!editMode}
+        placeholder={editMode ? placeholder : undefined}
+        className={cn(
+          "h-9 text-sm",
+          !editMode && "bg-muted border-muted cursor-default focus-visible:ring-0 focus-visible:ring-offset-0",
+          editMode && "bg-background",
+          error && editMode && "border-red-400 focus-visible:ring-red-400",
+          error && !editMode && "border-red-300 bg-red-50 dark:bg-red-950/20",
+        )}
+      />
+    </div>
+  );
+}
+
+/* ─── Unified Select — shadcn Select disabled in view mode ──────────────────── */
+function SelectField({
+  label,
+  value,
+  editMode,
+  required,
+  options,
+}: {
+  label: string;
+  value: string;
+  editMode: boolean;
+  required?: boolean;
+  options: string[];
+}) {
+  if (!editMode) {
+    return (
+      <div>
+        <FieldLabel label={label} required={required} />
+        <Input
+          value={value || "—"}
+          readOnly
+          className="h-9 text-sm bg-muted border-muted cursor-default focus-visible:ring-0 focus-visible:ring-offset-0"
+        />
+      </div>
+    );
+  }
+  return (
+    <div>
+      <FieldLabel label={label} required={required} />
+      <Select defaultValue={value}>
+        <SelectTrigger className="h-9 bg-background text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+/* ─── Switch field ──────────────────────────────────────────────────────────── */
+function SwitchField({
+  label,
+  value,
+  editMode,
+  onChange,
+}: {
+  label: string;
+  value: boolean;
+  editMode: boolean;
+  onChange?: (v: boolean) => void;
+}) {
   return (
     <div>
       <FieldLabel label={label} required />
@@ -190,22 +260,13 @@ function SwitchField({ label, value, editMode, onChange }: { label: string; valu
           disabled={!editMode}
           className={cn(
             "data-[state=checked]:bg-[#0047BB]",
-            !editMode && "opacity-100 cursor-default"
+            !editMode && "opacity-100 cursor-default",
           )}
         />
         <span style={{ fontSize: 13, fontWeight: 500, color: value ? "#0047BB" : "hsl(var(--muted-foreground))" }}>
           {value ? "Yes" : "No"}
         </span>
       </div>
-    </div>
-  );
-}
-
-function ReadOnlyField({ label, value, required }: { label: string; value: string; required?: boolean }) {
-  return (
-    <div>
-      <FieldLabel label={label} required={required} />
-      <ReadVal value={value} muted />
     </div>
   );
 }
@@ -295,6 +356,127 @@ function TapTable({ taps, editMode }: { taps: typeof HV.taps; editMode: boolean 
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Nameplate image card with IC overlay ──────────────────────────────────── */
+function NameplateImageCard({ icNumber, manufacturer, mfgSerial, kva }: {
+  icNumber: string;
+  manufacturer: string;
+  mfgSerial: string;
+  kva: number;
+}) {
+  return (
+    <div style={{
+      background: "hsl(var(--card))",
+      border: "1px solid hsl(var(--border))",
+      borderRadius: 10,
+      padding: 16,
+      marginBottom: 12,
+      display: "flex",
+      gap: 16,
+      alignItems: "flex-start",
+    }}>
+      {/* Simulated nameplate image with IC overlay */}
+      <div style={{
+        width: 200,
+        height: 120,
+        borderRadius: 8,
+        overflow: "hidden",
+        flexShrink: 0,
+        position: "relative",
+        border: "1px solid hsl(var(--border))",
+        background: "linear-gradient(135deg, #1a1f2e 0%, #2a3350 40%, #1e2640 100%)",
+      }}>
+        {/* Simulated nameplate text rows */}
+        <div style={{ padding: "10px 10px 6px", display: "flex", flexDirection: "column", gap: 3, height: "100%", boxSizing: "border-box" }}>
+          <div style={{
+            fontSize: 9, fontWeight: 800, color: "#e2e8f0", letterSpacing: "0.1em",
+            textTransform: "uppercase", borderBottom: "1px solid rgba(255,255,255,0.2)",
+            paddingBottom: 3, marginBottom: 1,
+          }}>
+            {manufacturer} · Distribution Transformer
+          </div>
+          {[
+            ["SERIAL", mfgSerial],
+            ["KVA", `${kva.toLocaleString()} ONAN`],
+            ["HV", "12470D / 12470GRD"],
+            ["LV", "480GRD/Y/277"],
+            ["IMP %", "5.75   HZ 60"],
+          ].map(([k, v]) => (
+            <div key={k} style={{ display: "flex", gap: 5, alignItems: "baseline" }}>
+              <span style={{ fontSize: 7, fontWeight: 700, color: "rgba(255,255,255,0.45)", width: 28, flexShrink: 0 }}>{k}</span>
+              <span style={{ fontSize: 8, fontWeight: 600, color: "#cbd5e1", letterSpacing: "0.04em", fontFamily: "monospace" }}>{v}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* IC# overlay — top-right badge */}
+        <div style={{
+          position: "absolute", top: 6, right: 6,
+          background: "rgba(0,71,187,0.92)",
+          borderRadius: 5,
+          padding: "2px 6px",
+          fontSize: 9, fontWeight: 700, color: "#fff",
+          letterSpacing: "0.05em",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
+          backdropFilter: "blur(2px)",
+        }}>
+          IC {icNumber}
+        </div>
+
+        {/* Photo quality indicator — bottom-left */}
+        <div style={{
+          position: "absolute", bottom: 5, left: 6,
+          display: "flex", alignItems: "center", gap: 3,
+        }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#FBBF24" }} />
+          <span style={{ fontSize: 7, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>Low quality</span>
+        </div>
+
+        {/* Capture timestamp — bottom-right */}
+        <div style={{
+          position: "absolute", bottom: 5, right: 6,
+          fontSize: 7, color: "rgba(255,255,255,0.45)", fontFamily: "monospace",
+        }}>
+          {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+        </div>
+      </div>
+
+      {/* Metadata beside image */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 1 }}>
+            IC: {icNumber}
+          </div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+            {manufacturer} · {mfgSerial} · {kva.toLocaleString()} kVA
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#047857", flexShrink: 0 }}>
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          <span style={{ fontSize: 11, color: "#047857", fontWeight: 500 }}>AI extraction complete</span>
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+          {["Blurry", "Underexposed", "Off angle"].map((tag) => (
+            <span key={tag} style={{
+              fontSize: 10, fontWeight: 500,
+              background: "#FEF3C7", border: "1px solid #FCD34D", color: "#92400E",
+              borderRadius: 20, padding: "1px 7px",
+            }}>
+              {tag}
+            </span>
+          ))}
+        </div>
+        <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+          Image quality issues detected — may reduce AI accuracy
+        </div>
       </div>
     </div>
   );
@@ -500,136 +682,47 @@ export default function NameplatePage() {
                 AI has successfully extracted data. Review and confirm the values below.
               </div>
 
-              {/* Nameplate image card */}
-              <div style={{
-                background: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: 10,
-                padding: 16,
-                marginBottom: 12,
-                display: "flex",
-                gap: 16,
-                alignItems: "flex-start",
-              }}>
-                {/* Image placeholder */}
-                <div style={{
-                  width: 120, height: 80, borderRadius: 7,
-                  background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0, overflow: "hidden", position: "relative",
-                }}>
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "hsl(var(--muted-foreground))", opacity: 0.4 }}>
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
-                    <polyline points="21 15 16 10 5 21"/>
-                  </svg>
-                </div>
-
-                {/* Metadata */}
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 3 }}>
-                    IC: {unit.icNumber}
-                  </div>
-                  <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginBottom: 8 }}>
-                    {unit.manufacturer} · {unit.mfgSerial} · {unit.kva.toLocaleString()} kVA · Captured just now
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#047857" }}>
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-                    </svg>
-                    <span style={{ fontSize: 11, color: "#047857", fontWeight: 500 }}>AI extraction complete</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* AI issue tags */}
-              <div style={{
-                display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
-                marginBottom: 20,
-              }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#92400E" }}>Issues detected</span>
-                {["Blurry", "Underexposed", "Off angle"].map((tag) => (
-                  <span key={tag} style={{
-                    fontSize: 11, fontWeight: 500,
-                    background: "#FEF3C7", border: "1px solid #FCD34D", color: "#92400E",
-                    borderRadius: 20, padding: "1px 9px",
-                  }}>
-                    {tag}
-                  </span>
-                ))}
-                <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>— may reduce AI accuracy</span>
-              </div>
+              {/* Nameplate image card with IC overlay */}
+              <NameplateImageCard
+                icNumber={unit.icNumber}
+                manufacturer={unit.manufacturer}
+                mfgSerial={unit.mfgSerial}
+                kva={unit.kva}
+              />
 
               {/* ── IDENTIFICATION ──────────────────────────────────────── */}
               <Section>
                 <SectionHeader title="Identification" confidence={87} />
                 <FieldGrid>
-                  {/* Manufacturer */}
-                  <div>
-                    <FieldLabel label="Manufacturer" required />
-                    {editMode ? (
-                      <Select defaultValue={IDENTIFICATION.manufacturer}>
-                        <SelectTrigger className="h-9 bg-background text-sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {["Siemens", "ABB", "Eaton", "General Electric", "Schneider Electric", "Square D"].map((m) => (
-                            <SelectItem key={m} value={m}>{m}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <ReadVal value={IDENTIFICATION.manufacturer} />
-                    )}
-                  </div>
+                  <SelectField
+                    label="Manufacturer"
+                    value={IDENTIFICATION.manufacturer}
+                    editMode={editMode}
+                    required
+                    options={["Siemens", "ABB", "Eaton", "General Electric", "Schneider Electric", "Square D"]}
+                  />
 
-                  {/* Serial Number */}
                   <div>
                     <FieldLabel label="Serial Number" required />
-                    {editMode ? (
-                      <Input defaultValue={IDENTIFICATION.serialNumber} className="h-9 bg-background text-sm" />
-                    ) : (
-                      <ReadVal value={IDENTIFICATION.serialNumber} />
-                    )}
+                    <Field label="" value={IDENTIFICATION.serialNumber} editMode={editMode} required />
                     <AiChip label={IDENTIFICATION.aiSerial} />
                   </div>
 
-                  {/* Unit Type */}
-                  <div>
-                    <FieldLabel label="Unit Type" required />
-                    {editMode ? (
-                      <Select defaultValue={IDENTIFICATION.unitType}>
-                        <SelectTrigger className="h-9 bg-background text-sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {["Three-Phase Pad", "Single-Phase Pad", "Pole Mount"].map((t) => (
-                            <SelectItem key={t} value={t}>{t}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <ReadVal value={IDENTIFICATION.unitType} />
-                    )}
-                  </div>
+                  <SelectField
+                    label="Unit Type"
+                    value={IDENTIFICATION.unitType}
+                    editMode={editMode}
+                    required
+                    options={["Three-Phase Pad", "Single-Phase Pad", "Pole Mount"]}
+                  />
 
-                  {/* Year Manufactured */}
-                  <div>
-                    <FieldLabel label="Year Manufactured" required />
-                    {editMode ? (
-                      <Select defaultValue={IDENTIFICATION.yearManufactured}>
-                        <SelectTrigger className="h-9 bg-background text-sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: 40 }, (_, i) => String(2024 - i)).map((y) => (
-                            <SelectItem key={y} value={y}>{y}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <ReadVal value={IDENTIFICATION.yearManufactured} />
-                    )}
-                  </div>
+                  <SelectField
+                    label="Year Manufactured"
+                    value={IDENTIFICATION.yearManufactured}
+                    editMode={editMode}
+                    required
+                    options={Array.from({ length: 40 }, (_, i) => String(2024 - i))}
+                  />
                 </FieldGrid>
               </Section>
 
@@ -637,84 +730,50 @@ export default function NameplatePage() {
               <Section>
                 <SectionHeader title="Ratings" confidence={91} />
                 <FieldGrid>
-                  <div>
-                    <FieldLabel label="KVA Base" required />
-                    {editMode ? <Input defaultValue={RATINGS.kvaBase} className="h-9 bg-background text-sm" /> : <ReadVal value={RATINGS.kvaBase} />}
-                  </div>
-                  <div>
-                    <FieldLabel label="KVA Fan Base" required />
-                    {editMode ? <Input defaultValue={RATINGS.kvaFanBase} placeholder="e.g. 2,000" className="h-9 bg-background text-sm" /> : <ReadVal value={RATINGS.kvaFanBase} />}
-                  </div>
-                  <div>
-                    <FieldLabel label="KVA Higher Rating" required />
-                    {editMode ? <Input defaultValue={RATINGS.kvaHigherRating} placeholder="e.g. 2,100" className="h-9 bg-background text-sm" /> : <ReadVal value={RATINGS.kvaHigherRating} />}
-                  </div>
-                  <div>
-                    <FieldLabel label="KVA Fan Higher Rating" required />
-                    {editMode ? <Input defaultValue={RATINGS.kvaFanHigherRating} placeholder="e.g. 2,200" className="h-9 bg-background text-sm" /> : <ReadVal value={RATINGS.kvaFanHigherRating} />}
-                  </div>
-                  <div>
-                    <FieldLabel label="Cooling Class" required />
-                    {editMode ? (
-                      <Select defaultValue={RATINGS.coolingClass}>
-                        <SelectTrigger className="h-9 bg-background text-sm"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {["ONAN", "ONAF", "ONAN/ONAF", "OFAF", "ODAF"].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    ) : <ReadVal value={RATINGS.coolingClass} />}
-                  </div>
-                  <div>
-                    <FieldLabel label="Rise (°C)" required />
-                    {editMode ? <Input defaultValue={RATINGS.rise} className="h-9 bg-background text-sm" /> : <ReadVal value={RATINGS.rise} />}
-                  </div>
-                  <div>
-                    <FieldLabel label="Frequency" required />
-                    {editMode ? <Input defaultValue={RATINGS.frequency} className="h-9 bg-background text-sm" /> : <ReadVal value={RATINGS.frequency} />}
-                  </div>
-                  <div>
-                    <FieldLabel label="Impedance %" required />
-                    {editMode ? <Input defaultValue={RATINGS.impedance} className="h-9 bg-background text-sm" /> : <ReadVal value={RATINGS.impedance} />}
-                  </div>
-                  <div>
-                    <FieldLabel label="Oil Type" required />
-                    {editMode ? (
-                      <Select defaultValue={RATINGS.oilType}>
-                        <SelectTrigger className="h-9 bg-background text-sm"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {["Mineral Oil", "Silicone", "Natural Ester", "Synthetic Ester"].map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    ) : <ReadVal value={RATINGS.oilType} />}
-                  </div>
+                  <Field label="KVA Base" value={RATINGS.kvaBase} editMode={editMode} required />
+                  <Field label="KVA Fan Base" value={RATINGS.kvaFanBase} editMode={editMode} required placeholder="e.g. 2,000" />
+                  <Field label="KVA Higher Rating" value={RATINGS.kvaHigherRating} editMode={editMode} required placeholder="e.g. 2,100" />
+                  <Field label="KVA Fan Higher Rating" value={RATINGS.kvaFanHigherRating} editMode={editMode} required placeholder="e.g. 2,200" />
+
+                  <SelectField
+                    label="Cooling Class"
+                    value={RATINGS.coolingClass}
+                    editMode={editMode}
+                    required
+                    options={["ONAN", "ONAF", "ONAN/ONAF", "OFAF", "ODAF"]}
+                  />
+
+                  <Field label="Rise (°C)" value={RATINGS.rise} editMode={editMode} required />
+                  <Field label="Frequency" value={RATINGS.frequency} editMode={editMode} required />
+                  <Field label="Impedance %" value={RATINGS.impedance} editMode={editMode} required />
+
+                  <SelectField
+                    label="Oil Type"
+                    value={RATINGS.oilType}
+                    editMode={editMode}
+                    required
+                    options={["Mineral Oil", "Silicone", "Natural Ester", "Synthetic Ester"]}
+                  />
 
                   {/* Oil Volume — validation error */}
                   <div>
                     <FieldLabel label="Oil Volume (Gallons)" required />
-                    {editMode ? (
-                      <Input defaultValue={RATINGS.oilVolume} className="h-9 bg-background text-sm border-red-400 focus-visible:ring-red-400" />
-                    ) : (
-                      <ReadVal value={RATINGS.oilVolume} error />
-                    )}
+                    <Input
+                      defaultValue={RATINGS.oilVolume}
+                      readOnly={!editMode}
+                      className={cn(
+                        "h-9 text-sm",
+                        !editMode && "bg-red-50 dark:bg-red-950/20 border-red-300 cursor-default focus-visible:ring-0 focus-visible:ring-offset-0",
+                        editMode && "bg-background border-red-400 focus-visible:ring-red-400",
+                      )}
+                    />
                     <ErrorMsg msg={RATINGS.oilVolumeError} />
                   </div>
 
-                  <div>
-                    <FieldLabel label="Core &amp; Coils Weight (lbs)" required />
-                    {editMode ? <Input defaultValue={RATINGS.coreCoilsWeight} className="h-9 bg-background text-sm" /> : <ReadVal value={RATINGS.coreCoilsWeight} />}
-                  </div>
-                  <div>
-                    <FieldLabel label="Oil Weight (lbs)" required />
-                    {editMode ? <Input defaultValue={RATINGS.oilWeight} className="h-9 bg-background text-sm" /> : <ReadVal value={RATINGS.oilWeight} />}
-                  </div>
-                  <div>
-                    <FieldLabel label="Case/Tank Weight (lbs)" required />
-                    {editMode ? <Input defaultValue={RATINGS.caseTankWeight} className="h-9 bg-background text-sm" /> : <ReadVal value={RATINGS.caseTankWeight} />}
-                  </div>
-                  <div>
-                    <FieldLabel label="Total Weight (lbs)" required />
-                    {editMode ? <Input defaultValue={RATINGS.totalWeight} className="h-9 bg-background text-sm" /> : <ReadVal value={RATINGS.totalWeight} />}
-                  </div>
+                  <Field label="Core & Coils Weight (lbs)" value={RATINGS.coreCoilsWeight} editMode={editMode} required />
+                  <Field label="Oil Weight (lbs)" value={RATINGS.oilWeight} editMode={editMode} required />
+                  <Field label="Case/Tank Weight (lbs)" value={RATINGS.caseTankWeight} editMode={editMode} required />
+                  <Field label="Total Weight (lbs)" value={RATINGS.totalWeight} editMode={editMode} required />
                 </FieldGrid>
               </Section>
 
@@ -722,62 +781,38 @@ export default function NameplatePage() {
               <Section>
                 <SectionHeader title="HV Ratings" confidence={96} />
                 <FieldGrid>
-                  <div>
-                    <FieldLabel label="HV Nominal Voltage" required />
-                    {editMode ? (
-                      <Select defaultValue={HV.nominalVoltage}>
-                        <SelectTrigger className="h-9 bg-background text-sm"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {[HV.nominalVoltage, "12470Y/7200", "13800", "4160"].map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    ) : <ReadVal value={HV.nominalVoltage} />}
-                  </div>
-                  <div>
-                    <FieldLabel label="HV DY Delta" required />
-                    {editMode ? (
-                      <Select defaultValue={HV.dyDelta}>
-                        <SelectTrigger className="h-9 bg-background text-sm"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {["Delta", "Wye", "Delta/Wye"].map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    ) : <ReadVal value={HV.dyDelta} />}
-                  </div>
-                  <ReadOnlyField label="HV 1 Configuration" value={HV.hv1Config} required />
+                  <SelectField
+                    label="HV Nominal Voltage"
+                    value={HV.nominalVoltage}
+                    editMode={editMode}
+                    required
+                    options={[HV.nominalVoltage, "12470Y/7200", "13800", "4160"]}
+                  />
+                  <SelectField
+                    label="HV DY Delta"
+                    value={HV.dyDelta}
+                    editMode={editMode}
+                    required
+                    options={["Delta", "Wye", "Delta/Wye"]}
+                  />
+                  <Field label="HV 1 Configuration" value={HV.hv1Config} editMode={false} required />
 
-                  <div>
-                    <FieldLabel label="HV 1 Delta" required />
-                    {editMode ? <Input defaultValue={HV.hv1Delta} className="h-9 bg-background text-sm" /> : <ReadVal value={HV.hv1Delta} />}
-                  </div>
-                  <ReadOnlyField label="HV 3 Configuration" value={HV.hv3Config} required />
-                  <div>
-                    <FieldLabel label="HV 2 Delta" required />
-                    {editMode ? <Input defaultValue={HV.hv2Delta} className="h-9 bg-background text-sm" /> : <ReadVal value={HV.hv2Delta} />}
-                  </div>
+                  <Field label="HV 1 Delta" value={HV.hv1Delta} editMode={editMode} required />
+                  <Field label="HV 3 Configuration" value={HV.hv3Config} editMode={false} required />
+                  <Field label="HV 2 Delta" value={HV.hv2Delta} editMode={editMode} required />
 
-                  <div>
-                    <FieldLabel label="HV 2 Wye" required />
-                    {editMode ? <Input defaultValue={HV.hv2Wye} className="h-9 bg-background text-sm" /> : <ReadVal value={HV.hv2Wye} />}
-                  </div>
+                  <Field label="HV 2 Wye" value={HV.hv2Wye} editMode={editMode} required />
                   <SwitchField label="Delta Wye" value={hvDeltaWye} editMode={editMode} onChange={setHvDeltaWye} />
                   <SwitchField label="Dual Voltage" value={hvDualVoltage} editMode={editMode} onChange={setHvDualVoltage} />
 
-                  <div>
-                    <FieldLabel label="HV BIL (kV)" required />
-                    {editMode ? <Input defaultValue={HV.bil} className="h-9 bg-background text-sm" /> : <ReadVal value={HV.bil} />}
-                  </div>
-                  <div>
-                    <FieldLabel label="HV Winding Material" required />
-                    {editMode ? (
-                      <Select defaultValue={HV.windingMaterial}>
-                        <SelectTrigger className="h-9 bg-background text-sm"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {["AL", "CU"].map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    ) : <ReadVal value={HV.windingMaterial} />}
-                  </div>
+                  <Field label="HV BIL (kV)" value={HV.bil} editMode={editMode} required />
+                  <SelectField
+                    label="HV Winding Material"
+                    value={HV.windingMaterial}
+                    editMode={editMode}
+                    required
+                    options={["AL", "CU"]}
+                  />
                   <div />
                 </FieldGrid>
 
@@ -788,25 +823,15 @@ export default function NameplatePage() {
 
                 <div style={{ marginTop: 16 }}>
                   <FieldGrid>
-                    <div>
-                      <FieldLabel label="Number of Taps" required />
-                      {editMode ? <Input defaultValue={HV.numberOfTaps} className="h-9 bg-background text-sm" /> : <ReadVal value={HV.numberOfTaps} />}
-                    </div>
-                    <div>
-                      <FieldLabel label="Tap Configuration" required />
-                      {editMode ? (
-                        <Select defaultValue={HV.tapConfig}>
-                          <SelectTrigger className="h-9 bg-background text-sm"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {["1A-5E", "1A-7G", "Full Range"].map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      ) : <ReadVal value={HV.tapConfig} />}
-                    </div>
-                    <div>
-                      <FieldLabel label="Nominal Tap Position" required />
-                      {editMode ? <Input defaultValue={HV.nominalTapPos} className="h-9 bg-background text-sm" /> : <ReadVal value={HV.nominalTapPos} />}
-                    </div>
+                    <Field label="Number of Taps" value={HV.numberOfTaps} editMode={editMode} required />
+                    <SelectField
+                      label="Tap Configuration"
+                      value={HV.tapConfig}
+                      editMode={editMode}
+                      required
+                      options={["1A-5E", "1A-7G", "Full Range"]}
+                    />
+                    <Field label="Nominal Tap Position" value={HV.nominalTapPos} editMode={editMode} required />
                   </FieldGrid>
                 </div>
               </Section>
@@ -815,55 +840,32 @@ export default function NameplatePage() {
               <Section>
                 <SectionHeader title="LV Ratings" confidence={54} />
                 <FieldGrid>
-                  <div style={{ gridColumn: "1 / span 1" }}>
-                    <FieldLabel label="LV Nominal Voltage" required />
-                    {editMode ? (
-                      <Select defaultValue={LV.nominalVoltage}>
-                        <SelectTrigger className="h-9 bg-background text-sm"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {[LV.nominalVoltage, "208Y/120", "480Y/277", "240/120"].map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    ) : <ReadVal value={LV.nominalVoltage} />}
-                  </div>
-                  <ReadOnlyField label="LV 1 Configuration" value={LV.lv1Config} required />
-                  <div>
-                    <FieldLabel label="LV1 Delta" required />
-                    {editMode ? <Input defaultValue={LV.lv1Delta} className="h-9 bg-background text-sm" /> : <ReadVal value={LV.lv1Delta} />}
-                  </div>
+                  <SelectField
+                    label="LV Nominal Voltage"
+                    value={LV.nominalVoltage}
+                    editMode={editMode}
+                    required
+                    options={[LV.nominalVoltage, "208Y/120", "480Y/277", "240/120"]}
+                  />
+                  <Field label="LV 1 Configuration" value={LV.lv1Config} editMode={false} required />
+                  <Field label="LV1 Delta" value={LV.lv1Delta} editMode={editMode} required />
 
-                  <div>
-                    <FieldLabel label="LV 1 Wye" required />
-                    {editMode ? <Input defaultValue={LV.lv1Wye} className="h-9 bg-background text-sm" /> : <ReadVal value={LV.lv1Wye} />}
-                  </div>
-                  <ReadOnlyField label="LV 2 Configuration" value={LV.lv2Config} required />
-                  <div>
-                    <FieldLabel label="LV 2 Delta" required />
-                    {editMode ? <Input defaultValue={LV.lv2Delta} className="h-9 bg-background text-sm" /> : <ReadVal value={LV.lv2Delta} />}
-                  </div>
+                  <Field label="LV 1 Wye" value={LV.lv1Wye} editMode={editMode} required />
+                  <Field label="LV 2 Configuration" value={LV.lv2Config} editMode={false} required />
+                  <Field label="LV 2 Delta" value={LV.lv2Delta} editMode={editMode} required />
 
-                  <div>
-                    <FieldLabel label="LV 2 Wye" required />
-                    {editMode ? <Input defaultValue={LV.lv2Wye} className="h-9 bg-background text-sm" /> : <ReadVal value={LV.lv2Wye} />}
-                  </div>
+                  <Field label="LV 2 Wye" value={LV.lv2Wye} editMode={editMode} required />
                   <SwitchField label="Delta Wye" value={lvDeltaWye} editMode={editMode} onChange={setLvDeltaWye} />
                   <SwitchField label="Dual Voltage" value={lvDualVoltage} editMode={editMode} onChange={setLvDualVoltage} />
 
-                  <div>
-                    <FieldLabel label="LV BIL (kV)" required />
-                    {editMode ? <Input defaultValue={LV.bil} className="h-9 bg-background text-sm" /> : <ReadVal value={LV.bil} />}
-                  </div>
-                  <div>
-                    <FieldLabel label="LV Winding Material" required />
-                    {editMode ? (
-                      <Select defaultValue={LV.windingMaterial}>
-                        <SelectTrigger className="h-9 bg-background text-sm"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {["AL", "CU"].map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    ) : <ReadVal value={LV.windingMaterial} />}
-                  </div>
+                  <Field label="LV BIL (kV)" value={LV.bil} editMode={editMode} required />
+                  <SelectField
+                    label="LV Winding Material"
+                    value={LV.windingMaterial}
+                    editMode={editMode}
+                    required
+                    options={["AL", "CU"]}
+                  />
                   <div />
                 </FieldGrid>
               </Section>

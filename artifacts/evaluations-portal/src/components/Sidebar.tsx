@@ -31,6 +31,16 @@ const NAV_ITEMS: NavItem[] = [
       </svg>
     ),
   },
+  {
+    id: "nameplate",
+    label: "Nameplate",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+        <line x1="7" y1="7" x2="7.01" y2="7"/>
+      </svg>
+    ),
+  },
 ];
 
 const COLLAPSED_W = 52;
@@ -39,8 +49,6 @@ const EXPANDED_W = 220;
 export function Sidebar() {
   const { currentPage, setCurrentPage } = useDemoContext();
   const [expanded, setExpanded] = useState(false);
-
-  const isNameplate = currentPage === "nameplate";
 
   return (
     <div
@@ -66,7 +74,7 @@ export function Sidebar() {
       >
         <div style={{ padding: "12px 8px", width: EXPANDED_W }}>
           {NAV_ITEMS.map((item) => {
-            const isActive = currentPage === item.id || (item.id === "evaluations-history" && isNameplate);
+            const isActive = currentPage === item.id;
             return (
               <button
                 key={item.id}
