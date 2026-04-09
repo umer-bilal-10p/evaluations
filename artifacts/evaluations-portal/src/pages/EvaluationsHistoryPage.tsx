@@ -164,17 +164,20 @@ const MANUFACTURERS  = [...new Set(SEED_UNITS.map((u) => u.manufacturer))].sort(
 const WAREHOUSES     = [...new Set(SEED_UNITS.map((u) => u.warehouse))].sort();
 const KVA_VALUES     = [...new Set(SEED_UNITS.map((u) => u.kva))].sort((a, b) => a - b).map(String);
 const SITES          = ["ALEL", "CABA", "COGJ", "KSOC", "KSSO", "PASH", "TNDE", "TXTE", "WASP"];
+const COMPLETED_BY   = [...new Set(SEED_UNITS.map((u) => u.completedBy).filter(Boolean) as string[])].sort();
 
 /* ─── Filters ────────────────────────────────────────────────────────────────── */
 type Filters = {
   dateFrom: string; dateTo: string; icNumber: string; loadNumber: string;
   manufacturer: string[]; kva: string[]; warehouse: string[];
   intakeCategory: string[]; status: string[]; site: string[];
+  completedBy: string[];
 };
 const EMPTY_FILTERS: Filters = {
   dateFrom: "", dateTo: "", icNumber: "", loadNumber: "",
   manufacturer: [], kva: [], warehouse: [],
   intakeCategory: [], status: [], site: [],
+  completedBy: [],
 };
 function countActiveFilters(f: Filters): number {
   let n = 0;
@@ -182,6 +185,7 @@ function countActiveFilters(f: Filters): number {
   if (f.manufacturer.length) n++; if (f.kva.length) n++;
   if (f.warehouse.length) n++; if (f.intakeCategory.length) n++;
   if (f.status.length) n++; if (f.site.length) n++;
+  if ((f.completedBy ?? []).length) n++;
   return n;
 }
 
@@ -679,8 +683,9 @@ export default function EvaluationsHistoryPage() {
       (!filters.kva.length        || filters.kva.includes(String(unit.kva))) &&
       (!filters.warehouse.length  || filters.warehouse.includes(unit.warehouse)) &&
       (!filters.intakeCategory.length || filters.intakeCategory.includes(unit.intakeCategory)) &&
-      (!filters.status.length     || filters.status.includes(status)) &&
-      (!filters.site.length       || filters.site.includes(unit.site))
+      (!filters.status.length       || filters.status.includes(status)) &&
+      (!filters.site.length         || filters.site.includes(unit.site)) &&
+      (!(filters.completedBy ?? []).length || (unit.completedBy !== null && filters.completedBy.includes(unit.completedBy)))
     );
   });
 
@@ -844,6 +849,10 @@ export default function EvaluationsHistoryPage() {
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Site</span>
                   <MultiSelect value={filters.site} onChange={(v) => setFilter("site", v)} options={SITES} placeholder="All Sites" style={{ width: "100%" }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                  <span style={LABEL}>Completed By</span>
+                  <MultiSelect value={filters.completedBy} onChange={(v) => setFilter("completedBy", v)} options={COMPLETED_BY} placeholder="All" style={{ width: "100%" }} />
                 </div>
               </div>
             </div>
