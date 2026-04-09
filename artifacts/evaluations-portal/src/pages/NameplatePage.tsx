@@ -473,12 +473,13 @@ function NameplateImageCard({ icNumber, manufacturer, mfgSerial, kva }: {
             <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{manufacturer} · {mfgSerial} · {kva.toLocaleString()} kVA</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#047857", flexShrink: 0 }}>
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#7C3AED", flexShrink: 0 }}>
+              <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/>
+              <path d="M3 9h2M3 15h2M19 9h2M19 15h2M9 3v2M15 3v2M9 19v2M15 19v2"/>
             </svg>
-            <span style={{ fontSize: 11, color: "#047857", fontWeight: 500 }}>AI extraction complete</span>
+            <span style={{ fontSize: 11, color: "#7C3AED", fontWeight: 500 }}>AI was used to scan Nameplate</span>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
             {["Blurry", "Underexposed", "Off angle"].map((tag) => (
               <span key={tag} style={{
                 fontSize: 10, fontWeight: 500,
@@ -486,9 +487,9 @@ function NameplateImageCard({ icNumber, manufacturer, mfgSerial, kva }: {
                 borderRadius: 20, padding: "1px 7px",
               }}>{tag}</span>
             ))}
-          </div>
-          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
-            Image quality issues detected — may reduce AI accuracy
+            <span style={{ fontSize: 11, color: "#92400E", fontWeight: 400 }}>
+              — Image quality issues were detected, AI accuracy was likely impacted.
+            </span>
           </div>
         </div>
       </div>
@@ -563,6 +564,12 @@ function NameplateImageCard({ icNumber, manufacturer, mfgSerial, kva }: {
 export default function NameplatePage() {
   const { selectedUnit, setCurrentPage } = useDemoContext();
   const [editMode, setEditMode] = useState(false);
+  const [supervisorComments, setSupervisorComments] = useState([
+    { initials: "MC", color: "#0047BB", name: "Michael Chen", role: "Senior Evaluator", time: "2 hours ago", text: "Oil volume reading of 210 gallons appears low for this unit. The standard capacity for ONAN 1,750 kVA is 220 gal. Please verify against the physical nameplate before finalizing." },
+    { initials: "SR", color: "#047857", name: "Sandra Rivera", role: "QA Supervisor", time: "45 min ago", text: "Confirmed HV nominal voltage matches the 12,470D configuration. All tap values look correct per the engineering spec sheet." },
+  ]);
+  const [commentDraft, setCommentDraft] = useState("");
+  const [postingComment, setPostingComment] = useState(false);
   const [hvDeltaWye, setHvDeltaWye] = useState(HV.deltaWye);
   const [hvDualVoltage, setHvDualVoltage] = useState(HV.dualVoltage);
   const [lvDeltaWye, setLvDeltaWye] = useState(LV.deltaWye);
@@ -730,28 +737,16 @@ export default function NameplatePage() {
                           background: "#0047BB", color: "#fff",
                           fontSize: 10, fontWeight: 700,
                           display: "inline-flex", alignItems: "center", justifyContent: "center",
-                        }}>2</span>
+                        }}>{supervisorComments.length}</span>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="px-4 pb-4">
                       <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 4 }}>
-                        {[
-                          {
-                            initials: "MC", color: "#0047BB", name: "Michael Chen",
-                            role: "Senior Evaluator", time: "2 hours ago",
-                            text: "Oil volume reading of 210 gallons appears low for this unit. The standard capacity for ONAN 1,750 kVA is 220 gal. Please verify against the physical nameplate before finalizing.",
-                          },
-                          {
-                            initials: "SR", color: "#047857", name: "Sandra Rivera",
-                            role: "QA Supervisor", time: "45 min ago",
-                            text: "Confirmed HV nominal voltage matches the 12,470D configuration. All tap values look correct per the engineering spec sheet.",
-                          },
-                        ].map((c) => (
-                          <div key={c.initials} style={{
+                        {supervisorComments.map((c, idx) => (
+                          <div key={idx} style={{
                             background: "hsl(var(--muted) / 0.5)",
                             border: "1px solid hsl(var(--border))",
-                            borderRadius: 8,
-                            padding: "12px 14px",
+                            borderRadius: 8, padding: "12px 14px",
                           }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                               <div style={{
@@ -771,6 +766,79 @@ export default function NameplatePage() {
                             <p style={{ fontSize: 13, color: "hsl(var(--foreground))", lineHeight: 1.5, margin: 0 }}>{c.text}</p>
                           </div>
                         ))}
+
+                        {/* ── New comment input ── */}
+                        <div style={{
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: 8, overflow: "hidden",
+                          background: "hsl(var(--card))",
+                        }}>
+                          <textarea
+                            value={commentDraft}
+                            onChange={(e) => setCommentDraft(e.target.value)}
+                            placeholder="Leave a comment…"
+                            rows={3}
+                            style={{
+                              width: "100%", boxSizing: "border-box",
+                              padding: "10px 12px",
+                              fontSize: 13, lineHeight: 1.55,
+                              color: "hsl(var(--foreground))",
+                              background: "transparent",
+                              border: "none", outline: "none", resize: "none",
+                              fontFamily: "inherit",
+                            }}
+                          />
+                          <div style={{
+                            borderTop: "1px solid hsl(var(--border))",
+                            padding: "8px 12px",
+                            display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8,
+                            background: "hsl(var(--muted) / 0.3)",
+                          }}>
+                            {commentDraft.trim() && (
+                              <button
+                                onClick={() => setCommentDraft("")}
+                                style={{
+                                  padding: "5px 12px", borderRadius: 6,
+                                  border: "1px solid hsl(var(--border))",
+                                  background: "transparent", color: "hsl(var(--muted-foreground))",
+                                  fontSize: 12, fontWeight: 500, cursor: "pointer",
+                                }}
+                              >
+                                Cancel
+                              </button>
+                            )}
+                            <button
+                              disabled={!commentDraft.trim() || postingComment}
+                              onClick={() => {
+                                if (!commentDraft.trim()) return;
+                                setPostingComment(true);
+                                setTimeout(() => {
+                                  setSupervisorComments((prev) => [
+                                    ...prev,
+                                    { initials: "YU", color: "#182557", name: "You", role: "Supervisor", time: "Just now", text: commentDraft.trim() },
+                                  ]);
+                                  setCommentDraft("");
+                                  setPostingComment(false);
+                                }, 400);
+                              }}
+                              style={{
+                                padding: "5px 14px", borderRadius: 6,
+                                border: "1px solid #0047BB",
+                                background: commentDraft.trim() ? "#0047BB" : "hsl(var(--muted))",
+                                color: commentDraft.trim() ? "#fff" : "hsl(var(--muted-foreground))",
+                                fontSize: 12, fontWeight: 600,
+                                cursor: commentDraft.trim() ? "pointer" : "not-allowed",
+                                display: "flex", alignItems: "center", gap: 6,
+                                transition: "background 0.15s, color 0.15s",
+                              }}
+                            >
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                              </svg>
+                              {postingComment ? "Posting…" : "Post Comment"}
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </AccordionContent>
                   </AccordionItem>
