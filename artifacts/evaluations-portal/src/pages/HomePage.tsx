@@ -7,7 +7,7 @@ export default function HomePage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col"
+      className="h-screen flex flex-col overflow-hidden"
       style={{ background: "hsl(var(--background))", color: "hsl(var(--foreground))" }}
     >
       <PortalHeader />

@@ -716,7 +716,7 @@ export default function EvaluationsHistoryPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "hsl(var(--background))", color: "hsl(var(--foreground))" }}>
+    <div className="h-screen flex flex-col overflow-hidden" style={{ background: "hsl(var(--background))", color: "hsl(var(--foreground))" }}>
       <PortalHeader />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
