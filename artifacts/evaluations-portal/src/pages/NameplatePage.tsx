@@ -570,6 +570,8 @@ export default function NameplatePage() {
   ]);
   const [commentDraft, setCommentDraft] = useState("");
   const [postingComment, setPostingComment] = useState(false);
+  const [editingCommentIdx, setEditingCommentIdx] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState("");
   const [hvDeltaWye, setHvDeltaWye] = useState(HV.deltaWye);
   const [hvDualVoltage, setHvDualVoltage] = useState(HV.dualVoltage);
   const [lvDeltaWye, setLvDeltaWye] = useState(LV.deltaWye);
@@ -742,30 +744,127 @@ export default function NameplatePage() {
                     </AccordionTrigger>
                     <AccordionContent className="px-4 pb-4">
                       <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 4 }}>
-                        {supervisorComments.map((c, idx) => (
-                          <div key={idx} style={{
-                            background: "hsl(var(--muted) / 0.5)",
-                            border: "1px solid hsl(var(--border))",
-                            borderRadius: 8, padding: "12px 14px",
-                          }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                              <div style={{
-                                width: 28, height: 28, borderRadius: "50%",
-                                background: c.color, color: "#fff",
-                                fontSize: 10, fontWeight: 700,
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                flexShrink: 0,
-                              }}>
-                                {c.initials}
+                        {supervisorComments.map((c, idx) => {
+                          const isOwn = c.initials === "YU";
+                          const isEditing = editingCommentIdx === idx;
+                          return (
+                            <div key={idx} style={{
+                              background: "hsl(var(--muted) / 0.5)",
+                              border: `1px solid ${isEditing ? "#0047BB" : "hsl(var(--border))"}`,
+                              borderRadius: 8, padding: "12px 14px",
+                            }}>
+                              {/* Header row */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                                <div style={{
+                                  width: 28, height: 28, borderRadius: "50%",
+                                  background: c.color, color: "#fff",
+                                  fontSize: 10, fontWeight: 700,
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                  flexShrink: 0,
+                                }}>
+                                  {c.initials}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))" }}>{c.name}</div>
+                                  <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{c.role} · {c.time}</div>
+                                </div>
+                                {/* Edit / Delete — own comments only, hidden while editing */}
+                                {isOwn && !isEditing && (
+                                  <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+                                    <button
+                                      title="Edit comment"
+                                      onClick={() => { setEditingCommentIdx(idx); setEditDraft(c.text); }}
+                                      style={{
+                                        width: 28, height: 28, borderRadius: 6,
+                                        border: "1px solid transparent", background: "none",
+                                        color: "hsl(var(--muted-foreground))", cursor: "pointer",
+                                        display: "flex", alignItems: "center", justifyContent: "center",
+                                      }}
+                                      onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(var(--muted))"; e.currentTarget.style.color = "hsl(var(--foreground))"; }}
+                                      onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "hsl(var(--muted-foreground))"; }}
+                                    >
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                      </svg>
+                                    </button>
+                                    <button
+                                      title="Delete comment"
+                                      onClick={() => setSupervisorComments((prev) => prev.filter((_, i) => i !== idx))}
+                                      style={{
+                                        width: 28, height: 28, borderRadius: 6,
+                                        border: "1px solid transparent", background: "none",
+                                        color: "hsl(var(--muted-foreground))", cursor: "pointer",
+                                        display: "flex", alignItems: "center", justifyContent: "center",
+                                      }}
+                                      onMouseEnter={(e) => { e.currentTarget.style.background = "#FEE2E2"; e.currentTarget.style.color = "#DC2626"; }}
+                                      onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "hsl(var(--muted-foreground))"; }}
+                                    >
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                                        <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                                      </svg>
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-                              <div>
-                                <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))" }}>{c.name}</div>
-                                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{c.role} · {c.time}</div>
-                              </div>
+
+                              {/* Body — inline edit or plain text */}
+                              {isEditing ? (
+                                <div>
+                                  <textarea
+                                    autoFocus
+                                    value={editDraft}
+                                    onChange={(e) => setEditDraft(e.target.value)}
+                                    rows={3}
+                                    style={{
+                                      width: "100%", boxSizing: "border-box",
+                                      padding: "8px 10px", borderRadius: 6,
+                                      border: "1px solid hsl(var(--border))",
+                                      background: "hsl(var(--background))",
+                                      fontSize: 13, lineHeight: 1.55,
+                                      color: "hsl(var(--foreground))",
+                                      outline: "none", resize: "none",
+                                      fontFamily: "inherit",
+                                    }}
+                                  />
+                                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, marginTop: 8 }}>
+                                    <button
+                                      onClick={() => setEditingCommentIdx(null)}
+                                      style={{
+                                        padding: "4px 12px", borderRadius: 6,
+                                        border: "1px solid hsl(var(--border))",
+                                        background: "transparent", color: "hsl(var(--muted-foreground))",
+                                        fontSize: 12, fontWeight: 500, cursor: "pointer",
+                                      }}
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      disabled={!editDraft.trim()}
+                                      onClick={() => {
+                                        if (!editDraft.trim()) return;
+                                        setSupervisorComments((prev) =>
+                                          prev.map((item, i) => i === idx ? { ...item, text: editDraft.trim(), time: "Edited · Just now" } : item)
+                                        );
+                                        setEditingCommentIdx(null);
+                                      }}
+                                      style={{
+                                        padding: "4px 14px", borderRadius: 6,
+                                        border: "1px solid #0047BB", background: "#0047BB",
+                                        color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                                      }}
+                                    >
+                                      Save
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p style={{ fontSize: 13, color: "hsl(var(--foreground))", lineHeight: 1.5, margin: 0 }}>{c.text}</p>
+                              )}
                             </div>
-                            <p style={{ fontSize: 13, color: "hsl(var(--foreground))", lineHeight: 1.5, margin: 0 }}>{c.text}</p>
-                          </div>
-                        ))}
+                          );
+                        })}
 
                         {/* ── New comment input ── */}
                         <div style={{
