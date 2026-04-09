@@ -255,17 +255,18 @@ function DateRangePicker({ from, to, onChange }: {
         <button
           style={{
             ...FIELD,
+            height: 38, padding: "0 14px", lineHeight: "normal",
             display: "flex", alignItems: "center", justifyContent: "space-between",
-            cursor: "pointer", gap: 6, boxShadow: "none",
+            cursor: "pointer", gap: 8, boxShadow: "none",
           }}
         >
-          <span style={{ display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: "hsl(var(--muted-foreground))" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0, flex: 1, overflow: "hidden" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: "hsl(var(--muted-foreground))" }}>
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
             </svg>
             <span style={{
               fontSize: 13, color: from || to ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))",
-              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             }}>
               {label}
             </span>
@@ -273,9 +274,9 @@ function DateRangePicker({ from, to, onChange }: {
           {(from || to) && (
             <span
               onClick={(e) => { e.stopPropagation(); onChange("", ""); }}
-              style={{ flexShrink: 0, display: "flex", alignItems: "center", color: "hsl(var(--muted-foreground))", cursor: "pointer" }}
+              style={{ flexShrink: 0, display: "flex", alignItems: "center", padding: 2, borderRadius: 3, color: "hsl(var(--muted-foreground))", cursor: "pointer" }}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
             </span>
@@ -780,7 +781,7 @@ export default function EvaluationsHistoryPage() {
             <div style={CARD}>
               {/* Row 1: Date · IC# · Manufacturer · Type · KVA */}
               <div style={{ display: "flex", alignItems: "flex-end", gap: 10, padding: "16px 20px 12px" }}>
-                <div style={{ flex: 2, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                <div style={{ flex: 3, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Date Received</span>
                   <DateRangePicker
                     from={filters.dateFrom}
