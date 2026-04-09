@@ -60,13 +60,13 @@ const HV = {
   bil: "110",
   windingMaterial: "AL",
   taps: [
-    { tap: "1A", kvaRating: "12,979", deviation: "+4.0" },
-    { tap: "2B", kvaRating: "12,724", deviation: "+2.0" },
-    { tap: "3C", kvaRating: "12,470", deviation: "0.0" },
-    { tap: "4D", kvaRating: "12,219", deviation: "-2.0" },
-    { tap: "5E", kvaRating: "11,961", deviation: "-4.0" },
-    { tap: "6F", kvaRating: "—", deviation: "—" },
-    { tap: "7G", kvaRating: "—", deviation: "—" },
+    { tap: "1/A", kvaRating: "12,979", deviation: "+4.0" },
+    { tap: "2/B", kvaRating: "12,724", deviation: "+2.0" },
+    { tap: "3/C", kvaRating: "12,470", deviation: "0.0" },
+    { tap: "4/D", kvaRating: "12,219", deviation: "-2.0" },
+    { tap: "5/E", kvaRating: "11,961", deviation: "-4.0" },
+    { tap: "6/F", kvaRating: "—", deviation: "—" },
+    { tap: "7/G", kvaRating: "—", deviation: "—" },
   ],
   numberOfTaps: "5",
   tapConfig: "1A-5E",
@@ -191,7 +191,6 @@ function Field({
           !editMode && "bg-muted border-muted cursor-default focus-visible:ring-0 focus-visible:ring-offset-0",
           editMode && "bg-background",
           error && editMode && "border-red-400 focus-visible:ring-red-400",
-          error && !editMode && "border-red-300 bg-red-50 dark:bg-red-950/20",
         )}
       />
     </div>
@@ -254,11 +253,7 @@ function SwitchField({
   return (
     <div>
       <FieldLabel label={label} required />
-      <div style={{
-        height: 36, borderRadius: 7, border: "1px solid hsl(var(--border))",
-        background: "hsl(var(--muted))", padding: "0 12px",
-        display: "flex", alignItems: "center", gap: 8,
-      }}>
+      <div style={{ height: 36, display: "flex", alignItems: "center", gap: 8 }}>
         <Switch
           checked={value}
           onCheckedChange={editMode ? onChange : undefined}
@@ -1016,7 +1011,7 @@ export default function NameplatePage() {
                     options={["Mineral Oil", "Silicone", "Natural Ester", "Synthetic Ester"]}
                   />
 
-                  {/* Oil Volume — validation error */}
+                  {/* Oil Volume */}
                   <div>
                     <FieldLabel label="Oil Volume (Gallons)" required />
                     <Input
@@ -1024,11 +1019,11 @@ export default function NameplatePage() {
                       readOnly={!editMode}
                       className={cn(
                         "h-9 text-sm",
-                        !editMode && "bg-red-50 dark:bg-red-950/20 border-red-300 cursor-default focus-visible:ring-0 focus-visible:ring-offset-0",
+                        !editMode && "bg-muted border-muted cursor-default focus-visible:ring-0 focus-visible:ring-offset-0",
                         editMode && "bg-background border-red-400 focus-visible:ring-red-400",
                       )}
                     />
-                    <ErrorMsg msg={RATINGS.oilVolumeError} />
+                    {editMode && <ErrorMsg msg={RATINGS.oilVolumeError} />}
                   </div>
 
                   <Field label="Core & Coils Weight (lbs)" value={RATINGS.coreCoilsWeight} editMode={editMode} required />
@@ -1077,12 +1072,8 @@ export default function NameplatePage() {
                   <div />
                 </FieldGrid>
 
-                {/* Tap table */}
+                {/* Tap meta — above the table */}
                 <div style={{ marginTop: 20 }}>
-                  <TapTable taps={HV.taps} editMode={editMode} />
-                </div>
-
-                <div style={{ marginTop: 16 }}>
                   <FieldGrid>
                     <Field label="Number of Taps" value={HV.numberOfTaps} editMode={editMode} required />
                     <SelectField
@@ -1090,10 +1081,15 @@ export default function NameplatePage() {
                       value={HV.tapConfig}
                       editMode={editMode}
                       required
-                      options={["1A-5E", "1A-7G", "Full Range"]}
+                      options={["1/A-5/E", "1/A-7/G", "Full Range"]}
                     />
                     <Field label="Nominal Tap Position" value={HV.nominalTapPos} editMode={editMode} required />
                   </FieldGrid>
+                </div>
+
+                {/* Tap table — only rows with real data */}
+                <div style={{ marginTop: 16 }}>
+                  <TapTable taps={HV.taps.filter((t) => t.kvaRating !== "—")} editMode={editMode} />
                 </div>
               </Section>
 
