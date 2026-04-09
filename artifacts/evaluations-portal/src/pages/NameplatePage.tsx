@@ -89,21 +89,27 @@ const LV = {
 
 /* ─── Sub-components ────────────────────────────────────────────────────────── */
 
+/* Sparkle icon shared by AI components */
+function SparkleIcon({ size = 10 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2L14.09 8.26L20.5 9.27L16.25 13.41L17.18 19.82L12 17L6.82 19.82L7.75 13.41L3.5 9.27L9.91 8.26L12 2Z"/>
+    </svg>
+  );
+}
+
 function ConfidenceBadge({ pct }: { pct: number }) {
-  const isHigh = pct >= 90;
-  const isMid = pct >= 70 && pct < 90;
-  const bg = isHigh ? "#D4F7E8" : isMid ? "#FEF3C7" : "#FEE2E2";
-  const color = isHigh ? "#047857" : isMid ? "#92400E" : "#DC2626";
-  const border = isHigh ? "#6EE7B7" : isMid ? "#FCD34D" : "#FCA5A5";
+  const isHigh = pct >= 60;
+  const bg = isHigh ? "rgba(124,58,237,0.10)" : "#FEF3C7";
+  const color = isHigh ? "#7C3AED" : "#92400E";
+  const border = isHigh ? "rgba(124,58,237,0.28)" : "#FCD34D";
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 4,
       fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 20,
       background: bg, color, border: `1px solid ${border}`,
     }}>
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-      </svg>
+      <SparkleIcon size={10} />
       {pct}% Confidence
     </span>
   );
@@ -139,13 +145,11 @@ function AiChip({ label }: { label: string }) {
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 4, marginTop: 4,
-      fontSize: 11, color: "#0047BB", fontWeight: 500,
-      background: "rgba(0,71,187,0.07)", border: "1px solid rgba(0,71,187,0.18)",
+      fontSize: 11, color: "#7C3AED", fontWeight: 500,
+      background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.22)",
       borderRadius: 5, padding: "1px 7px",
     }}>
-      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-      </svg>
+      <SparkleIcon size={9} />
       AI: {label}
     </span>
   );
@@ -362,124 +366,196 @@ function TapTable({ taps, editMode }: { taps: typeof HV.taps; editMode: boolean 
   );
 }
 
+/* ─── Nameplate image content (reused in thumbnail + modal) ─────────────────── */
+function NameplateImageContent({ icNumber, manufacturer, mfgSerial, kva, scale = 1 }: {
+  icNumber: string; manufacturer: string; mfgSerial: string; kva: number; scale?: number;
+}) {
+  const fs = (n: number) => n * scale;
+  return (
+    <>
+      <div style={{ padding: `${fs(10)}px ${fs(10)}px ${fs(6)}px`, display: "flex", flexDirection: "column", gap: fs(3), height: "100%", boxSizing: "border-box" }}>
+        <div style={{
+          fontSize: fs(9), fontWeight: 800, color: "#e2e8f0", letterSpacing: "0.1em",
+          textTransform: "uppercase", borderBottom: "1px solid rgba(255,255,255,0.2)",
+          paddingBottom: fs(3), marginBottom: fs(1),
+        }}>
+          {manufacturer} · Distribution Transformer
+        </div>
+        {[
+          ["SERIAL", mfgSerial],
+          ["KVA", `${kva.toLocaleString()} ONAN`],
+          ["HV", "12470D / 12470GRD"],
+          ["LV", "480GRD/Y/277"],
+          ["IMP %", "5.75   HZ 60"],
+          ["TEMP", "65°C Rise"],
+          ["WT OIL", "210 Gal"],
+          ["FLUID", "Type II Mineral Oil"],
+        ].map(([k, v]) => (
+          <div key={k} style={{ display: "flex", gap: fs(5), alignItems: "baseline" }}>
+            <span style={{ fontSize: fs(7), fontWeight: 700, color: "rgba(255,255,255,0.45)", width: fs(28), flexShrink: 0 }}>{k}</span>
+            <span style={{ fontSize: fs(8), fontWeight: 600, color: "#cbd5e1", letterSpacing: "0.04em", fontFamily: "monospace" }}>{v}</span>
+          </div>
+        ))}
+      </div>
+      {/* IC# overlay */}
+      <div style={{
+        position: "absolute", top: fs(6), right: fs(6),
+        background: "rgba(0,71,187,0.92)", borderRadius: fs(5),
+        padding: `${fs(2)}px ${fs(6)}px`,
+        fontSize: fs(9), fontWeight: 700, color: "#fff",
+        letterSpacing: "0.05em", boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
+      }}>
+        IC {icNumber}
+      </div>
+      {/* Quality indicator */}
+      <div style={{ position: "absolute", bottom: fs(5), left: fs(6), display: "flex", alignItems: "center", gap: fs(3) }}>
+        <div style={{ width: fs(6), height: fs(6), borderRadius: "50%", background: "#FBBF24" }} />
+        <span style={{ fontSize: fs(7), fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>Low quality</span>
+      </div>
+      {/* Timestamp */}
+      <div style={{ position: "absolute", bottom: fs(5), right: fs(6), fontSize: fs(7), color: "rgba(255,255,255,0.45)", fontFamily: "monospace" }}>
+        {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+      </div>
+    </>
+  );
+}
+
 /* ─── Nameplate image card with IC overlay ──────────────────────────────────── */
 function NameplateImageCard({ icNumber, manufacturer, mfgSerial, kva }: {
-  icNumber: string;
-  manufacturer: string;
-  mfgSerial: string;
-  kva: number;
+  icNumber: string; manufacturer: string; mfgSerial: string; kva: number;
 }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const handleDownload = () => {
+    const a = document.createElement("a");
+    a.href = "data:text/plain,nameplate-placeholder";
+    a.download = `nameplate-IC${icNumber}.png`;
+    a.click();
+  };
+
   return (
-    <div style={{
-      background: "hsl(var(--card))",
-      border: "1px solid hsl(var(--border))",
-      borderRadius: 10,
-      padding: 16,
-      marginBottom: 12,
-      display: "flex",
-      gap: 16,
-      alignItems: "flex-start",
-    }}>
-      {/* Simulated nameplate image with IC overlay */}
+    <>
       <div style={{
-        width: 200,
-        height: 120,
-        borderRadius: 8,
-        overflow: "hidden",
-        flexShrink: 0,
-        position: "relative",
-        border: "1px solid hsl(var(--border))",
-        background: "linear-gradient(135deg, #1a1f2e 0%, #2a3350 40%, #1e2640 100%)",
+        background: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
+        borderRadius: 10, padding: 16, marginBottom: 12,
+        display: "flex", gap: 16, alignItems: "flex-start",
       }}>
-        {/* Simulated nameplate text rows */}
-        <div style={{ padding: "10px 10px 6px", display: "flex", flexDirection: "column", gap: 3, height: "100%", boxSizing: "border-box" }}>
+        {/* Thumbnail — clickable */}
+        <div
+          onClick={() => setExpanded(true)}
+          style={{
+            width: 200, height: 140, borderRadius: 8, overflow: "hidden",
+            flexShrink: 0, position: "relative", cursor: "pointer",
+            border: "1px solid hsl(var(--border))",
+            background: "linear-gradient(135deg, #1a1f2e 0%, #2a3350 40%, #1e2640 100%)",
+          }}
+        >
+          <NameplateImageContent icNumber={icNumber} manufacturer={manufacturer} mfgSerial={mfgSerial} kva={kva} scale={1} />
+          {/* Expand icon overlay */}
           <div style={{
-            fontSize: 9, fontWeight: 800, color: "#e2e8f0", letterSpacing: "0.1em",
-            textTransform: "uppercase", borderBottom: "1px solid rgba(255,255,255,0.2)",
-            paddingBottom: 3, marginBottom: 1,
+            position: "absolute", top: 6, left: 6,
+            width: 24, height: 24, borderRadius: 5,
+            background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "rgba(255,255,255,0.85)",
           }}>
-            {manufacturer} · Distribution Transformer
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+              <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+            </svg>
           </div>
-          {[
-            ["SERIAL", mfgSerial],
-            ["KVA", `${kva.toLocaleString()} ONAN`],
-            ["HV", "12470D / 12470GRD"],
-            ["LV", "480GRD/Y/277"],
-            ["IMP %", "5.75   HZ 60"],
-          ].map(([k, v]) => (
-            <div key={k} style={{ display: "flex", gap: 5, alignItems: "baseline" }}>
-              <span style={{ fontSize: 7, fontWeight: 700, color: "rgba(255,255,255,0.45)", width: 28, flexShrink: 0 }}>{k}</span>
-              <span style={{ fontSize: 8, fontWeight: 600, color: "#cbd5e1", letterSpacing: "0.04em", fontFamily: "monospace" }}>{v}</span>
-            </div>
-          ))}
         </div>
 
-        {/* IC# overlay — top-right badge */}
-        <div style={{
-          position: "absolute", top: 6, right: 6,
-          background: "rgba(0,71,187,0.92)",
-          borderRadius: 5,
-          padding: "2px 6px",
-          fontSize: 9, fontWeight: 700, color: "#fff",
-          letterSpacing: "0.05em",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
-          backdropFilter: "blur(2px)",
-        }}>
-          IC {icNumber}
-        </div>
-
-        {/* Photo quality indicator — bottom-left */}
-        <div style={{
-          position: "absolute", bottom: 5, left: 6,
-          display: "flex", alignItems: "center", gap: 3,
-        }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#FBBF24" }} />
-          <span style={{ fontSize: 7, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>Low quality</span>
-        </div>
-
-        {/* Capture timestamp — bottom-right */}
-        <div style={{
-          position: "absolute", bottom: 5, right: 6,
-          fontSize: 7, color: "rgba(255,255,255,0.45)", fontFamily: "monospace",
-        }}>
-          {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-        </div>
-      </div>
-
-      {/* Metadata beside image */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 1 }}>
-            IC: {icNumber}
+        {/* Metadata beside image */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 1 }}>IC: {icNumber}</div>
+            <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{manufacturer} · {mfgSerial} · {kva.toLocaleString()} kVA</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#047857", flexShrink: 0 }}>
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <span style={{ fontSize: 11, color: "#047857", fontWeight: 500 }}>AI extraction complete</span>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            {["Blurry", "Underexposed", "Off angle"].map((tag) => (
+              <span key={tag} style={{
+                fontSize: 10, fontWeight: 500,
+                background: "#FEF3C7", border: "1px solid #FCD34D", color: "#92400E",
+                borderRadius: 20, padding: "1px 7px",
+              }}>{tag}</span>
+            ))}
           </div>
           <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
-            {manufacturer} · {mfgSerial} · {kva.toLocaleString()} kVA
+            Image quality issues detected — may reduce AI accuracy
           </div>
         </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#047857", flexShrink: 0 }}>
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-          </svg>
-          <span style={{ fontSize: 11, color: "#047857", fontWeight: 500 }}>AI extraction complete</span>
-        </div>
-
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-          {["Blurry", "Underexposed", "Off angle"].map((tag) => (
-            <span key={tag} style={{
-              fontSize: 10, fontWeight: 500,
-              background: "#FEF3C7", border: "1px solid #FCD34D", color: "#92400E",
-              borderRadius: 20, padding: "1px 7px",
-            }}>
-              {tag}
-            </span>
-          ))}
-        </div>
-        <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
-          Image quality issues detected — may reduce AI accuracy
-        </div>
       </div>
-    </div>
+
+      {/* ── Expanded modal ── */}
+      {expanded && (
+        <div
+          onClick={() => setExpanded(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 9999,
+            background: "rgba(0,0,0,0.82)", backdropFilter: "blur(6px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ position: "relative" }}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setExpanded(false)}
+              style={{
+                position: "absolute", top: -40, left: 0,
+                display: "flex", alignItems: "center", gap: 6,
+                background: "none", border: "none", color: "rgba(255,255,255,0.7)",
+                fontSize: 13, fontWeight: 500, cursor: "pointer", padding: 0,
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/>
+              </svg>
+              Close
+            </button>
+
+            {/* Download button */}
+            <button
+              onClick={handleDownload}
+              style={{
+                position: "absolute", top: -40, right: 0,
+                display: "flex", alignItems: "center", gap: 6,
+                background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)",
+                color: "#fff", fontSize: 12, fontWeight: 500, cursor: "pointer",
+                borderRadius: 7, padding: "5px 12px",
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Download
+            </button>
+
+            {/* Large nameplate image */}
+            <div style={{
+              width: 640, height: 400, borderRadius: 12, overflow: "hidden",
+              position: "relative",
+              background: "linear-gradient(135deg, #1a1f2e 0%, #2a3350 40%, #1e2640 100%)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              boxShadow: "0 24px 64px rgba(0,0,0,0.6)",
+            }}>
+              <NameplateImageContent icNumber={icNumber} manufacturer={manufacturer} mfgSerial={mfgSerial} kva={kva} scale={3.2} />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -576,36 +652,58 @@ export default function NameplatePage() {
               ))}
             </div>
 
-            {/* Edit / Done button */}
-            <button
-              onClick={() => setEditMode((v) => !v)}
-              style={{
-                flexShrink: 0,
-                padding: "6px 16px", borderRadius: 7,
-                border: editMode ? "1px solid rgba(255,255,255,0.3)" : "1px solid #0047BB",
-                background: editMode ? "rgba(255,255,255,0.08)" : "#0047BB",
-                color: "#fff", fontSize: 12, fontWeight: 600,
-                cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-                transition: "background 0.15s, border-color 0.15s",
-              }}
-            >
-              {editMode ? (
-                <>
+            {/* Edit / Save / Discard buttons */}
+            {editMode ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                <button
+                  onClick={() => setEditMode(false)}
+                  style={{
+                    padding: "6px 16px", borderRadius: 7,
+                    border: "1px solid rgba(255,255,255,0.22)",
+                    background: "transparent", color: "rgba(255,255,255,0.75)",
+                    fontSize: 12, fontWeight: 500, cursor: "pointer",
+                    display: "flex", alignItems: "center", gap: 6,
+                  }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.08)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                  Discard Changes
+                </button>
+                <button
+                  onClick={() => setEditMode(false)}
+                  style={{
+                    padding: "6px 16px", borderRadius: 7,
+                    border: "1px solid #0047BB", background: "#0047BB",
+                    color: "#fff", fontSize: 12, fontWeight: 600,
+                    cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+                  }}
+                >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12"/>
                   </svg>
-                  Done Editing
-                </>
-              ) : (
-                <>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                  Edit
-                </>
-              )}
-            </button>
+                  Save
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setEditMode(true)}
+                style={{
+                  flexShrink: 0, padding: "6px 16px", borderRadius: 7,
+                  border: "1px solid #0047BB", background: "#0047BB",
+                  color: "#fff", fontSize: 12, fontWeight: 600,
+                  cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Edit
+              </button>
+            )}
           </div>
 
           {/* ── Scrollable content ───────────────────────────────────────── */}
@@ -677,19 +775,6 @@ export default function NameplatePage() {
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>
-              </div>
-
-              {/* AI success banner */}
-              <div style={{
-                background: "#D4F7E8", border: "1px solid #6EE7B7",
-                borderRadius: 8, padding: "10px 16px",
-                display: "flex", alignItems: "center", gap: 10,
-                marginBottom: 16, fontSize: 13, color: "#047857", fontWeight: 500,
-              }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-                AI has successfully extracted data. Review and confirm the values below.
               </div>
 
               {/* Nameplate image card with IC overlay */}
