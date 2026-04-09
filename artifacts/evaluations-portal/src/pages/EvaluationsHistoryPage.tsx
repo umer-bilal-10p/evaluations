@@ -289,16 +289,18 @@ function DateRangePicker({ from, to, onChange }: {
         align="start"
         sideOffset={4}
       >
-        <Calendar
-          mode="range"
-          selected={range}
-          onSelect={(r) => {
-            onChange(toIso(r?.from), toIso(r?.to));
-            if (r?.from && r?.to) setOpen(false);
-          }}
-          numberOfMonths={2}
-          className="[--cell-size:2.25rem] p-4"
-        />
+        <div style={{ "--cell-size": "2.75rem" } as React.CSSProperties}>
+          <Calendar
+            mode="range"
+            selected={range}
+            onSelect={(r) => {
+              onChange(toIso(r?.from), toIso(r?.to));
+              if (r?.from && r?.to) setOpen(false);
+            }}
+            numberOfMonths={2}
+            className="p-4"
+          />
+        </div>
       </PopoverContent>
     </Popover>
   );
