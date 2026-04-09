@@ -170,7 +170,7 @@ function Field({
         readOnly={!editMode}
         placeholder={editMode ? placeholder : undefined}
         className={cn(
-          "h-9 text-sm",
+          "h-9 text-sm shadow-none",
           !editMode && "bg-muted border-muted cursor-default focus-visible:ring-0 focus-visible:ring-offset-0",
           editMode && "bg-background",
           error && editMode && "border-red-400 focus-visible:ring-red-400",
@@ -190,7 +190,7 @@ function SelectField({
     return (
       <div>
         <FieldLabel label={label} required={required} />
-        <Input value={value || "—"} readOnly className="h-9 text-sm bg-muted border-muted cursor-default focus-visible:ring-0 focus-visible:ring-offset-0" />
+        <Input value={value || "—"} readOnly className="h-9 text-sm shadow-none bg-muted border-muted cursor-default focus-visible:ring-0 focus-visible:ring-offset-0" />
       </div>
     );
   }
@@ -198,7 +198,7 @@ function SelectField({
     <div>
       <FieldLabel label={label} required={required} />
       <Select defaultValue={value}>
-        <SelectTrigger className="h-9 bg-background text-sm">
+        <SelectTrigger className="h-9 bg-background text-sm shadow-none">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -272,7 +272,7 @@ function TapTable({ taps, editMode }: { taps: typeof HV.taps; editMode: boolean 
                 <TableCell className="font-semibold text-sm py-2">{row.tap}</TableCell>
                 <TableCell className="text-sm py-2">
                   {editMode ? (
-                    <Input defaultValue={row.kvaRating} className="h-7 text-xs bg-background max-w-[100px]" />
+                    <Input defaultValue={row.kvaRating} className="h-7 text-xs bg-background max-w-[100px] shadow-none" />
                   ) : row.kvaRating}
                 </TableCell>
                 <TableCell className={cn(
@@ -282,7 +282,7 @@ function TapTable({ taps, editMode }: { taps: typeof HV.taps; editMode: boolean 
                     : "text-destructive",
                 )}>
                   {editMode ? (
-                    <Input defaultValue={row.deviation} className="h-7 text-xs bg-background max-w-[80px]" />
+                    <Input defaultValue={row.deviation} className="h-7 text-xs bg-background max-w-[80px] shadow-none" />
                   ) : row.deviation}
                 </TableCell>
               </TableRow>
@@ -647,7 +647,7 @@ export default function NameplatePage() {
                                       value={editDraft}
                                       onChange={(e) => setEditDraft(e.target.value)}
                                       rows={3}
-                                      className="text-sm resize-none bg-background"
+                                      className="text-sm resize-none bg-background shadow-none"
                                     />
                                     <div className="flex justify-end gap-1.5 mt-2">
                                       <Button variant="outline" size="sm" onClick={() => setEditingCommentIdx(null)}>
@@ -684,7 +684,7 @@ export default function NameplatePage() {
                             onChange={(e) => setCommentDraft(e.target.value)}
                             placeholder="Leave a comment…"
                             rows={3}
-                            className="border-0 rounded-none focus-visible:ring-0 resize-none text-sm bg-transparent"
+                            className="border-0 rounded-none focus-visible:ring-0 resize-none text-sm bg-transparent shadow-none"
                           />
                           <div className="border-t border-border px-3 py-2 flex justify-end items-center gap-2 bg-muted/30">
                             {commentDraft.trim() && (
@@ -768,7 +768,7 @@ export default function NameplatePage() {
                       defaultValue={RATINGS.oilVolume}
                       readOnly={!editMode}
                       className={cn(
-                        "h-9 text-sm",
+                        "h-9 text-sm shadow-none",
                         !editMode && "bg-muted border-muted cursor-default focus-visible:ring-0 focus-visible:ring-offset-0",
                         editMode && "bg-background border-red-400 focus-visible:ring-red-400",
                       )}
