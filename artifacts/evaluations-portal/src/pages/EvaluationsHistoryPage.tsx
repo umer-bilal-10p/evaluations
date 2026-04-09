@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { useDemoContext } from "@/context/DemoContext";
+import { type DateRange } from "react-day-picker";
 
 /* ─── Types ──────────────────────────────────────────────────────────────────── */
 type EvalStatus = "Not Started" | "In Progress" | "Completed";
@@ -210,7 +212,7 @@ const LABEL: React.CSSProperties = {
 };
 const CARD: React.CSSProperties = {
   background: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
-  borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.07)",
+  borderRadius: 12,
 };
 
 function FInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
@@ -220,8 +222,79 @@ function FInput({ value, onChange, placeholder }: { value: string; onChange: (v:
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="h-[34px] text-[13px] rounded-[7px] font-sans bg-background"
+      className="h-[34px] text-[13px] rounded-[7px] font-sans bg-background shadow-none"
     />
+  );
+}
+
+/* ─── Date Range Picker ──────────────────────────────────────────────────────── */
+function DateRangePicker({ from, to, onChange }: {
+  from: string; to: string;
+  onChange: (from: string, to: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const toDate = (iso: string) => iso ? new Date(iso + "T00:00:00") : undefined;
+  const toIso = (d: Date | undefined) => d ? d.toISOString().split("T")[0] : "";
+
+  const range: DateRange = { from: toDate(from), to: toDate(to) };
+
+  const fmt = (iso: string) => {
+    if (!iso) return "";
+    const d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
+
+  const label = from || to
+    ? `${fmt(from) || "…"}  –  ${fmt(to) || "…"}`
+    : "All dates";
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          style={{
+            ...FIELD,
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            cursor: "pointer", gap: 6, boxShadow: "none",
+          }}
+        >
+          <span style={{ display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: "hsl(var(--muted-foreground))" }}>
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <span style={{
+              fontSize: 13, color: from || to ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))",
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>
+              {label}
+            </span>
+          </span>
+          {(from || to) && (
+            <span
+              onClick={(e) => { e.stopPropagation(); onChange("", ""); }}
+              style={{ flexShrink: 0, display: "flex", alignItems: "center", color: "hsl(var(--muted-foreground))", cursor: "pointer" }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start" sideOffset={4}>
+        <Calendar
+          mode="range"
+          selected={range}
+          onSelect={(r) => {
+            onChange(toIso(r?.from), toIso(r?.to));
+            if (r?.from && r?.to) setOpen(false);
+          }}
+          numberOfMonths={2}
+          className="[--cell-size:1.85rem] text-[13px]"
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -709,15 +782,11 @@ export default function EvaluationsHistoryPage() {
               <div style={{ display: "flex", alignItems: "flex-end", gap: 10, padding: "16px 20px 12px" }}>
                 <div style={{ flex: 2, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Date Received</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                    <Input type="date" value={filters.dateFrom} onChange={(e) => setFilter("dateFrom", e.target.value)}
-                      className="h-[34px] text-[13px] rounded-[7px] font-sans flex-1 min-w-0 w-auto bg-background"
-                      style={{ colorScheme: "inherit" as React.CSSProperties["colorScheme"] }} />
-                    <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", flexShrink: 0 }}>–</span>
-                    <Input type="date" value={filters.dateTo} onChange={(e) => setFilter("dateTo", e.target.value)}
-                      className="h-[34px] text-[13px] rounded-[7px] font-sans flex-1 min-w-0 w-auto bg-background"
-                      style={{ colorScheme: "inherit" as React.CSSProperties["colorScheme"] }} />
-                  </div>
+                  <DateRangePicker
+                    from={filters.dateFrom}
+                    to={filters.dateTo}
+                    onChange={(f, t) => { setFilter("dateFrom", f); setFilter("dateTo", t); }}
+                  />
                 </div>
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>IC #</span>
@@ -732,7 +801,7 @@ export default function EvaluationsHistoryPage() {
                   <div style={{ position: "relative" }}>
                     <Input
                       readOnly disabled value="Three-Phase Pad"
-                      className="h-[34px] text-[13px] rounded-[7px] font-sans w-full pr-7 bg-muted text-muted-foreground cursor-not-allowed disabled:opacity-100"
+                      className="h-[34px] text-[13px] rounded-[7px] font-sans w-full pr-7 bg-muted text-muted-foreground cursor-not-allowed disabled:opacity-100 shadow-none"
                     />
                     <span style={{ position: "absolute", right: 9, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", display: "flex", alignItems: "center" }}>
                       <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
