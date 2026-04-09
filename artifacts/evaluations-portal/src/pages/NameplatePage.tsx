@@ -110,7 +110,7 @@ function ConfidenceBadge({ pct }: { pct: number }) {
       background: bg, color, border: `1px solid ${border}`,
     }}>
       <SparkleIcon size={10} />
-      {pct}% Confidence
+      AI was {pct}% Confident
     </span>
   );
 }
@@ -595,22 +595,24 @@ export default function NameplatePage() {
             flexShrink: 0,
             flexWrap: "wrap",
           }}>
-            {/* Back link */}
+            {/* Back button */}
             <button
               onClick={() => setCurrentPage("evaluations-history")}
               style={{
-                display: "flex", alignItems: "center", gap: 5,
-                color: "rgba(255,255,255,0.55)", fontSize: 12, fontWeight: 500,
-                background: "none", border: "none", cursor: "pointer", padding: 0,
-                flexShrink: 0,
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "6px 14px", borderRadius: 7,
+                border: "1px solid rgba(255,255,255,0.22)",
+                background: "rgba(255,255,255,0.08)",
+                color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: 500,
+                cursor: "pointer", flexShrink: 0,
               }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#fff"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.55)"; }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.15)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.08)"; }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M19 12H5M12 5l-7 7 7 7"/>
               </svg>
-              Evaluations
+              Back to Evaluation History
             </button>
 
             <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)", flexShrink: 0 }} />
