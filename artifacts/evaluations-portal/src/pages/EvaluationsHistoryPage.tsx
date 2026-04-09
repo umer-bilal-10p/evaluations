@@ -283,7 +283,12 @@ function DateRangePicker({ from, to, onChange }: {
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start" sideOffset={4}>
+      <PopoverContent
+        className="p-0"
+        style={{ width: "auto", minWidth: "max-content" }}
+        align="start"
+        sideOffset={4}
+      >
         <Calendar
           mode="range"
           selected={range}
@@ -292,7 +297,7 @@ function DateRangePicker({ from, to, onChange }: {
             if (r?.from && r?.to) setOpen(false);
           }}
           numberOfMonths={2}
-          className="[--cell-size:1.85rem] text-[13px]"
+          className="[--cell-size:2.25rem] p-4"
         />
       </PopoverContent>
     </Popover>
