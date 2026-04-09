@@ -6,6 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 /* ─── Default mock data ─────────────────────────────────────────────────────── */
@@ -69,7 +77,7 @@ const HV = {
     { tap: "7/G", kvaRating: "—", deviation: "—" },
   ],
   numberOfTaps: "5",
-  tapConfig: "1A-5E",
+  tapConfig: "1/A-5/E",
   nominalTapPos: "3",
 };
 
@@ -89,7 +97,6 @@ const LV = {
 
 /* ─── Sub-components ────────────────────────────────────────────────────────── */
 
-/* Sparkle icon shared by AI components */
 function SparkleIcon({ size = 10 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -100,84 +107,60 @@ function SparkleIcon({ size = 10 }: { size?: number }) {
 
 function ConfidenceBadge({ pct }: { pct: number }) {
   const isHigh = pct >= 60;
-  const bg = isHigh ? "rgba(124,58,237,0.10)" : "#FEF3C7";
-  const color = isHigh ? "#7C3AED" : "#92400E";
-  const border = isHigh ? "rgba(124,58,237,0.28)" : "#FCD34D";
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 4,
-      fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 20,
-      background: bg, color, border: `1px solid ${border}`,
-    }}>
+    <Badge
+      className={cn(
+        "gap-1 rounded-full font-semibold text-[11px] px-2 py-0.5",
+        isHigh
+          ? "border-[rgba(124,58,237,0.28)] bg-[rgba(124,58,237,0.10)] text-[#7C3AED]"
+          : "border-[#FCD34D] bg-[#FEF3C7] text-[#92400E]",
+      )}
+    >
       <SparkleIcon size={10} />
       AI was {pct}% Confident
-    </span>
+    </Badge>
   );
 }
 
 function SectionHeader({ title, confidence }: { title: string; confidence: number }) {
   return (
-    <div style={{
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      paddingBottom: 12, marginBottom: 16,
-      borderBottom: "1px solid hsl(var(--border))",
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <div style={{ width: 3, height: 16, borderRadius: 2, background: "#0047BB", flexShrink: 0 }} />
-        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "hsl(var(--foreground))" }}>
-          {title}
-        </span>
-      </div>
+    <div className="flex items-center justify-between pb-3 mb-4 border-b border-border">
+      <span className="text-sm font-semibold text-foreground">{title}</span>
       <ConfidenceBadge pct={confidence} />
-    </div>
-  );
-}
-
-function FieldLabel({ label, required }: { label: string; required?: boolean }) {
-  return (
-    <div style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--muted-foreground))", marginBottom: 5, letterSpacing: "0.02em" }}>
-      {label}{required && <span style={{ color: "#DC2626", marginLeft: 2 }}>*</span>}
     </div>
   );
 }
 
 function AiChip({ label }: { label: string }) {
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 4, marginTop: 4,
-      fontSize: 11, color: "#7C3AED", fontWeight: 500,
-      background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.22)",
-      borderRadius: 5, padding: "1px 7px",
-    }}>
+    <Badge
+      className="mt-1 gap-1 rounded-md text-[11px] font-medium px-1.5 py-0.5 border-[rgba(124,58,237,0.22)] bg-[rgba(124,58,237,0.08)] text-[#7C3AED]"
+    >
       <SparkleIcon size={9} />
       AI: {label}
-    </span>
+    </Badge>
   );
 }
 
 function ErrorMsg({ msg }: { msg: string }) {
   return (
-    <span style={{ display: "block", marginTop: 4, fontSize: 11, color: "#DC2626" }}>
-      ⚠ {msg}
-    </span>
+    <span className="block mt-1 text-[11px] text-destructive">⚠ {msg}</span>
   );
 }
 
-/* ─── Unified Field — shadcn Input in readOnly or editable state ──────────── */
+/* ─── Unified Field ──────────────────────────────────────────────────────────── */
+function FieldLabel({ label, required }: { label: string; required?: boolean }) {
+  return (
+    <Label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+      {label}{required && <span className="text-destructive ml-0.5">*</span>}
+    </Label>
+  );
+}
+
 function Field({
-  label,
-  value,
-  editMode,
-  required,
-  error,
-  placeholder,
+  label, value, editMode, required, error, placeholder,
 }: {
-  label: string;
-  value: string;
-  editMode: boolean;
-  required?: boolean;
-  error?: boolean;
-  placeholder?: string;
+  label: string; value: string; editMode: boolean; required?: boolean; error?: boolean; placeholder?: string;
 }) {
   return (
     <div>
@@ -197,29 +180,17 @@ function Field({
   );
 }
 
-/* ─── Unified Select — shadcn Select disabled in view mode ──────────────────── */
+/* ─── Unified Select ─────────────────────────────────────────────────────────── */
 function SelectField({
-  label,
-  value,
-  editMode,
-  required,
-  options,
+  label, value, editMode, required, options,
 }: {
-  label: string;
-  value: string;
-  editMode: boolean;
-  required?: boolean;
-  options: string[];
+  label: string; value: string; editMode: boolean; required?: boolean; options: string[];
 }) {
   if (!editMode) {
     return (
       <div>
         <FieldLabel label={label} required={required} />
-        <Input
-          value={value || "—"}
-          readOnly
-          className="h-9 text-sm bg-muted border-muted cursor-default focus-visible:ring-0 focus-visible:ring-offset-0"
-        />
+        <Input value={value || "—"} readOnly className="h-9 text-sm bg-muted border-muted cursor-default focus-visible:ring-0 focus-visible:ring-offset-0" />
       </div>
     );
   }
@@ -240,30 +211,21 @@ function SelectField({
 
 /* ─── Switch field ──────────────────────────────────────────────────────────── */
 function SwitchField({
-  label,
-  value,
-  editMode,
-  onChange,
+  label, value, editMode, onChange,
 }: {
-  label: string;
-  value: boolean;
-  editMode: boolean;
-  onChange?: (v: boolean) => void;
+  label: string; value: boolean; editMode: boolean; onChange?: (v: boolean) => void;
 }) {
   return (
     <div>
       <FieldLabel label={label} required />
-      <div style={{ height: 36, display: "flex", alignItems: "center", gap: 8 }}>
+      <div className="flex items-center gap-2 h-9">
         <Switch
           checked={value}
           onCheckedChange={editMode ? onChange : undefined}
           disabled={!editMode}
-          className={cn(
-            "data-[state=checked]:bg-[#0047BB]",
-            !editMode && "opacity-100 cursor-default",
-          )}
+          className={cn("data-[state=checked]:bg-[#0047BB]", !editMode && "opacity-100 cursor-default")}
         />
-        <span style={{ fontSize: 13, fontWeight: 500, color: value ? "#0047BB" : "hsl(var(--muted-foreground))" }}>
+        <span className={cn("text-sm font-medium", value ? "text-[#0047BB]" : "text-muted-foreground")}>
           {value ? "Yes" : "No"}
         </span>
       </div>
@@ -274,25 +236,15 @@ function SwitchField({
 /* ─── Section wrapper ───────────────────────────────────────────────────────── */
 function Section({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{
-      background: "hsl(var(--card))",
-      border: "1px solid hsl(var(--border))",
-      borderRadius: 12,
-      padding: "20px 24px",
-      marginBottom: 16,
-    }}>
-      {children}
-    </div>
+    <Card className="mb-4 shadow-none rounded-xl">
+      <CardContent className="p-6">{children}</CardContent>
+    </Card>
   );
 }
 
 function FieldGrid({ children, cols = 3 }: { children: React.ReactNode; cols?: number }) {
   return (
-    <div style={{
-      display: "grid",
-      gridTemplateColumns: `repeat(${cols}, 1fr)`,
-      gap: "16px 20px",
-    }}>
+    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: "16px 20px" }}>
       {children}
     </div>
   );
@@ -301,61 +253,42 @@ function FieldGrid({ children, cols = 3 }: { children: React.ReactNode; cols?: n
 /* ─── Tap table ─────────────────────────────────────────────────────────────── */
 function TapTable({ taps, editMode }: { taps: typeof HV.taps; editMode: boolean }) {
   return (
-    <div style={{ marginTop: 4 }}>
-      <div style={{
-        fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase",
-        color: "hsl(var(--muted-foreground))", marginBottom: 8,
-      }}>
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
         Tap Voltage &amp; % Deviation
-      </div>
-      <div style={{
-        border: "1px solid hsl(var(--border))",
-        borderRadius: 8,
-        overflow: "hidden",
-        fontSize: 12,
-      }}>
-        <div style={{
-          display: "grid", gridTemplateColumns: "64px 1fr 1fr",
-          background: "hsl(var(--muted))",
-          borderBottom: "1px solid hsl(var(--border))",
-          padding: "6px 12px",
-          fontWeight: 700, fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase",
-          color: "hsl(var(--muted-foreground))",
-        }}>
-          <span>TAP</span>
-          <span>KVA Rating</span>
-          <span>% Deviation</span>
-        </div>
-        {taps.map((row, i) => {
-          const isEmpty = row.kvaRating === "—";
-          return (
-            <div key={row.tap} style={{
-              display: "grid", gridTemplateColumns: "64px 1fr 1fr",
-              padding: "7px 12px",
-              borderBottom: i < taps.length - 1 ? "1px solid hsl(var(--border))" : undefined,
-              background: "hsl(var(--card))",
-              alignItems: "center",
-            }}>
-              <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>{row.tap}</span>
-              <span style={{ color: isEmpty ? "hsl(var(--muted-foreground))" : "hsl(var(--foreground))" }}>
-                {editMode && !isEmpty ? (
-                  <Input defaultValue={row.kvaRating} className="h-7 text-xs bg-background" style={{ maxWidth: 100 }} />
-                ) : row.kvaRating}
-              </span>
-              <span style={{
-                color: isEmpty ? "hsl(var(--muted-foreground))"
-                  : row.deviation.startsWith("+") ? "#047857"
-                  : row.deviation === "0.0" ? "hsl(var(--foreground))"
-                  : "#DC2626",
-                fontWeight: isEmpty ? 400 : 500,
-              }}>
-                {editMode && !isEmpty ? (
-                  <Input defaultValue={row.deviation} className="h-7 text-xs bg-background" style={{ maxWidth: 80 }} />
-                ) : row.deviation}
-              </span>
-            </div>
-          );
-        })}
+      </p>
+      <div className="rounded-lg border border-border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted hover:bg-muted">
+              <TableHead className="h-8 text-[10px] font-bold uppercase tracking-wider w-16">TAP</TableHead>
+              <TableHead className="h-8 text-[10px] font-bold uppercase tracking-wider">KVA Rating</TableHead>
+              <TableHead className="h-8 text-[10px] font-bold uppercase tracking-wider">% Deviation</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {taps.map((row) => (
+              <TableRow key={row.tap} className="hover:bg-muted/30">
+                <TableCell className="font-semibold text-sm py-2">{row.tap}</TableCell>
+                <TableCell className="text-sm py-2">
+                  {editMode ? (
+                    <Input defaultValue={row.kvaRating} className="h-7 text-xs bg-background max-w-[100px]" />
+                  ) : row.kvaRating}
+                </TableCell>
+                <TableCell className={cn(
+                  "text-sm font-medium py-2",
+                  row.deviation.startsWith("+") ? "text-[#047857]"
+                    : row.deviation === "0.0" ? "text-foreground"
+                    : "text-destructive",
+                )}>
+                  {editMode ? (
+                    <Input defaultValue={row.deviation} className="h-7 text-xs bg-background max-w-[80px]" />
+                  ) : row.deviation}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
@@ -392,7 +325,6 @@ function NameplateImageContent({ icNumber, manufacturer, mfgSerial, kva, scale =
           </div>
         ))}
       </div>
-      {/* IC# overlay */}
       <div style={{
         position: "absolute", top: fs(6), right: fs(6),
         background: "rgba(0,71,187,0.92)", borderRadius: fs(5),
@@ -402,12 +334,10 @@ function NameplateImageContent({ icNumber, manufacturer, mfgSerial, kva, scale =
       }}>
         IC {icNumber}
       </div>
-      {/* Quality indicator */}
       <div style={{ position: "absolute", bottom: fs(5), left: fs(6), display: "flex", alignItems: "center", gap: fs(3) }}>
         <div style={{ width: fs(6), height: fs(6), borderRadius: "50%", background: "#FBBF24" }} />
         <span style={{ fontSize: fs(7), fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>Low quality</span>
       </div>
-      {/* Timestamp */}
       <div style={{ position: "absolute", bottom: fs(5), right: fs(6), fontSize: fs(7), color: "rgba(255,255,255,0.45)", fontFamily: "monospace" }}>
         {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
       </div>
@@ -415,7 +345,7 @@ function NameplateImageContent({ icNumber, manufacturer, mfgSerial, kva, scale =
   );
 }
 
-/* ─── Nameplate image card with IC overlay ──────────────────────────────────── */
+/* ─── Nameplate image card ───────────────────────────────────────────────────── */
 function NameplateImageCard({ icNumber, manufacturer, mfgSerial, kva }: {
   icNumber: string; manufacturer: string; mfgSerial: string; kva: number;
 }) {
@@ -430,105 +360,75 @@ function NameplateImageCard({ icNumber, manufacturer, mfgSerial, kva }: {
 
   return (
     <>
-      <div style={{
-        background: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
-        borderRadius: 10, padding: 16, marginBottom: 12,
-        display: "flex", gap: 16, alignItems: "flex-start",
-      }}>
-        {/* Thumbnail — clickable */}
-        <div
-          onClick={() => setExpanded(true)}
-          style={{
-            width: 200, height: 140, borderRadius: 8, overflow: "hidden",
-            flexShrink: 0, position: "relative", cursor: "pointer",
-            border: "1px solid hsl(var(--border))",
-            background: "linear-gradient(135deg, #1a1f2e 0%, #2a3350 40%, #1e2640 100%)",
-          }}
-        >
-          <NameplateImageContent icNumber={icNumber} manufacturer={manufacturer} mfgSerial={mfgSerial} kva={kva} scale={1} />
-          {/* Expand icon overlay */}
-          <div style={{
-            position: "absolute", top: 6, left: 6,
-            width: 24, height: 24, borderRadius: 5,
-            background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: "rgba(255,255,255,0.85)",
-          }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
-              <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
-            </svg>
+      <Card className="mb-3 shadow-none">
+        <CardContent className="p-4 flex gap-4 items-start">
+          {/* Thumbnail */}
+          <div
+            onClick={() => setExpanded(true)}
+            className="relative flex-shrink-0 cursor-pointer rounded-lg overflow-hidden border border-border"
+            style={{ width: 200, height: 140, background: "linear-gradient(135deg, #1a1f2e 0%, #2a3350 40%, #1e2640 100%)" }}
+          >
+            <NameplateImageContent icNumber={icNumber} manufacturer={manufacturer} mfgSerial={mfgSerial} kva={kva} scale={1} />
+            <div className="absolute top-1.5 left-1.5 w-6 h-6 rounded flex items-center justify-center text-white/85"
+              style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </div>
           </div>
-        </div>
 
-        {/* Metadata beside image */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 1 }}>IC: {icNumber}</div>
-            <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{manufacturer} · {mfgSerial} · {kva.toLocaleString()} kVA</div>
+          {/* Metadata */}
+          <div className="flex flex-col gap-2">
+            <div>
+              <p className="text-xs font-semibold text-foreground mb-0.5">IC: {icNumber}</p>
+              <p className="text-[11px] text-muted-foreground">{manufacturer} · {mfgSerial} · {kva.toLocaleString()} kVA</p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#7C3AED] flex-shrink-0">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/>
+                <path d="M3 9h2M3 15h2M19 9h2M19 15h2M9 3v2M15 3v2M9 19v2M15 19v2"/>
+              </svg>
+              <span className="text-[11px] text-[#7C3AED] font-medium">AI was used to scan Nameplate</span>
+            </div>
+            <div className="flex flex-wrap gap-1 items-center">
+              {["Blurry", "Underexposed", "Off angle"].map((tag) => (
+                <Badge key={tag} className="rounded-full text-[10px] font-medium border-[#FCD34D] bg-[#FEF3C7] text-[#92400E] px-2 py-0">
+                  {tag}
+                </Badge>
+              ))}
+              <span className="text-[11px] text-[#92400E]">
+                — Image quality issues were detected, AI accuracy was likely impacted.
+              </span>
+            </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#7C3AED", flexShrink: 0 }}>
-              <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/>
-              <path d="M3 9h2M3 15h2M19 9h2M19 15h2M9 3v2M15 3v2M9 19v2M15 19v2"/>
-            </svg>
-            <span style={{ fontSize: 11, color: "#7C3AED", fontWeight: 500 }}>AI was used to scan Nameplate</span>
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
-            {["Blurry", "Underexposed", "Off angle"].map((tag) => (
-              <span key={tag} style={{
-                fontSize: 10, fontWeight: 500,
-                background: "#FEF3C7", border: "1px solid #FCD34D", color: "#92400E",
-                borderRadius: 20, padding: "1px 7px",
-              }}>{tag}</span>
-            ))}
-            <span style={{ fontSize: 11, color: "#92400E", fontWeight: 400 }}>
-              — Image quality issues were detected, AI accuracy was likely impacted.
-            </span>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* ── Expanded modal ── */}
+      {/* Expanded modal */}
       {expanded && (
         <div
           onClick={() => setExpanded(false)}
-          style={{
-            position: "fixed", inset: 0, zIndex: 9999,
-            background: "rgba(0,0,0,0.82)", backdropFilter: "blur(6px)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.82)", backdropFilter: "blur(6px)" }}
         >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{ position: "relative" }}
-          >
-            {/* Close button */}
-            <button
+          <div onClick={(e) => e.stopPropagation()} className="relative">
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setExpanded(false)}
-              style={{
-                position: "absolute", top: -40, left: 0,
-                display: "flex", alignItems: "center", gap: 6,
-                background: "none", border: "none", color: "rgba(255,255,255,0.7)",
-                fontSize: 13, fontWeight: 500, cursor: "pointer", padding: 0,
-              }}
+              className="absolute -top-10 left-0 text-white/70 hover:text-white hover:bg-white/10 gap-1.5"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/>
               </svg>
               Close
-            </button>
-
-            {/* Download button */}
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleDownload}
-              style={{
-                position: "absolute", top: -40, right: 0,
-                display: "flex", alignItems: "center", gap: 6,
-                background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)",
-                color: "#fff", fontSize: 12, fontWeight: 500, cursor: "pointer",
-                borderRadius: 7, padding: "5px 12px",
-              }}
+              className="absolute -top-10 right-0 text-white border-white/20 bg-white/12 hover:bg-white/20 gap-1.5"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -536,16 +436,9 @@ function NameplateImageCard({ icNumber, manufacturer, mfgSerial, kva }: {
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
               Download
-            </button>
-
-            {/* Large nameplate image */}
-            <div style={{
-              width: 640, height: 400, borderRadius: 12, overflow: "hidden",
-              position: "relative",
-              background: "linear-gradient(135deg, #1a1f2e 0%, #2a3350 40%, #1e2640 100%)",
-              border: "1px solid rgba(255,255,255,0.15)",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.6)",
-            }}>
+            </Button>
+            <div className="rounded-xl overflow-hidden relative border border-white/15"
+              style={{ width: 640, height: 400, background: "linear-gradient(135deg, #1a1f2e 0%, #2a3350 40%, #1e2640 100%)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}>
               <NameplateImageContent icNumber={icNumber} manufacturer={manufacturer} mfgSerial={mfgSerial} kva={kva} scale={3.2} />
             </div>
           </div>
@@ -583,42 +476,27 @@ export default function NameplatePage() {
 
         <main className="flex-1 flex flex-col overflow-hidden">
 
-          {/* ── Unit sub-header ──────────────────────────────────────────── */}
-          <div style={{
-            background: "#0d1629",
-            borderBottom: "1px solid rgba(255,255,255,0.08)",
-            padding: "0 24px",
-            minHeight: 48,
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-            flexShrink: 0,
-            flexWrap: "wrap",
-          }}>
+          {/* ── Unit sub-header ── */}
+          <div className="flex items-center gap-4 px-6 flex-shrink-0 flex-wrap min-h-12"
+            style={{ background: "#0d1629", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+
             {/* Back button */}
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setCurrentPage("evaluations-history")}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "6px 14px", borderRadius: 7,
-                border: "1px solid rgba(255,255,255,0.22)",
-                background: "rgba(255,255,255,0.08)",
-                color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: 500,
-                cursor: "pointer", flexShrink: 0,
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.15)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.08)"; }}
+              className="gap-1.5 border-white/22 bg-white/8 text-white/85 hover:bg-white/15 hover:text-white flex-shrink-0"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M19 12H5M12 5l-7 7 7 7"/>
               </svg>
               Back to Evaluation History
-            </button>
+            </Button>
 
-            <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)", flexShrink: 0 }} />
+            <Separator orientation="vertical" className="h-4 bg-white/15 flex-shrink-0" />
 
             {/* Breadcrumb pills */}
-            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", flex: 1 }}>
+            <div className="flex items-center gap-1.5 flex-wrap flex-1">
               {[
                 unit.manufacturer,
                 `IC: ${unit.icNumber}`,
@@ -626,284 +504,196 @@ export default function NameplatePage() {
                 `KVA: ${unit.kva.toLocaleString()}`,
                 unit.transformerType,
               ].map((label, i) => (
-                <span key={i} style={{
-                  fontSize: 12, color: "rgba(255,255,255,0.75)", fontWeight: 500,
-                  background: "rgba(255,255,255,0.07)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: 6, padding: "2px 9px",
-                }}>
+                <Badge key={i} variant="outline" className="text-[12px] font-medium text-white/75 bg-white/7 border-white/12 rounded-md px-2 py-0.5">
                   {label}
-                </span>
+                </Badge>
               ))}
               {unit.hasBaseDamage && (
-                <span style={{
-                  fontSize: 11, fontWeight: 600, color: "#FEF3C7",
-                  background: "rgba(234,88,12,0.25)", border: "1px solid rgba(234,88,12,0.45)",
-                  borderRadius: 6, padding: "2px 9px", display: "inline-flex", alignItems: "center", gap: 4,
-                }}>
+                <Badge className="text-[11px] font-semibold gap-1 rounded-md px-2 py-0.5 border-[rgba(234,88,12,0.45)] bg-[rgba(234,88,12,0.25)] text-[#FEF3C7]">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                   </svg>
                   Base Damage
-                </span>
+                </Badge>
               )}
               {(unit.intakeTags ?? []).map((tag: string) => (
-                <span key={tag} style={{
-                  fontSize: 11, fontWeight: 600, color: "#E0F2FE",
-                  background: "rgba(14,165,233,0.18)", border: "1px solid rgba(14,165,233,0.35)",
-                  borderRadius: 6, padding: "2px 9px",
-                }}>
+                <Badge key={tag} className="text-[11px] font-semibold rounded-md px-2 py-0.5 border-[rgba(14,165,233,0.35)] bg-[rgba(14,165,233,0.18)] text-[#E0F2FE]">
                   {tag}
-                </span>
+                </Badge>
               ))}
             </div>
 
-            {/* Edit / Save / Discard buttons */}
+            {/* Edit / Save / Discard */}
             {editMode ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                <button
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setEditMode(false)}
-                  style={{
-                    padding: "6px 16px", borderRadius: 7,
-                    border: "1px solid rgba(255,255,255,0.22)",
-                    background: "transparent", color: "rgba(255,255,255,0.75)",
-                    fontSize: 12, fontWeight: 500, cursor: "pointer",
-                    display: "flex", alignItems: "center", gap: 6,
-                  }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.08)"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                  className="gap-1.5 border border-white/22 text-white/75 hover:bg-white/8 hover:text-white"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                   </svg>
                   Discard Changes
-                </button>
-                <button
+                </Button>
+                <Button
+                  size="sm"
                   onClick={() => setEditMode(false)}
-                  style={{
-                    padding: "6px 16px", borderRadius: 7,
-                    border: "1px solid #0047BB", background: "#0047BB",
-                    color: "#fff", fontSize: 12, fontWeight: 600,
-                    cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-                  }}
+                  className="gap-1.5 bg-[#0047BB] border-[#0047BB] text-white hover:bg-[#0040AA]"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12"/>
                   </svg>
                   Save
-                </button>
+                </Button>
               </div>
             ) : (
-              <button
+              <Button
+                size="sm"
                 onClick={() => setEditMode(true)}
-                style={{
-                  flexShrink: 0, padding: "6px 16px", borderRadius: 7,
-                  border: "1px solid #0047BB", background: "#0047BB",
-                  color: "#fff", fontSize: 12, fontWeight: 600,
-                  cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-                }}
+                className="flex-shrink-0 gap-1.5 bg-[#0047BB] border-[#0047BB] text-white hover:bg-[#0040AA]"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
                 Edit
-              </button>
+              </Button>
             )}
           </div>
 
-          {/* ── Scrollable content ───────────────────────────────────────── */}
-          <div className="flex-1 overflow-auto" style={{ padding: "24px 32px" }}>
-            <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          {/* ── Scrollable content ── */}
+          <div className="flex-1 overflow-auto px-8 py-6">
+            <div className="max-w-[1100px] mx-auto">
 
               {/* Supervisor Comments */}
-              <div style={{ marginBottom: 16 }}>
+              <div className="mb-4">
                 <Accordion type="single" collapsible>
-                  <AccordionItem value="comments" style={{
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 10,
-                    background: "hsl(var(--card))",
-                    overflow: "hidden",
-                  }}>
-                    <AccordionTrigger className="px-4 py-3 hover:no-underline" style={{ borderBottom: "none" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#0047BB" }}>
+                  <AccordionItem value="comments" className="border border-border rounded-xl bg-card overflow-hidden">
+                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0047BB]">
                           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                         </svg>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: "hsl(var(--foreground))" }}>Supervisor Comments</span>
-                        <span style={{
-                          width: 18, height: 18, borderRadius: "50%",
-                          background: "#0047BB", color: "#fff",
-                          fontSize: 10, fontWeight: 700,
-                          display: "inline-flex", alignItems: "center", justifyContent: "center",
-                        }}>{supervisorComments.length}</span>
+                        <span className="text-sm font-semibold text-foreground">Supervisor Comments</span>
+                        <Badge className="w-[18px] h-[18px] rounded-full bg-[#0047BB] text-white text-[10px] font-bold p-0 flex items-center justify-center">
+                          {supervisorComments.length}
+                        </Badge>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="px-4 pb-4">
-                      <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 4 }}>
+                      <div className="flex flex-col gap-3 pt-1">
                         {supervisorComments.map((c, idx) => {
                           const isOwn = c.initials === "YU";
                           const isEditing = editingCommentIdx === idx;
                           return (
-                            <div key={idx} style={{
-                              background: "hsl(var(--muted) / 0.5)",
-                              border: `1px solid ${isEditing ? "#0047BB" : "hsl(var(--border))"}`,
-                              borderRadius: 8, padding: "12px 14px",
-                            }}>
-                              {/* Header row */}
-                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                                <div style={{
-                                  width: 28, height: 28, borderRadius: "50%",
-                                  background: c.color, color: "#fff",
-                                  fontSize: 10, fontWeight: 700,
-                                  display: "flex", alignItems: "center", justifyContent: "center",
-                                  flexShrink: 0,
-                                }}>
-                                  {c.initials}
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))" }}>{c.name}</div>
-                                  <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{c.role} · {c.time}</div>
-                                </div>
-                                {/* Edit / Delete — own comments only, hidden while editing */}
-                                {isOwn && !isEditing && (
-                                  <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
-                                    <button
-                                      title="Edit comment"
-                                      onClick={() => { setEditingCommentIdx(idx); setEditDraft(c.text); }}
-                                      style={{
-                                        width: 28, height: 28, borderRadius: 6,
-                                        border: "1px solid transparent", background: "none",
-                                        color: "hsl(var(--muted-foreground))", cursor: "pointer",
-                                        display: "flex", alignItems: "center", justifyContent: "center",
-                                      }}
-                                      onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(var(--muted))"; e.currentTarget.style.color = "hsl(var(--foreground))"; }}
-                                      onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "hsl(var(--muted-foreground))"; }}
+                            <Card key={idx} className={cn(
+                              "shadow-none rounded-lg",
+                              isEditing ? "border-[#0047BB]" : "border-border",
+                              "bg-muted/50",
+                            )}>
+                              <CardContent className="p-3.5">
+                                {/* Header */}
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Avatar className="h-7 w-7 flex-shrink-0">
+                                    <AvatarFallback
+                                      className="text-[10px] font-bold text-white"
+                                      style={{ background: c.color }}
                                     >
-                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                      </svg>
-                                    </button>
-                                    <button
-                                      title="Delete comment"
-                                      onClick={() => setSupervisorComments((prev) => prev.filter((_, i) => i !== idx))}
-                                      style={{
-                                        width: 28, height: 28, borderRadius: 6,
-                                        border: "1px solid transparent", background: "none",
-                                        color: "hsl(var(--muted-foreground))", cursor: "pointer",
-                                        display: "flex", alignItems: "center", justifyContent: "center",
-                                      }}
-                                      onMouseEnter={(e) => { e.currentTarget.style.background = "#FEE2E2"; e.currentTarget.style.color = "#DC2626"; }}
-                                      onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "hsl(var(--muted-foreground))"; }}
-                                    >
-                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
-                                        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                                        <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-                                      </svg>
-                                    </button>
+                                      {c.initials}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1">
+                                    <p className="text-xs font-semibold text-foreground">{c.name}</p>
+                                    <p className="text-[11px] text-muted-foreground">{c.role} · {c.time}</p>
                                   </div>
-                                )}
-                              </div>
+                                  {isOwn && !isEditing && (
+                                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        title="Edit comment"
+                                        onClick={() => { setEditingCommentIdx(idx); setEditDraft(c.text); }}
+                                        className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted"
+                                      >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        title="Delete comment"
+                                        onClick={() => setSupervisorComments((prev) => prev.filter((_, i) => i !== idx))}
+                                        className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                      >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+                                          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                                          <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                                        </svg>
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
 
-                              {/* Body — inline edit or plain text */}
-                              {isEditing ? (
-                                <div>
-                                  <textarea
-                                    autoFocus
-                                    value={editDraft}
-                                    onChange={(e) => setEditDraft(e.target.value)}
-                                    rows={3}
-                                    style={{
-                                      width: "100%", boxSizing: "border-box",
-                                      padding: "8px 10px", borderRadius: 6,
-                                      border: "1px solid hsl(var(--border))",
-                                      background: "hsl(var(--background))",
-                                      fontSize: 13, lineHeight: 1.55,
-                                      color: "hsl(var(--foreground))",
-                                      outline: "none", resize: "none",
-                                      fontFamily: "inherit",
-                                    }}
-                                  />
-                                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, marginTop: 8 }}>
-                                    <button
-                                      onClick={() => setEditingCommentIdx(null)}
-                                      style={{
-                                        padding: "4px 12px", borderRadius: 6,
-                                        border: "1px solid hsl(var(--border))",
-                                        background: "transparent", color: "hsl(var(--muted-foreground))",
-                                        fontSize: 12, fontWeight: 500, cursor: "pointer",
-                                      }}
-                                    >
-                                      Cancel
-                                    </button>
-                                    <button
-                                      disabled={!editDraft.trim()}
-                                      onClick={() => {
-                                        if (!editDraft.trim()) return;
-                                        setSupervisorComments((prev) =>
-                                          prev.map((item, i) => i === idx ? { ...item, text: editDraft.trim(), time: "Edited · Just now" } : item)
-                                        );
-                                        setEditingCommentIdx(null);
-                                      }}
-                                      style={{
-                                        padding: "4px 14px", borderRadius: 6,
-                                        border: "1px solid #0047BB", background: "#0047BB",
-                                        color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer",
-                                      }}
-                                    >
-                                      Save
-                                    </button>
+                                {/* Body */}
+                                {isEditing ? (
+                                  <div>
+                                    <Textarea
+                                      autoFocus
+                                      value={editDraft}
+                                      onChange={(e) => setEditDraft(e.target.value)}
+                                      rows={3}
+                                      className="text-sm resize-none bg-background"
+                                    />
+                                    <div className="flex justify-end gap-1.5 mt-2">
+                                      <Button variant="outline" size="sm" onClick={() => setEditingCommentIdx(null)}>
+                                        Cancel
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        disabled={!editDraft.trim()}
+                                        onClick={() => {
+                                          if (!editDraft.trim()) return;
+                                          setSupervisorComments((prev) =>
+                                            prev.map((item, i) => i === idx ? { ...item, text: editDraft.trim(), time: "Edited · Just now" } : item)
+                                          );
+                                          setEditingCommentIdx(null);
+                                        }}
+                                        className="bg-[#0047BB] border-[#0047BB] text-white hover:bg-[#0040AA]"
+                                      >
+                                        Save
+                                      </Button>
+                                    </div>
                                   </div>
-                                </div>
-                              ) : (
-                                <p style={{ fontSize: 13, color: "hsl(var(--foreground))", lineHeight: 1.5, margin: 0 }}>{c.text}</p>
-                              )}
-                            </div>
+                                ) : (
+                                  <p className="text-sm text-foreground leading-relaxed m-0">{c.text}</p>
+                                )}
+                              </CardContent>
+                            </Card>
                           );
                         })}
 
-                        {/* ── New comment input ── */}
-                        <div style={{
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: 8, overflow: "hidden",
-                          background: "hsl(var(--card))",
-                        }}>
-                          <textarea
+                        {/* New comment input */}
+                        <Card className="shadow-none rounded-lg overflow-hidden">
+                          <Textarea
                             value={commentDraft}
                             onChange={(e) => setCommentDraft(e.target.value)}
                             placeholder="Leave a comment…"
                             rows={3}
-                            style={{
-                              width: "100%", boxSizing: "border-box",
-                              padding: "10px 12px",
-                              fontSize: 13, lineHeight: 1.55,
-                              color: "hsl(var(--foreground))",
-                              background: "transparent",
-                              border: "none", outline: "none", resize: "none",
-                              fontFamily: "inherit",
-                            }}
+                            className="border-0 rounded-none focus-visible:ring-0 resize-none text-sm bg-transparent"
                           />
-                          <div style={{
-                            borderTop: "1px solid hsl(var(--border))",
-                            padding: "8px 12px",
-                            display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8,
-                            background: "hsl(var(--muted) / 0.3)",
-                          }}>
+                          <div className="border-t border-border px-3 py-2 flex justify-end items-center gap-2 bg-muted/30">
                             {commentDraft.trim() && (
-                              <button
-                                onClick={() => setCommentDraft("")}
-                                style={{
-                                  padding: "5px 12px", borderRadius: 6,
-                                  border: "1px solid hsl(var(--border))",
-                                  background: "transparent", color: "hsl(var(--muted-foreground))",
-                                  fontSize: 12, fontWeight: 500, cursor: "pointer",
-                                }}
-                              >
+                              <Button variant="outline" size="sm" onClick={() => setCommentDraft("")}>
                                 Cancel
-                              </button>
+                              </Button>
                             )}
-                            <button
+                            <Button
+                              size="sm"
                               disabled={!commentDraft.trim() || postingComment}
                               onClick={() => {
                                 if (!commentDraft.trim()) return;
@@ -917,31 +707,22 @@ export default function NameplatePage() {
                                   setPostingComment(false);
                                 }, 400);
                               }}
-                              style={{
-                                padding: "5px 14px", borderRadius: 6,
-                                border: "1px solid #0047BB",
-                                background: commentDraft.trim() ? "#0047BB" : "hsl(var(--muted))",
-                                color: commentDraft.trim() ? "#fff" : "hsl(var(--muted-foreground))",
-                                fontSize: 12, fontWeight: 600,
-                                cursor: commentDraft.trim() ? "pointer" : "not-allowed",
-                                display: "flex", alignItems: "center", gap: 6,
-                                transition: "background 0.15s, color 0.15s",
-                              }}
+                              className="gap-1.5 bg-[#0047BB] border-[#0047BB] text-white hover:bg-[#0040AA] disabled:opacity-50"
                             >
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
                               </svg>
                               {postingComment ? "Posting…" : "Post Comment"}
-                            </button>
+                            </Button>
                           </div>
-                        </div>
+                        </Card>
                       </div>
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>
               </div>
 
-              {/* Nameplate image card with IC overlay */}
+              {/* Nameplate image card */}
               <NameplateImageCard
                 icNumber={unit.icNumber}
                 manufacturer={unit.manufacturer}
@@ -949,42 +730,24 @@ export default function NameplatePage() {
                 kva={unit.kva}
               />
 
-              {/* ── IDENTIFICATION ──────────────────────────────────────── */}
+              {/* ── IDENTIFICATION ── */}
               <Section>
                 <SectionHeader title="Identification" confidence={87} />
                 <FieldGrid>
-                  <SelectField
-                    label="Manufacturer"
-                    value={IDENTIFICATION.manufacturer}
-                    editMode={editMode}
-                    required
-                    options={["Siemens", "ABB", "Eaton", "General Electric", "Schneider Electric", "Square D"]}
-                  />
-
+                  <SelectField label="Manufacturer" value={IDENTIFICATION.manufacturer} editMode={editMode} required
+                    options={["Siemens", "ABB", "Eaton", "General Electric", "Schneider Electric", "Square D"]} />
                   <div>
                     <Field label="Serial Number" value={IDENTIFICATION.serialNumber} editMode={editMode} required />
                     <AiChip label={IDENTIFICATION.aiSerial} />
                   </div>
-
-                  <SelectField
-                    label="Unit Type"
-                    value={IDENTIFICATION.unitType}
-                    editMode={editMode}
-                    required
-                    options={["Three-Phase Pad", "Single-Phase Pad", "Pole Mount"]}
-                  />
-
-                  <SelectField
-                    label="Year Manufactured"
-                    value={IDENTIFICATION.yearManufactured}
-                    editMode={editMode}
-                    required
-                    options={Array.from({ length: 40 }, (_, i) => String(2024 - i))}
-                  />
+                  <SelectField label="Unit Type" value={IDENTIFICATION.unitType} editMode={editMode} required
+                    options={["Three-Phase Pad", "Single-Phase Pad", "Pole Mount"]} />
+                  <SelectField label="Year Manufactured" value={IDENTIFICATION.yearManufactured} editMode={editMode} required
+                    options={Array.from({ length: 40 }, (_, i) => String(2024 - i))} />
                 </FieldGrid>
               </Section>
 
-              {/* ── RATINGS ─────────────────────────────────────────────── */}
+              {/* ── RATINGS ── */}
               <Section>
                 <SectionHeader title="Ratings" confidence={91} />
                 <FieldGrid>
@@ -992,28 +755,13 @@ export default function NameplatePage() {
                   <Field label="KVA Fan Base" value={RATINGS.kvaFanBase} editMode={editMode} required placeholder="e.g. 2,000" />
                   <Field label="KVA Higher Rating" value={RATINGS.kvaHigherRating} editMode={editMode} required placeholder="e.g. 2,100" />
                   <Field label="KVA Fan Higher Rating" value={RATINGS.kvaFanHigherRating} editMode={editMode} required placeholder="e.g. 2,200" />
-
-                  <SelectField
-                    label="Cooling Class"
-                    value={RATINGS.coolingClass}
-                    editMode={editMode}
-                    required
-                    options={["ONAN", "ONAF", "ONAN/ONAF", "OFAF", "ODAF"]}
-                  />
-
+                  <SelectField label="Cooling Class" value={RATINGS.coolingClass} editMode={editMode} required
+                    options={["ONAN", "ONAF", "ONAN/ONAF", "OFAF", "ODAF"]} />
                   <Field label="Rise (°C)" value={RATINGS.rise} editMode={editMode} required />
                   <Field label="Frequency" value={RATINGS.frequency} editMode={editMode} required />
                   <Field label="Impedance %" value={RATINGS.impedance} editMode={editMode} required />
-
-                  <SelectField
-                    label="Oil Type"
-                    value={RATINGS.oilType}
-                    editMode={editMode}
-                    required
-                    options={["Mineral Oil", "Silicone", "Natural Ester", "Synthetic Ester"]}
-                  />
-
-                  {/* Oil Volume */}
+                  <SelectField label="Oil Type" value={RATINGS.oilType} editMode={editMode} required
+                    options={["Mineral Oil", "Silicone", "Natural Ester", "Synthetic Ester"]} />
                   <div>
                     <FieldLabel label="Oil Volume (Gallons)" required />
                     <Input
@@ -1027,7 +775,6 @@ export default function NameplatePage() {
                     />
                     {editMode && <ErrorMsg msg={RATINGS.oilVolumeError} />}
                   </div>
-
                   <Field label="Core & Coils Weight (lbs)" value={RATINGS.coreCoilsWeight} editMode={editMode} required />
                   <Field label="Oil Weight (lbs)" value={RATINGS.oilWeight} editMode={editMode} required />
                   <Field label="Case/Tank Weight (lbs)" value={RATINGS.caseTankWeight} editMode={editMode} required />
@@ -1035,102 +782,59 @@ export default function NameplatePage() {
                 </FieldGrid>
               </Section>
 
-              {/* ── HV RATINGS ──────────────────────────────────────────── */}
+              {/* ── HV RATINGS ── */}
               <Section>
                 <SectionHeader title="HV Ratings" confidence={96} />
                 <FieldGrid>
-                  <SelectField
-                    label="HV Nominal Voltage"
-                    value={HV.nominalVoltage}
-                    editMode={editMode}
-                    required
-                    options={[HV.nominalVoltage, "12470Y/7200", "13800", "4160"]}
-                  />
-                  <SelectField
-                    label="HV DY Delta"
-                    value={HV.dyDelta}
-                    editMode={editMode}
-                    required
-                    options={["Delta", "Wye", "Delta/Wye"]}
-                  />
+                  <SelectField label="HV Nominal Voltage" value={HV.nominalVoltage} editMode={editMode} required
+                    options={[HV.nominalVoltage, "12470Y/7200", "13800", "4160"]} />
+                  <SelectField label="HV DY Delta" value={HV.dyDelta} editMode={editMode} required
+                    options={["Delta", "Wye", "Delta/Wye"]} />
                   <Field label="HV 1 Configuration" value={HV.hv1Config} editMode={editMode} required />
-
                   <Field label="HV 1 Delta" value={HV.hv1Delta} editMode={editMode} required />
                   <Field label="HV 3 Configuration" value={HV.hv3Config} editMode={editMode} required />
                   <Field label="HV 2 Delta" value={HV.hv2Delta} editMode={editMode} required />
-
                   <Field label="HV 2 Wye" value={HV.hv2Wye} editMode={editMode} required />
                   <SwitchField label="Delta Wye" value={hvDeltaWye} editMode={editMode} onChange={setHvDeltaWye} />
                   <SwitchField label="Dual Voltage" value={hvDualVoltage} editMode={editMode} onChange={setHvDualVoltage} />
-
                   <Field label="HV BIL (kV)" value={HV.bil} editMode={editMode} required />
-                  <SelectField
-                    label="HV Winding Material"
-                    value={HV.windingMaterial}
-                    editMode={editMode}
-                    required
-                    options={["AL", "CU"]}
-                  />
+                  <SelectField label="HV Winding Material" value={HV.windingMaterial} editMode={editMode} required options={["AL", "CU"]} />
                   <div />
                 </FieldGrid>
-
-                {/* Tap meta — above the table */}
-                <div style={{ marginTop: 20 }}>
+                <div className="mt-5">
                   <FieldGrid>
                     <Field label="Number of Taps" value={HV.numberOfTaps} editMode={editMode} required />
-                    <SelectField
-                      label="Tap Configuration"
-                      value={HV.tapConfig}
-                      editMode={editMode}
-                      required
-                      options={["1/A-5/E", "1/A-7/G", "Full Range"]}
-                    />
+                    <SelectField label="Tap Configuration" value={HV.tapConfig} editMode={editMode} required
+                      options={["1/A-5/E", "1/A-7/G", "Full Range"]} />
                     <Field label="Nominal Tap Position" value={HV.nominalTapPos} editMode={editMode} required />
                   </FieldGrid>
                 </div>
-
-                {/* Tap table — only rows with real data */}
-                <div style={{ marginTop: 16 }}>
+                <div className="mt-4">
                   <TapTable taps={HV.taps.filter((t) => t.kvaRating !== "—")} editMode={editMode} />
                 </div>
               </Section>
 
-              {/* ── LV RATINGS ──────────────────────────────────────────── */}
+              {/* ── LV RATINGS ── */}
               <Section>
                 <SectionHeader title="LV Ratings" confidence={54} />
                 <FieldGrid>
-                  <SelectField
-                    label="LV Nominal Voltage"
-                    value={LV.nominalVoltage}
-                    editMode={editMode}
-                    required
-                    options={[LV.nominalVoltage, "208Y/120", "480Y/277", "240/120"]}
-                  />
+                  <SelectField label="LV Nominal Voltage" value={LV.nominalVoltage} editMode={editMode} required
+                    options={[LV.nominalVoltage, "208Y/120", "480Y/277", "240/120"]} />
                   <Field label="LV 1 Configuration" value={LV.lv1Config} editMode={editMode} required />
                   <Field label="LV1 Delta" value={LV.lv1Delta} editMode={editMode} required />
-
                   <Field label="LV 1 Wye" value={LV.lv1Wye} editMode={editMode} required />
                   <Field label="LV 2 Configuration" value={LV.lv2Config} editMode={editMode} required />
                   <Field label="LV 2 Delta" value={LV.lv2Delta} editMode={editMode} required />
-
                   <Field label="LV 2 Wye" value={LV.lv2Wye} editMode={editMode} required />
                   <SwitchField label="Delta Wye" value={lvDeltaWye} editMode={editMode} onChange={setLvDeltaWye} />
                   <SwitchField label="Dual Voltage" value={lvDualVoltage} editMode={editMode} onChange={setLvDualVoltage} />
-
                   <Field label="LV BIL (kV)" value={LV.bil} editMode={editMode} required />
-                  <SelectField
-                    label="LV Winding Material"
-                    value={LV.windingMaterial}
-                    editMode={editMode}
-                    required
-                    options={["AL", "CU"]}
-                  />
+                  <SelectField label="LV Winding Material" value={LV.windingMaterial} editMode={editMode} required options={["AL", "CU"]} />
                   <div />
                 </FieldGrid>
               </Section>
 
-              {/* Bottom padding */}
-              <div style={{ height: 80 }} />
+              <div className="h-20" />
             </div>
           </div>
         </main>
