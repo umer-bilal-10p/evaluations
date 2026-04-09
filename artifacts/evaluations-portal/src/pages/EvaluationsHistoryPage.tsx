@@ -200,10 +200,10 @@ function formatTimestamp(iso: string): string {
 
 /* ─── Shared field styles ────────────────────────────────────────────────────── */
 const FIELD: React.CSSProperties = {
-  height: 34, fontSize: 13, padding: "0 10px", borderRadius: 7,
+  height: 36, fontSize: 13, padding: "0 10px", borderRadius: 7,
   border: "1px solid hsl(var(--border))", background: "hsl(var(--background))",
   color: "hsl(var(--foreground))", outline: "none", boxSizing: "border-box",
-  lineHeight: "34px", width: "100%", fontFamily: "inherit",
+  lineHeight: "36px", width: "100%", fontFamily: "inherit",
 };
 const LABEL: React.CSSProperties = {
   display: "block", fontSize: 10, fontWeight: 600, textTransform: "uppercase",
@@ -222,7 +222,7 @@ function FInput({ value, onChange, placeholder }: { value: string; onChange: (v:
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="h-[34px] text-[13px] rounded-[7px] font-sans bg-background shadow-none"
+      className="h-[36px] text-[13px] rounded-[7px] font-sans bg-background shadow-none"
     />
   );
 }
@@ -255,7 +255,7 @@ function DateRangePicker({ from, to, onChange }: {
         <button
           style={{
             ...FIELD,
-            height: 38, padding: "0 14px", lineHeight: "normal",
+            height: 36, padding: "0 12px", lineHeight: "normal",
             display: "flex", alignItems: "center", justifyContent: "space-between",
             cursor: "pointer", gap: 8, boxShadow: "none",
           }}
@@ -318,7 +318,7 @@ function MultiSelect({ value, onChange, options, placeholder, style }: {
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <div style={{
-            ...FIELD, position: "relative", height: "auto", minHeight: 34, display: "flex", flexWrap: "wrap",
+            ...FIELD, position: "relative", height: "auto", minHeight: 36, display: "flex", flexWrap: "wrap",
             alignItems: "center", gap: 4, padding: value.length > 0 ? "4px 28px 4px 5px" : "0 28px 0 10px",
             cursor: "pointer", boxSizing: "border-box",
             border: open ? "1px solid #0047BB" : "1px solid hsl(var(--border))",
@@ -788,7 +788,7 @@ export default function EvaluationsHistoryPage() {
             <div style={CARD}>
               {/* Row 1: Date · IC# · Manufacturer · Type · KVA */}
               <div style={{ display: "flex", alignItems: "flex-end", gap: 10, padding: "16px 20px 12px" }}>
-                <div style={{ flex: 3, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                <div style={{ flex: 2, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Date Received</span>
                   <DateRangePicker
                     from={filters.dateFrom}
@@ -809,7 +809,7 @@ export default function EvaluationsHistoryPage() {
                   <div style={{ position: "relative" }}>
                     <Input
                       readOnly disabled value="Three-Phase Pad"
-                      className="h-[34px] text-[13px] rounded-[7px] font-sans w-full pr-7 bg-muted text-muted-foreground cursor-not-allowed disabled:opacity-100 shadow-none"
+                      className="h-[36px] text-[13px] rounded-[7px] font-sans w-full pr-7 bg-muted text-muted-foreground cursor-not-allowed disabled:opacity-100 shadow-none"
                     />
                     <span style={{ position: "absolute", right: 9, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", display: "flex", alignItems: "center" }}>
                       <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
