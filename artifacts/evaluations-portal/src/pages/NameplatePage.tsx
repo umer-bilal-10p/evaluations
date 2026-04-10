@@ -453,11 +453,88 @@ function NameplateImageCard({ icNumber, manufacturer, mfgSerial, kva }: {
 
 /* ─── Evaluation stepper ────────────────────────────────────────────────────── */
 const EVAL_STEPS = [
-  { id: "identification", label: "Identification", confidence: 87 },
-  { id: "ratings",        label: "Ratings",        confidence: 91 },
-  { id: "hv",             label: "HV Ratings",     confidence: 96 },
-  { id: "lv",             label: "LV Ratings",     confidence: 54 },
-] as const;
+  {
+    id: "nameplate", label: "Nameplate",
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+        <line x1="7" y1="7" x2="7.01" y2="7"/>
+      </svg>
+    ),
+  },
+  {
+    id: "electrical", label: "Electrical",
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+      </svg>
+    ),
+  },
+  {
+    id: "condition", label: "Condition",
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    ),
+  },
+  {
+    id: "dimensions", label: "Dimensions",
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="1" y="7" width="22" height="10" rx="2"/>
+        <line x1="7" y1="7" x2="7" y2="17"/>
+        <line x1="11" y1="7" x2="11" y2="12"/>
+        <line x1="15" y1="7" x2="15" y2="17"/>
+        <line x1="19" y1="7" x2="19" y2="12"/>
+      </svg>
+    ),
+  },
+  {
+    id: "configuration", label: "Configuration",
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
+        <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
+        <line x1="1" y1="14" x2="7" y2="14"/>
+        <line x1="9" y1="8" x2="15" y2="8"/>
+        <line x1="17" y1="16" x2="23" y2="16"/>
+      </svg>
+    ),
+  },
+  {
+    id: "accessories", label: "Accessories",
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+        <line x1="12" y1="22.08" x2="12" y2="12"/>
+      </svg>
+    ),
+  },
+  {
+    id: "photos", label: "Photos",
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    ),
+  },
+  {
+    id: "final-report", label: "Final Report",
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+      </svg>
+    ),
+  },
+];
 
 function EvalStepper({
   activeStep,
@@ -470,7 +547,6 @@ function EvalStepper({
   onStepClick: (i: number) => void;
   onToggleComplete: (i: number) => void;
 }) {
-  const allDone = EVAL_STEPS.every((_, i) => completedSteps.has(i));
   return (
     <div className="flex flex-col">
       <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)", marginBottom: 20 }}>
@@ -513,7 +589,7 @@ function EvalStepper({
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 ) : (
-                  <span>{i + 1}</span>
+                  step.icon
                 )}
               </button>
               {/* Bottom line */}
@@ -560,22 +636,6 @@ function EvalStepper({
         );
       })}
 
-      {/* Submit button — active when all done */}
-      <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-        <button
-          disabled={!allDone}
-          style={{
-            width: "100%", padding: "7px 0", borderRadius: 8, fontSize: 12,
-            fontWeight: 600, cursor: allDone ? "pointer" : "not-allowed",
-            border: "none",
-            background: allDone ? "#0047BB" : "rgba(255,255,255,0.07)",
-            color: allDone ? "#fff" : "rgba(255,255,255,0.3)",
-            transition: "all 0.2s",
-          }}
-        >
-          Submit Evaluation
-        </button>
-      </div>
     </div>
   );
 }
@@ -629,6 +689,7 @@ export default function NameplatePage() {
     sectionRefs[idx]?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     setActiveStep(idx);
   };
+
 
   const toggleComplete = (idx: number) => {
     setCompletedSteps((prev) => {
