@@ -39,9 +39,7 @@ export function DatePickerField({
           className="flex h-[36px] w-full min-w-0 flex-1 items-center justify-between rounded-[7px] border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-2.5 text-[13px] leading-[36px] outline-none"
         >
           <span
-            className={
-              displayValue ? "text-[hsl(var(--foreground))]" : "text-[hsl(var(--muted-foreground))]"
-            }
+            className="text-[hsl(var(--muted-foreground))]"
           >
             {displayValue || placeholder}
           </span>

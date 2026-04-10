@@ -224,7 +224,7 @@ function FInput({ value, onChange, placeholder }: { value: string; onChange: (v:
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="h-[36px] text-[13px] rounded-[7px] font-sans bg-background shadow-none"
+      className="h-[36px] text-[13px] rounded-[7px] font-sans bg-background shadow-none text-muted-foreground"
     />
   );
 }
