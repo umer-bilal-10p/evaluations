@@ -459,14 +459,6 @@ const EVAL_STEPS = [
   { id: "lv",             label: "LV Ratings",     confidence: 54 },
 ] as const;
 
-function confClass(pct: number) {
-  return pct >= 80
-    ? "text-[#047857] dark:text-[#6EE7B7]"
-    : pct >= 60
-    ? "text-[#d97706] dark:text-[#FCD34D]"
-    : "text-[#dc2626] dark:text-[#f87171]";
-}
-
 function EvalStepper({
   activeStep,
   completedSteps,
@@ -481,30 +473,9 @@ function EvalStepper({
   const allDone = EVAL_STEPS.every((_, i) => completedSteps.has(i));
   return (
     <div className="flex flex-col">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-5">
-        Evaluation Progress
+      <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)", marginBottom: 20 }}>
+        Evaluation Steps
       </p>
-
-      {/* Progress bar */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-1.5">
-          <span className="text-[11px] text-muted-foreground">
-            {completedSteps.size} of {EVAL_STEPS.length} sections
-          </span>
-          <span className="text-[11px] font-semibold text-foreground">
-            {Math.round((completedSteps.size / EVAL_STEPS.length) * 100)}%
-          </span>
-        </div>
-        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-          <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{
-              width: `${(completedSteps.size / EVAL_STEPS.length) * 100}%`,
-              background: allDone ? "#047857" : "#0047BB",
-            }}
-          />
-        </div>
-      </div>
 
       {EVAL_STEPS.map((step, i) => {
         const done = completedSteps.has(i);
@@ -518,8 +489,7 @@ function EvalStepper({
                 <div
                   style={{
                     width: 2, height: 10, flexShrink: 0,
-                    background: completedSteps.has(i - 1)
-                      ? "#0047BB" : "hsl(var(--border))",
+                    background: completedSteps.has(i - 1) ? "#0047BB" : "rgba(255,255,255,0.12)",
                     transition: "background 0.3s",
                   }}
                 />
@@ -530,9 +500,9 @@ function EvalStepper({
                 title={done ? "Mark incomplete" : "Mark complete"}
                 style={{
                   width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
-                  border: done ? "none" : active ? "2px solid #0047BB" : "2px solid hsl(var(--border))",
-                  background: done ? "#0047BB" : active ? "rgba(0,71,187,0.10)" : "hsl(var(--card))",
-                  color: done ? "#fff" : active ? "#0047BB" : "hsl(var(--muted-foreground))",
+                  border: done ? "none" : active ? "2px solid #5b9cf6" : "2px solid rgba(255,255,255,0.18)",
+                  background: done ? "#0047BB" : active ? "rgba(91,156,246,0.15)" : "transparent",
+                  color: done ? "#fff" : active ? "#5b9cf6" : "rgba(255,255,255,0.4)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   cursor: "pointer", transition: "all 0.2s",
                   fontSize: 10, fontWeight: 700,
@@ -551,7 +521,7 @@ function EvalStepper({
                 <div
                   style={{
                     width: 2, flex: 1, minHeight: 24, flexShrink: 0,
-                    background: done ? "#0047BB" : "hsl(var(--border))",
+                    background: done ? "#0047BB" : "rgba(255,255,255,0.12)",
                     transition: "background 0.3s",
                   }}
                 />
@@ -573,19 +543,16 @@ function EvalStepper({
               >
                 <div style={{
                   fontSize: 12,
-                  fontWeight: active ? 600 : 500,
+                  fontWeight: active ? 600 : 400,
                   lineHeight: 1.3,
                   color: done
-                    ? "hsl(var(--foreground))"
+                    ? "rgba(255,255,255,0.85)"
                     : active
-                    ? "#0047BB"
-                    : "hsl(var(--muted-foreground))",
+                    ? "#5b9cf6"
+                    : "rgba(255,255,255,0.45)",
                   transition: "color 0.15s",
                 }}>
                   {step.label}
-                </div>
-                <div className={`text-[10px] font-medium mt-0.5 ${confClass(step.confidence)}`}>
-                  {step.confidence}% AI confidence
                 </div>
               </button>
             </div>
@@ -594,19 +561,19 @@ function EvalStepper({
       })}
 
       {/* Submit button — active when all done */}
-      <div className="mt-6 pt-5 border-t border-border">
+      <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
         <button
           disabled={!allDone}
           style={{
             width: "100%", padding: "7px 0", borderRadius: 8, fontSize: 12,
             fontWeight: 600, cursor: allDone ? "pointer" : "not-allowed",
             border: "none",
-            background: allDone ? "#0047BB" : "hsl(var(--muted))",
-            color: allDone ? "#fff" : "hsl(var(--muted-foreground))",
+            background: allDone ? "#0047BB" : "rgba(255,255,255,0.07)",
+            color: allDone ? "#fff" : "rgba(255,255,255,0.3)",
             transition: "all 0.2s",
           }}
         >
-          {allDone ? "Submit Evaluation" : `${EVAL_STEPS.length - completedSteps.size} section${EVAL_STEPS.length - completedSteps.size !== 1 ? "s" : ""} remaining`}
+          Submit Evaluation
         </button>
       </div>
     </div>
@@ -774,8 +741,8 @@ export default function NameplatePage() {
           <div className="flex-1 overflow-hidden flex">
 
             {/* ── Left: sticky stepper panel ── */}
-            <div className="w-[200px] flex-shrink-0 overflow-auto border-r border-border py-6 px-4"
-              style={{ background: "hsl(var(--card))" }}>
+            <div className="w-[230px] flex-shrink-0 overflow-auto py-6 px-4"
+              style={{ background: "#0d1629", borderRight: "1px solid rgba(255,255,255,0.08)" }}>
               <EvalStepper
                 activeStep={activeStep}
                 completedSteps={completedSteps}
