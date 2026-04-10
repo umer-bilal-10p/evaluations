@@ -161,27 +161,26 @@ const SEED_UNITS: EvaluationUnit[] = [
 const ROW_INTERVAL_MS = 280;
 const MANUFACTURERS  = [...new Set(SEED_UNITS.map((u) => u.manufacturer))].sort();
 const WAREHOUSES     = [...new Set(SEED_UNITS.map((u) => u.warehouse))].sort();
-const KVA_VALUES     = [...new Set(SEED_UNITS.map((u) => u.kva))].sort((a, b) => a - b).map(String);
 const SITES          = ["ALEL", "CABA", "COGJ", "KSOC", "KSSO", "PASH", "TNDE", "TXTE", "WASP"];
 const COMPLETED_BY   = [...new Set(SEED_UNITS.map((u) => u.completedBy).filter(Boolean) as string[])].sort();
 
 /* ─── Filters ────────────────────────────────────────────────────────────────── */
 type Filters = {
   dateFrom: string; dateTo: string; icNumber: string; loadNumber: string;
-  manufacturer: string[]; kva: string[]; warehouse: string[];
+  manufacturer: string[]; kva: string; warehouse: string[];
   intakeCategory: string[]; status: string[]; site: string[];
   completedBy: string[];
 };
 const EMPTY_FILTERS: Filters = {
   dateFrom: "", dateTo: "", icNumber: "", loadNumber: "",
-  manufacturer: [], kva: [], warehouse: [],
+  manufacturer: [], kva: "", warehouse: [],
   intakeCategory: [], status: [], site: [],
   completedBy: [],
 };
 function countActiveFilters(f: Filters): number {
   let n = 0;
   if (f.dateFrom) n++; if (f.dateTo) n++; if (f.icNumber) n++; if (f.loadNumber) n++;
-  if (f.manufacturer.length) n++; if (f.kva.length) n++;
+  if (f.manufacturer.length) n++; if (f.kva) n++;
   if (f.warehouse.length) n++; if (f.intakeCategory.length) n++;
   if (f.status.length) n++; if (f.site.length) n++;
   if ((f.completedBy ?? []).length) n++;
@@ -600,7 +599,7 @@ export default function EvaluationsHistoryPage() {
       (!filters.icNumber          || unit.icNumber.includes(filters.icNumber)) &&
       (!filters.loadNumber        || String(unit.loadNumber).includes(filters.loadNumber)) &&
       (!filters.manufacturer.length || filters.manufacturer.includes(unit.manufacturer)) &&
-      (!filters.kva.length        || filters.kva.includes(String(unit.kva))) &&
+      (!filters.kva               || String(unit.kva).includes(filters.kva)) &&
       (!filters.warehouse.length  || filters.warehouse.includes(unit.warehouse)) &&
       (!filters.intakeCategory.length || filters.intakeCategory.includes(unit.intakeCategory)) &&
       (!filters.status.length       || filters.status.includes(status)) &&
@@ -754,7 +753,7 @@ export default function EvaluationsHistoryPage() {
                 </div>
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>KVA</span>
-                  <MultiSelect value={filters.kva} onChange={(v) => setFilter("kva", v)} options={KVA_VALUES} placeholder="All" style={{ width: "100%" }} />
+                  <FInput value={filters.kva} onChange={(v) => setFilter("kva", v)} placeholder="Search KVA…" />
                 </div>
               </div>
               {/* Row 2: Intake Type · Load # · Warehouse · Status · Site */}
