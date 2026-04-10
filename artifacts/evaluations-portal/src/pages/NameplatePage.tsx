@@ -112,8 +112,8 @@ function ConfidenceBadge({ pct }: { pct: number }) {
       className={cn(
         "gap-1 rounded-full font-semibold text-xs px-2 py-0.5",
         isHigh
-          ? "border-[rgba(124,58,237,0.28)] bg-[rgba(124,58,237,0.10)] text-[#7C3AED]"
-          : "border-[#FCD34D] bg-[#FEF3C7] text-[#92400E]",
+          ? "border-[rgba(124,58,237,0.28)] bg-[rgba(124,58,237,0.10)] text-[#7C3AED] dark:border-[rgba(167,139,250,0.38)] dark:bg-[rgba(139,92,246,0.18)] dark:text-[#c4b5fd]"
+          : "border-[#FCD34D] bg-[#FEF3C7] text-[#92400E] dark:border-[rgba(252,211,77,0.42)] dark:bg-[rgba(251,191,36,0.18)] dark:text-[#FCD34D]",
       )}
     >
       <SparkleIcon size={10} />
@@ -134,7 +134,7 @@ function SectionHeader({ title, confidence }: { title: string; confidence: numbe
 function AiChip({ label }: { label: string }) {
   return (
     <Badge
-      className="mt-1 gap-1 rounded-md text-xs font-medium px-1.5 py-0.5 border-[rgba(124,58,237,0.22)] bg-[rgba(124,58,237,0.08)] text-[#7C3AED]"
+      className="mt-1 gap-1 rounded-md text-xs font-medium px-1.5 py-0.5 border-[rgba(124,58,237,0.22)] bg-[rgba(124,58,237,0.08)] text-[#7C3AED] dark:border-[rgba(167,139,250,0.38)] dark:bg-[rgba(139,92,246,0.18)] dark:text-[#c4b5fd]"
     >
       <SparkleIcon size={9} />
       AI: {label}
@@ -277,7 +277,7 @@ function TapTable({ taps, editMode }: { taps: typeof HV.taps; editMode: boolean 
                 </TableCell>
                 <TableCell className={cn(
                   "text-sm font-medium py-2",
-                  row.deviation.startsWith("+") ? "text-[#047857]"
+                  row.deviation.startsWith("+") ? "text-[#047857] dark:text-[#6EE7B7]"
                     : row.deviation === "0.0" ? "text-foreground"
                     : "text-destructive",
                 )}>
@@ -385,19 +385,19 @@ function NameplateImageCard({ icNumber, manufacturer, mfgSerial, kva }: {
               <p className="text-xs text-muted-foreground">{manufacturer} · {mfgSerial} · {kva.toLocaleString()} kVA</p>
             </div>
             <div className="flex items-center gap-1.5">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#7C3AED] flex-shrink-0">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#7C3AED] dark:text-[#c4b5fd] flex-shrink-0">
                 <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/>
                 <path d="M3 9h2M3 15h2M19 9h2M19 15h2M9 3v2M15 3v2M9 19v2M15 19v2"/>
               </svg>
-              <span className="text-xs text-[#7C3AED] font-medium">AI was used to scan Nameplate</span>
+              <span className="text-xs text-[#7C3AED] dark:text-[#c4b5fd] font-medium">AI was used to scan Nameplate</span>
             </div>
             <div className="flex flex-wrap gap-1 items-center">
               {["Blurry", "Underexposed", "Off angle"].map((tag) => (
-                <Badge key={tag} className="rounded-full text-[10px] font-medium border-[#FCD34D] bg-[#FEF3C7] text-[#92400E] px-2 py-0">
+                <Badge key={tag} className="rounded-full text-[10px] font-medium border-[#FCD34D] bg-[#FEF3C7] text-[#92400E] dark:border-[rgba(252,211,77,0.42)] dark:bg-[rgba(251,191,36,0.18)] dark:text-[#FCD34D] px-2 py-0">
                   {tag}
                 </Badge>
               ))}
-              <span className="text-xs text-[#92400E]">
+              <span className="text-xs text-[#92400E] dark:text-[#FCD34D]">
                 — Image quality issues were detected, AI accuracy was likely impacted.
               </span>
             </div>

@@ -9,6 +9,17 @@ import { cn } from "@/lib/utils";
 import { useDemoContext } from "@/context/DemoContext";
 import { DatePickerField } from "@/components/DatePickerField";
 
+/* Dark-mode detection hook — watches the `dark` class on <html> */
+function useIsDark() {
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
+  useEffect(() => {
+    const obs = new MutationObserver(() => setDark(document.documentElement.classList.contains("dark")));
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
+  return dark;
+}
+
 /* ─── Types ──────────────────────────────────────────────────────────────────── */
 type EvalStatus = "Not Started" | "In Progress" | "Completed";
 type TransformerType = "Three-Phase Pad" | "Single-Phase Pad" | "Pole Mount";
@@ -234,6 +245,7 @@ function MultiSelect({ value, onChange, options, placeholder, style }: {
   value: string[]; onChange: (v: string[]) => void; options: string[]; placeholder: string; style?: React.CSSProperties;
 }) {
   const [open, setOpen] = useState(false);
+  const dark = useIsDark();
   const toggle = (opt: string) => onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt]);
   const remove = (e: React.MouseEvent, opt: string) => { e.stopPropagation(); onChange(value.filter((v) => v !== opt)); };
   return (
@@ -251,16 +263,17 @@ function MultiSelect({ value, onChange, options, placeholder, style }: {
             ) : value.map((opt) => (
               <span key={opt} style={{
                 display: "inline-flex", alignItems: "center", gap: 4,
-                background: "rgba(0,71,187,0.09)", color: "#0047BB",
-                border: "1px solid rgba(0,71,187,0.22)", borderRadius: 5,
-                fontSize: 12, fontWeight: 500, padding: "1px 5px 1px 7px",
+                background: dark ? "rgba(99,156,255,0.16)" : "rgba(0,71,187,0.09)",
+                color: dark ? "#93C5FD" : "#0047BB",
+                border: dark ? "1px solid rgba(147,197,253,0.38)" : "1px solid rgba(0,71,187,0.22)",
+                borderRadius: 5, fontSize: 12, fontWeight: 500, padding: "1px 5px 1px 7px",
                 lineHeight: "20px", whiteSpace: "nowrap", userSelect: "none",
               }}>
                 {opt}
                 <span onClick={(e) => remove(e, opt)} style={{
                   display: "inline-flex", alignItems: "center", justifyContent: "center",
                   width: 14, height: 14, borderRadius: 3, cursor: "pointer",
-                  color: "#0047BB", opacity: 0.7, fontSize: 14, lineHeight: 1,
+                  color: dark ? "#93C5FD" : "#0047BB", opacity: 0.7, fontSize: 14, lineHeight: 1,
                   flexShrink: 0,
                 }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLSpanElement).style.opacity = "1"; (e.currentTarget as HTMLSpanElement).style.background = "rgba(0,71,187,0.15)"; }}
@@ -314,6 +327,12 @@ const STATUS_STYLES: Record<EvalStatus, { bg: string; color: string; borderColor
   "In Progress": { bg: "#E8F2FF",                  color: "#1D4ED8", borderColor: "#93C5FD" },
   "Completed":   { bg: "#D4F7E8",                  color: "#047857", borderColor: "#6EE7B7" },
 };
+/* Dark-mode equivalents — lighter tints that read on deep-navy backgrounds */
+const STATUS_STYLES_DARK: Record<EvalStatus, { bg: string; color: string; borderColor: string }> = {
+  "Not Started": { bg: "rgba(100,116,139,0.20)",  color: "#94a3b8", borderColor: "rgba(148,163,184,0.38)" },
+  "In Progress": { bg: "rgba(59,130,246,0.18)",   color: "#93C5FD", borderColor: "rgba(147,197,253,0.42)" },
+  "Completed":   { bg: "rgba(16,185,129,0.18)",   color: "#6EE7B7", borderColor: "rgba(110,231,183,0.42)" },
+};
 
 function StatusIcon({ status }: { status: EvalStatus }) {
   const p = { width: 13, height: 13, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.25, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
@@ -324,7 +343,8 @@ function StatusIcon({ status }: { status: EvalStatus }) {
 
 const StatusBadge = forwardRef<HTMLButtonElement, { status: EvalStatus } & React.ButtonHTMLAttributes<HTMLButtonElement>>(
   ({ status, ...props }, ref) => {
-    const s = STATUS_STYLES[status];
+    const dark = useIsDark();
+    const s = (dark ? STATUS_STYLES_DARK : STATUS_STYLES)[status];
     return (
       <button ref={ref} {...props}
         className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
@@ -354,6 +374,7 @@ function FlagIcon() {
 }
 
 function IntakePills({ category, tags }: { category: IntakeCategory; tags: IntakeTag[] }) {
+  const dark = useIsDark();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 140 }}>
       <span style={{ fontSize: 11, fontWeight: 500, color: "hsl(var(--muted-foreground))" }}>{category}</span>
@@ -364,9 +385,15 @@ function IntakePills({ category, tags }: { category: IntakeCategory; tags: Intak
             <span key={tag} style={{
               display: "inline-flex", alignItems: "center", gap: 4,
               padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 500, whiteSpace: "nowrap",
-              background: isDamage ? "#FEF3C7" : "rgba(100,116,139,0.08)",
-              color:      isDamage ? "#92400E" : "#64748b",
-              border:     isDamage ? "1px solid #FCD34D" : "1px solid rgba(100,116,139,0.22)",
+              background: isDamage
+                ? (dark ? "rgba(251,191,36,0.18)"  : "#FEF3C7")
+                : (dark ? "rgba(100,116,139,0.20)" : "rgba(100,116,139,0.08)"),
+              color: isDamage
+                ? (dark ? "#FCD34D" : "#92400E")
+                : (dark ? "#94a3b8" : "#64748b"),
+              border: isDamage
+                ? (dark ? "1px solid rgba(252,211,77,0.42)"  : "1px solid #FCD34D")
+                : (dark ? "1px solid rgba(148,163,184,0.35)" : "1px solid rgba(100,116,139,0.22)"),
             }}>
               {isDamage ? <FlagIcon /> : tag === "NPX: Rewind" ? (
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -555,6 +582,7 @@ function CommentModal({ unit, onClose }: { unit: EvaluationUnit; onClose: () => 
 /* ─── Main page ──────────────────────────────────────────────────────────────── */
 export default function EvaluationsHistoryPage() {
   const { setCurrentPage, setSelectedUnit } = useDemoContext();
+  const isDark = useIsDark();
   const [visibleCount, setVisibleCount]     = useState(0);
   const [started, setStarted]               = useState(false);
   const [statuses, setStatuses]             = useState<Record<string, EvalStatus>>({});
@@ -879,7 +907,7 @@ export default function EvaluationsHistoryPage() {
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="start" className="min-w-[160px]">
                                     {ALL_STATUSES.map((s) => {
-                                      const st = STATUS_STYLES[s];
+                                      const st = (isDark ? STATUS_STYLES_DARK : STATUS_STYLES)[s];
                                       return (
                                         <DropdownMenuItem key={s}
                                           onClick={() => setStatuses((prev) => ({ ...prev, [unit.id]: s }))}
