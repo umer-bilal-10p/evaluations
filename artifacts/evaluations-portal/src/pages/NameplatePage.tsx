@@ -225,7 +225,10 @@ function SwitchField({
           disabled={!editMode}
           className={cn("data-[state=checked]:bg-[#0047BB]", !editMode && "opacity-100 cursor-default")}
         />
-        <span className={cn("text-sm font-medium", value ? "text-[#0047BB]" : "text-muted-foreground")}>
+        <span className={cn(
+          "text-sm font-medium",
+          value ? "text-[#0047BB] dark:text-[#93C5FD]" : "text-muted-foreground",
+        )}>
           {value ? "Yes" : "No"}
         </span>
       </div>
