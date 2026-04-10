@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PortalHeader } from "@/components/PortalHeader";
 import { Sidebar } from "@/components/Sidebar";
 import { useDemoContext } from "@/context/DemoContext";
@@ -451,6 +451,168 @@ function NameplateImageCard({ icNumber, manufacturer, mfgSerial, kva }: {
   );
 }
 
+/* ─── Evaluation stepper ────────────────────────────────────────────────────── */
+const EVAL_STEPS = [
+  { id: "identification", label: "Identification", confidence: 87 },
+  { id: "ratings",        label: "Ratings",        confidence: 91 },
+  { id: "hv",             label: "HV Ratings",     confidence: 96 },
+  { id: "lv",             label: "LV Ratings",     confidence: 54 },
+] as const;
+
+function confClass(pct: number) {
+  return pct >= 80
+    ? "text-[#047857] dark:text-[#6EE7B7]"
+    : pct >= 60
+    ? "text-[#d97706] dark:text-[#FCD34D]"
+    : "text-[#dc2626] dark:text-[#f87171]";
+}
+
+function EvalStepper({
+  activeStep,
+  completedSteps,
+  onStepClick,
+  onToggleComplete,
+}: {
+  activeStep: number;
+  completedSteps: Set<number>;
+  onStepClick: (i: number) => void;
+  onToggleComplete: (i: number) => void;
+}) {
+  const allDone = EVAL_STEPS.every((_, i) => completedSteps.has(i));
+  return (
+    <div className="flex flex-col">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-5">
+        Evaluation Progress
+      </p>
+
+      {/* Progress bar */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-1.5">
+          <span className="text-[11px] text-muted-foreground">
+            {completedSteps.size} of {EVAL_STEPS.length} sections
+          </span>
+          <span className="text-[11px] font-semibold text-foreground">
+            {Math.round((completedSteps.size / EVAL_STEPS.length) * 100)}%
+          </span>
+        </div>
+        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{
+              width: `${(completedSteps.size / EVAL_STEPS.length) * 100}%`,
+              background: allDone ? "#047857" : "#0047BB",
+            }}
+          />
+        </div>
+      </div>
+
+      {EVAL_STEPS.map((step, i) => {
+        const done = completedSteps.has(i);
+        const active = activeStep === i;
+        return (
+          <div key={step.id} className="flex">
+            {/* Connector + circle */}
+            <div className="flex flex-col items-center" style={{ width: 28, flexShrink: 0 }}>
+              {/* Top line */}
+              {i > 0 && (
+                <div
+                  style={{
+                    width: 2, height: 10, flexShrink: 0,
+                    background: completedSteps.has(i - 1)
+                      ? "#0047BB" : "hsl(var(--border))",
+                    transition: "background 0.3s",
+                  }}
+                />
+              )}
+              {/* Circle — click to toggle complete */}
+              <button
+                onClick={() => onToggleComplete(i)}
+                title={done ? "Mark incomplete" : "Mark complete"}
+                style={{
+                  width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
+                  border: done ? "none" : active ? "2px solid #0047BB" : "2px solid hsl(var(--border))",
+                  background: done ? "#0047BB" : active ? "rgba(0,71,187,0.10)" : "hsl(var(--card))",
+                  color: done ? "#fff" : active ? "#0047BB" : "hsl(var(--muted-foreground))",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer", transition: "all 0.2s",
+                  fontSize: 10, fontWeight: 700,
+                }}
+              >
+                {done ? (
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : (
+                  <span>{i + 1}</span>
+                )}
+              </button>
+              {/* Bottom line */}
+              {i < EVAL_STEPS.length - 1 && (
+                <div
+                  style={{
+                    width: 2, flex: 1, minHeight: 24, flexShrink: 0,
+                    background: done ? "#0047BB" : "hsl(var(--border))",
+                    transition: "background 0.3s",
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Step content — click to scroll */}
+            <div
+              style={{
+                paddingLeft: 10,
+                paddingTop: i === 0 ? 0 : 10,
+                paddingBottom: i < EVAL_STEPS.length - 1 ? 10 : 0,
+                flex: 1,
+              }}
+            >
+              <button
+                onClick={() => onStepClick(i)}
+                style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, width: "100%" }}
+              >
+                <div style={{
+                  fontSize: 12,
+                  fontWeight: active ? 600 : 500,
+                  lineHeight: 1.3,
+                  color: done
+                    ? "hsl(var(--foreground))"
+                    : active
+                    ? "#0047BB"
+                    : "hsl(var(--muted-foreground))",
+                  transition: "color 0.15s",
+                }}>
+                  {step.label}
+                </div>
+                <div className={`text-[10px] font-medium mt-0.5 ${confClass(step.confidence)}`}>
+                  {step.confidence}% AI confidence
+                </div>
+              </button>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Submit button — active when all done */}
+      <div className="mt-6 pt-5 border-t border-border">
+        <button
+          disabled={!allDone}
+          style={{
+            width: "100%", padding: "7px 0", borderRadius: 8, fontSize: 12,
+            fontWeight: 600, cursor: allDone ? "pointer" : "not-allowed",
+            border: "none",
+            background: allDone ? "#0047BB" : "hsl(var(--muted))",
+            color: allDone ? "#fff" : "hsl(var(--muted-foreground))",
+            transition: "all 0.2s",
+          }}
+        >
+          {allDone ? "Submit Evaluation" : `${EVAL_STEPS.length - completedSteps.size} section${EVAL_STEPS.length - completedSteps.size !== 1 ? "s" : ""} remaining`}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main page ─────────────────────────────────────────────────────────────── */
 export default function NameplatePage() {
   const { selectedUnit, setCurrentPage } = useDemoContext();
@@ -467,6 +629,47 @@ export default function NameplatePage() {
   const [hvDualVoltage, setHvDualVoltage] = useState(HV.dualVoltage);
   const [lvDeltaWye, setLvDeltaWye] = useState(LV.deltaWye);
   const [lvDualVoltage, setLvDualVoltage] = useState(LV.dualVoltage);
+
+  /* Stepper state */
+  const [activeStep, setActiveStep]       = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+
+  /* Section refs for scroll-to + IntersectionObserver */
+  const identRef   = useRef<HTMLDivElement>(null);
+  const ratingsRef = useRef<HTMLDivElement>(null);
+  const hvRef      = useRef<HTMLDivElement>(null);
+  const lvRef      = useRef<HTMLDivElement>(null);
+  const sectionRefs = [identRef, ratingsRef, hvRef, lvRef];
+
+  /* Auto-highlight active step as user scrolls */
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const idx = sectionRefs.findIndex((r) => r.current === entry.target);
+            if (idx >= 0) setActiveStep(idx);
+          }
+        });
+      },
+      { threshold: 0.25, rootMargin: "-80px 0px -55% 0px" }
+    );
+    sectionRefs.forEach((r) => { if (r.current) observer.observe(r.current); });
+    return () => observer.disconnect();
+  }, []);
+
+  const scrollToStep = (idx: number) => {
+    sectionRefs[idx]?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setActiveStep(idx);
+  };
+
+  const toggleComplete = (idx: number) => {
+    setCompletedSteps((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx); else next.add(idx);
+      return next;
+    });
+  };
 
   const unit = selectedUnit || DEFAULT_NAMEPLATE;
 
@@ -567,9 +770,23 @@ export default function NameplatePage() {
             )}
           </div>
 
-          {/* ── Scrollable content ── */}
-          <div className="flex-1 overflow-auto px-8 py-6">
-            <div className="max-w-[1100px] mx-auto">
+          {/* ── Content: stepper panel + scrollable sections ── */}
+          <div className="flex-1 overflow-hidden flex">
+
+            {/* ── Left: sticky stepper panel ── */}
+            <div className="w-[200px] flex-shrink-0 overflow-auto border-r border-border py-6 px-4"
+              style={{ background: "hsl(var(--card))" }}>
+              <EvalStepper
+                activeStep={activeStep}
+                completedSteps={completedSteps}
+                onStepClick={scrollToStep}
+                onToggleComplete={toggleComplete}
+              />
+            </div>
+
+            {/* ── Right: scrollable content ── */}
+            <div className="flex-1 overflow-auto px-8 py-6">
+            <div className="max-w-[900px] mx-auto">
 
               {/* Evaluation Comments */}
               <div className="mb-4">
@@ -734,6 +951,7 @@ export default function NameplatePage() {
               />
 
               {/* ── IDENTIFICATION ── */}
+              <div ref={identRef}>
               <Section>
                 <SectionHeader title="Identification" confidence={87} />
                 <FieldGrid>
@@ -749,8 +967,10 @@ export default function NameplatePage() {
                     options={Array.from({ length: 40 }, (_, i) => String(2024 - i))} />
                 </FieldGrid>
               </Section>
+              </div>
 
               {/* ── RATINGS ── */}
+              <div ref={ratingsRef}>
               <Section>
                 <SectionHeader title="Ratings" confidence={91} />
                 <FieldGrid>
@@ -784,8 +1004,10 @@ export default function NameplatePage() {
                   <Field label="Total Weight (lbs)" value={RATINGS.totalWeight} editMode={editMode} required />
                 </FieldGrid>
               </Section>
+              </div>
 
               {/* ── HV RATINGS ── */}
+              <div ref={hvRef}>
               <Section>
                 <SectionHeader title="HV Ratings" confidence={96} />
                 <FieldGrid>
@@ -816,8 +1038,10 @@ export default function NameplatePage() {
                   <TapTable taps={HV.taps.filter((t) => t.kvaRating !== "—")} editMode={editMode} />
                 </div>
               </Section>
+              </div>
 
               {/* ── LV RATINGS ── */}
+              <div ref={lvRef}>
               <Section>
                 <SectionHeader title="LV Ratings" confidence={54} />
                 <FieldGrid>
@@ -836,10 +1060,12 @@ export default function NameplatePage() {
                   <div />
                 </FieldGrid>
               </Section>
+              </div>
 
               <div className="h-20" />
             </div>
-          </div>
+            </div>{/* end scrollable right */}
+          </div>{/* end stepper+content flex */}
         </main>
       </div>
     </div>
