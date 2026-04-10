@@ -570,7 +570,7 @@ function EvalStepper({
                   }}
                 />
               )}
-              {/* Circle — click to toggle complete */}
+              {/* Circle — click to toggle complete; always shows step icon */}
               <button
                 onClick={() => onToggleComplete(i)}
                 title={done ? "Mark incomplete" : "Mark complete"}
@@ -578,19 +578,12 @@ function EvalStepper({
                   width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
                   border: done ? "none" : active ? "2px solid #5b9cf6" : "2px solid rgba(255,255,255,0.18)",
                   background: done ? "#0047BB" : active ? "rgba(91,156,246,0.15)" : "transparent",
-                  color: done ? "#fff" : active ? "#5b9cf6" : "rgba(255,255,255,0.4)",
+                  color: done ? "#fff" : active ? "#5b9cf6" : "rgba(255,255,255,0.5)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   cursor: "pointer", transition: "all 0.2s",
-                  fontSize: 10, fontWeight: 700,
                 }}
               >
-                {done ? (
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                ) : (
-                  step.icon
-                )}
+                {step.icon}
               </button>
               {/* Bottom line */}
               {i < EVAL_STEPS.length - 1 && (
@@ -611,26 +604,44 @@ function EvalStepper({
                 paddingTop: i === 0 ? 0 : 10,
                 paddingBottom: i < EVAL_STEPS.length - 1 ? 10 : 0,
                 flex: 1,
+                display: "flex", alignItems: "center", gap: 6,
               }}
             >
               <button
                 onClick={() => onStepClick(i)}
-                style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, width: "100%" }}
+                style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, flex: 1 }}
               >
                 <div style={{
                   fontSize: 12,
                   fontWeight: active ? 600 : 400,
                   lineHeight: 1.3,
-                  color: done
-                    ? "rgba(255,255,255,0.85)"
-                    : active
-                    ? "#5b9cf6"
-                    : "rgba(255,255,255,0.45)",
+                  color: active ? "#5b9cf6" : "rgba(255,255,255,0.85)",
                   transition: "color 0.15s",
                 }}>
                   {step.label}
                 </div>
               </button>
+
+              {/* Right status indicator */}
+              {done ? (
+                /* Green check — completed */
+                <div style={{
+                  width: 16, height: 16, borderRadius: "50%", flexShrink: 0,
+                  background: "#16a34a",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+              ) : active ? (
+                /* Blue pulsing dot — in progress */
+                <div style={{
+                  width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+                  background: "#5b9cf6",
+                  boxShadow: "0 0 0 3px rgba(91,156,246,0.25)",
+                }} />
+              ) : null}
             </div>
           </div>
         );
