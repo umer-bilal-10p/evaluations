@@ -356,7 +356,7 @@ function NameplateImageCard({ icNumber, manufacturer, mfgSerial, kva }: {
 
   const handleDownload = () => {
     const a = document.createElement("a");
-    a.href = "data:text/plain,nameplate-placeholder";
+    a.href = "/nameplate.png";
     a.download = `nameplate-IC${icNumber}.png`;
     a.click();
   };
@@ -369,9 +369,13 @@ function NameplateImageCard({ icNumber, manufacturer, mfgSerial, kva }: {
           <div
             onClick={() => setExpanded(true)}
             className="relative flex-shrink-0 cursor-pointer rounded-lg overflow-hidden border border-border"
-            style={{ width: 200, height: 140, background: "linear-gradient(135deg, #1a1f2e 0%, #2a3350 40%, #1e2640 100%)" }}
+            style={{ width: 200, height: 140 }}
           >
-            <NameplateImageContent icNumber={icNumber} manufacturer={manufacturer} mfgSerial={mfgSerial} kva={kva} scale={1} />
+            <img
+              src="/nameplate.png"
+              alt="Nameplate scan"
+              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+            />
             <div className="absolute top-1.5 left-1.5 w-6 h-6 rounded flex items-center justify-center text-white/85"
               style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
@@ -441,8 +445,12 @@ function NameplateImageCard({ icNumber, manufacturer, mfgSerial, kva }: {
               Download
             </Button>
             <div className="rounded-xl overflow-hidden relative border border-white/15"
-              style={{ width: 640, height: 400, background: "linear-gradient(135deg, #1a1f2e 0%, #2a3350 40%, #1e2640 100%)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}>
-              <NameplateImageContent icNumber={icNumber} manufacturer={manufacturer} mfgSerial={mfgSerial} kva={kva} scale={3.2} />
+              style={{ maxWidth: 800, boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}>
+              <img
+                src="/nameplate.png"
+                alt="Nameplate scan"
+                style={{ display: "block", maxWidth: "80vw", maxHeight: "70vh", objectFit: "contain" }}
+              />
             </div>
           </div>
         </div>
@@ -562,7 +570,7 @@ function EvalStepper({
             {i > 0 && (
               <div style={{ display: "flex", paddingLeft: 11 }}>
                 <div style={{
-                  width: 2, height: 10,
+                  width: 2, height: 18,
                   background: completedSteps.has(i - 1) ? "#0047BB" : "rgba(255,255,255,0.12)",
                   transition: "background 0.3s",
                 }} />
