@@ -8,6 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Sparkle, Sparkles } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -102,26 +103,18 @@ const YEAR_OPTIONS = Array.from({ length: new Date().getFullYear() - 1949 }, (_,
 
 /* ─── Sub-components ────────────────────────────────────────────────────────── */
 
-function SparkleIcon({ size = 10 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2L14.09 8.26L20.5 9.27L16.25 13.41L17.18 19.82L12 17L6.82 19.82L7.75 13.41L3.5 9.27L9.91 8.26L12 2Z"/>
-    </svg>
-  );
-}
-
 function ConfidenceBadge({ pct }: { pct: number }) {
   const isHigh = pct >= 60;
   return (
     <Badge
       className={cn(
-        "gap-1 rounded-full font-semibold text-xs px-2 py-0.5",
+        "gap-1.5 rounded-full font-semibold text-xs px-2.5 py-0.5",
         isHigh
           ? "border-[rgba(124,58,237,0.28)] bg-[rgba(124,58,237,0.10)] text-[#7C3AED] dark:border-[rgba(167,139,250,0.38)] dark:bg-[rgba(139,92,246,0.18)] dark:text-[#c4b5fd]"
           : "border-[#FCD34D] bg-[#FEF3C7] text-[#92400E] dark:border-[rgba(252,211,77,0.42)] dark:bg-[rgba(251,191,36,0.18)] dark:text-[#FCD34D]",
       )}
     >
-      <SparkleIcon size={10} />
+      <Sparkles size={11} strokeWidth={1.75} />
       AI was {pct}% Confident
     </Badge>
   );
@@ -141,7 +134,7 @@ function AiChip({ label }: { label: string }) {
     <Badge
       className="mt-1 gap-1 rounded-md text-xs font-medium px-1.5 py-0.5 border-[rgba(124,58,237,0.22)] bg-[rgba(124,58,237,0.08)] text-[#7C3AED] dark:border-[rgba(167,139,250,0.38)] dark:bg-[rgba(139,92,246,0.18)] dark:text-[#c4b5fd]"
     >
-      <SparkleIcon size={9} />
+      <Sparkle size={10} strokeWidth={1.75} />
       AI: {label}
     </Badge>
   );
