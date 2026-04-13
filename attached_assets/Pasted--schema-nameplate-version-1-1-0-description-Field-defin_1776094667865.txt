@@ -1,0 +1,725 @@
+{
+  "schema": "nameplate",
+  "version": "1.1.0",
+  "description": "Field definitions, dropdown values, validation rules, and conditional logic for the Transformer Nameplate evaluation page.",
+
+  "changelog": [
+    {
+      "version": "1.1.0",
+      "changes": [
+        "Tap percentage column renamed from '% Deviation' to 'Percentage'. Format changed from signed deviation (e.g. '+2.50') to absolute % of nominal (e.g. '102.50' = 102.5% of rated voltage).",
+        "Tap nominal voltage reference fixed: deriveNominalValue now always uses the HV Delta (line) voltage field regardless of winding configuration (GrdY/Y/DELTA). Nameplate tap voltages are always expressed as line voltages.",
+        "Tap table visibility rule added: the table only renders when numberOfTaps > 0. It remains hidden while numberOfTaps is empty or zero.",
+        "Tap Custom mode: the Percentage column is now an editable text input (in addition to the Voltage column) when tapConfig === 'Custom'. Entering either field cross-calculates the other.",
+        "HV/LV Ratings layout: Delta Wye and Dual Voltage toggles are co-located in a single half-width paired slot (each occupying one-sixth of the row). All FieldGrid rows consistently use cols=3 (each field is 1/3 of the row).",
+        "HV Dual Voltage toggle is now a standalone ToggleField in the HV section only. LV Dual Voltage remains in the LV section and is still locked to HV Dual Voltage."
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "changes": ["Initial schema release."]
+    }
+  ],
+
+  "sections": [
+    {
+      "id": "identification",
+      "title": "Identification",
+      "fields": [
+        {
+          "id": "manufacturer",
+          "label": "Manufacturer",
+          "type": "select",
+          "required": true,
+          "options": [
+            "ABB","Eaton","GE","Hitachi","Siemens","SPX","Square D","Virginia Transformer","Other"
+          ],
+          "conditionalFields": [
+            { "triggerValue": "Other", "reveals": "manufacturerCustom" }
+          ],
+          "validation": { "errorMessage": "Manufacturer is required" }
+        },
+        {
+          "id": "manufacturerCustom",
+          "label": "Manufacturer (Custom)",
+          "type": "text",
+          "required": false,
+          "visibilityCondition": { "field": "manufacturer", "equals": "Other" },
+          "validation": { "errorMessage": "Custom manufacturer name is required when 'Other' is selected" }
+        },
+        {
+          "id": "serialNumber",
+          "label": "Serial Number",
+          "type": "text",
+          "required": true,
+          "validation": {
+            "errorMessage": "Serial Number is required",
+            "ltmMatch": {
+              "description": "Must match the LTM (Load Management) record serial number on file for the unit.",
+              "errorMessage": "Must match LTM record: {LTM_SERIAL}"
+            }
+          }
+        },
+        {
+          "id": "unitType",
+          "label": "Unit Type",
+          "type": "select",
+          "required": true,
+          "options": ["Three-Phase Pad","Single-Phase Pad","Underground","Network","Auto-Transformer"],
+          "validation": { "errorMessage": "Unit Type is required" }
+        },
+        {
+          "id": "yearManufactured",
+          "label": "Year Manufactured",
+          "type": "select",
+          "required": false,
+          "options": {
+            "description": "Numeric years from 1950 to the current calendar year, descending.",
+            "range": { "from": 1950, "to": "CURRENT_YEAR", "order": "descending" }
+          }
+        }
+      ]
+    },
+
+    {
+      "id": "ratings",
+      "title": "Ratings",
+      "fields": [
+        {
+          "id": "kvaBase",
+          "label": "KVA Base",
+          "type": "number",
+          "required": true,
+          "unit": "kVA",
+          "validation": { "errorMessage": "KVA Base is required", "min": 0 }
+        },
+        {
+          "id": "kvaFanBase",
+          "label": "KVA Fan Base",
+          "type": "number",
+          "required": false,
+          "unit": "kVA"
+        },
+        {
+          "id": "kvaHigher",
+          "label": "KVA Higher Rating",
+          "type": "number",
+          "required": false,
+          "unit": "kVA"
+        },
+        {
+          "id": "kvaFanHigher",
+          "label": "KVA Fan Higher Rating",
+          "type": "number",
+          "required": false,
+          "unit": "kVA"
+        },
+        {
+          "id": "coolingClass",
+          "label": "Cooling Class",
+          "type": "select",
+          "required": false,
+          "options": [
+            "ONAN/ONAF","ONAN","ONAF","ONAF (FUT)","ONAN/ONAF/ONAF","ONAN/ONAF(F)/ONAF(F)",
+            "ONAN/OFAF","ONAN/ONAF/OFAF","OFAF","KNAN","KNAF","KNAF (FUT)",
+            "KNAN/KNAF/KNAF","KNAN/KNAF(F)/KNAF(F)","KNAN/KFAF","KNAN/KNAF/KFAF","KFAF"
+          ]
+        },
+        {
+          "id": "rise",
+          "label": "Rise (°C)",
+          "type": "select",
+          "required": false,
+          "options": ["55","65","75","55/65","65/75"]
+        },
+        {
+          "id": "frequency",
+          "label": "Frequency",
+          "type": "number",
+          "required": true,
+          "unit": "Hz",
+          "defaultValue": 60,
+          "validation": { "errorMessage": "Frequency is required" }
+        },
+        {
+          "id": "impedancePct",
+          "label": "Impedance %",
+          "type": "number",
+          "required": false,
+          "unit": "%"
+        },
+        {
+          "id": "oilType",
+          "label": "Oil Type",
+          "type": "select",
+          "required": false,
+          "defaultValue": "Mineral Oil",
+          "options": ["Mineral Oil","FR3","R-Temp","Silicone","BETA","Wecosol","Natural Ester","BIOTEMP"]
+        },
+        {
+          "id": "oilVolume",
+          "label": "Oil Volume",
+          "type": "number",
+          "required": false,
+          "unit": "Gal",
+          "validation": {
+            "capacityCheck": {
+              "description": "Validated against the maximum oil capacity for the unit's KVA rating and cooling class. Exceeding the limit raises an error.",
+              "errorMessage": "Exceeds max capacity for {coolingClass} {kvaBase} kVA ({maxCapacity} gal)"
+            }
+          }
+        },
+        {
+          "id": "coreCoilsWeight",
+          "label": "Core & Coils Weight",
+          "type": "number",
+          "required": false,
+          "unit": "lbs"
+        },
+        {
+          "id": "oilWeight",
+          "label": "Oil Weight",
+          "type": "number",
+          "required": false,
+          "unit": "lbs"
+        },
+        {
+          "id": "caseTankWeight",
+          "label": "Case/Tank Weight",
+          "type": "number",
+          "required": false,
+          "unit": "lbs"
+        },
+        {
+          "id": "totalWeight",
+          "label": "Total Weight",
+          "type": "number",
+          "required": false,
+          "unit": "lbs"
+        }
+      ]
+    },
+
+    {
+      "id": "hvRatings",
+      "title": "HV (High Voltage) Ratings",
+      "uiLayout": {
+        "gridColumns": 3,
+        "columnWidth": "1fr",
+        "note": "All rows use a 3-column 1fr grid so every field is exactly 1/3 of the row width. The Delta Wye and Dual Voltage toggles share a single field slot as a paired half-width (1/6 each) sub-group."
+      },
+      "fields": [
+        {
+          "id": "hvNominalVoltage",
+          "label": "HV Nominal Voltage",
+          "type": "searchable-select",
+          "required": true,
+          "options": [
+            "2400GRDY/1386","4160GRDY/2400","7200GRDY/4157","12470GRDY/7200",
+            "13200GRDY/7620","13800GRDY/7967","24940GRDY/14400","34500GRDY/19920",
+            "69000GRDY/39840","115000GRDY/66395","138000GRDY/79674",
+            "2400","4160","7200","12470","13200","13800","34500","69000",
+            "2400/4160Y/2400","4160/7200Y/4157","7200/12470Y/7200","13200/22860Y/13200",
+            "12470GRDY/7200 X 14400GRDY/8315",
+            "2400/4160Y/2400 X 7200/12470Y/7200"
+          ],
+          "validation": { "errorMessage": "HV Nominal Voltage is required" }
+        },
+        {
+          "id": "hv1Config",
+          "label": "HV 1 Configuration",
+          "type": "select",
+          "required": false,
+          "options": ["GrdY","Y","DELTA"]
+        },
+        {
+          "id": "hvDeltaWye",
+          "label": "Delta Wye",
+          "type": "toggle",
+          "required": false,
+          "defaultValue": false,
+          "uiLayout": {
+            "slot": "paired-with:hvDualVoltage",
+            "slotWidth": "half",
+            "note": "Rendered as the left half of a single 1/3-wide field slot, side-by-side with the Dual Voltage toggle."
+          },
+          "validation": {
+            "integralDeltaWye": {
+              "description": "If an integral delta-wye configuration is detected (HV1 and HV2 have different configs on a dual-voltage unit), this toggle is locked on and cannot be manually disabled.",
+              "errorMessage": "Integral Delta Wye detected"
+            }
+          }
+        },
+        {
+          "id": "hvDualVoltage",
+          "label": "Dual Voltage",
+          "type": "toggle",
+          "required": false,
+          "defaultValue": false,
+          "uiLayout": {
+            "slot": "paired-with:hvDeltaWye",
+            "slotWidth": "half",
+            "note": "Rendered as the right half of a single 1/3-wide field slot, side-by-side with the Delta Wye toggle."
+          },
+          "note": "Enabling HV Dual Voltage also forces LV Dual Voltage on. The HV 2 Configuration field and HV 2 Delta/Wye sub-voltage fields become visible. Disabling HV Dual Voltage also disables LV Dual Voltage."
+        },
+        {
+          "id": "hv2Config",
+          "label": "HV 2 Configuration",
+          "type": "select",
+          "required": false,
+          "options": ["GrdY","Y","DELTA"],
+          "visibilityCondition": { "field": "hvDualVoltage", "equals": true }
+        },
+        {
+          "id": "hv1DyDelta",
+          "label": "HV 1 DY Delta",
+          "type": "select",
+          "required": false,
+          "visibilityCondition": {
+            "and": [
+              { "field": "hvDeltaWye", "equals": true },
+              { "field": "isHvIntegral", "equals": false }
+            ]
+          },
+          "options": ["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]
+        },
+        {
+          "id": "hv1Wye",
+          "label": "HV 1 Wye",
+          "type": "select",
+          "required": false,
+          "visibilityCondition": { "field": "hv1Config", "in": ["GrdY","Y"] },
+          "options": ["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]
+        },
+        {
+          "id": "hv1Delta",
+          "label": "HV 1 Delta",
+          "type": "select",
+          "required": false,
+          "options": ["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"],
+          "note": "This is the line (Delta) voltage. It is used as the reference for all tap percentage calculations regardless of winding configuration."
+        },
+        {
+          "id": "hv2DyDelta",
+          "label": "HV 2 DY Delta",
+          "type": "select",
+          "required": false,
+          "visibilityCondition": {
+            "and": [
+              { "field": "hvDualVoltage", "equals": true },
+              { "field": "hvDeltaWye", "equals": true },
+              { "field": "isHvIntegral", "equals": false }
+            ]
+          },
+          "options": ["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]
+        },
+        {
+          "id": "hv2Wye",
+          "label": "HV 2 Wye",
+          "type": "select",
+          "required": false,
+          "visibilityCondition": {
+            "and": [
+              { "field": "hvDualVoltage", "equals": true },
+              { "field": "hv2Config", "in": ["GrdY","Y"] }
+            ]
+          },
+          "options": ["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]
+        },
+        {
+          "id": "hv2Delta",
+          "label": "HV 2 Delta",
+          "type": "select",
+          "required": false,
+          "visibilityCondition": { "field": "hvDualVoltage", "equals": true },
+          "options": ["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"],
+          "note": "When Dual Voltage is on, this Delta field is used as the nominal voltage reference for tap percentage calculations instead of hv1Delta."
+        },
+        {
+          "id": "hvBil",
+          "label": "HV BIL (kV)",
+          "type": "select",
+          "required": false,
+          "unit": "kV",
+          "options": ["30","45","60","75","95","110","125","150","200","250","350"]
+        },
+        {
+          "id": "hvWindingMaterial",
+          "label": "HV Winding Material",
+          "type": "select",
+          "required": false,
+          "options": [
+            { "value": "CU", "label": "Copper" },
+            { "value": "AL", "label": "Aluminum" },
+            { "value": "UN", "label": "Unknown" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": "tapTable",
+      "title": "Tap Table",
+      "description": "Defines the tap voltage configuration for the HV winding. Up to 7 taps (1/A through 7/G).",
+      "visibilityCondition": {
+        "description": "The tap table section (rows) only renders when numberOfTaps > 0. While numberOfTaps is empty or zero the table is hidden. The Number of Taps, Tap Configuration, and Nominal Tap Position fields are always visible.",
+        "rule": "parseInt(numberOfTaps) > 0"
+      },
+      "tapPercentageReference": {
+        "description": "All tap percentage calculations use the HV line (Delta) voltage as the nominal reference — specifically hv1Delta when single voltage, hv2Delta when Dual Voltage is enabled. Nameplate tap voltages are always specified as line voltages. The neutral (Wye) voltage is never used as the tap reference.",
+        "formula": "percentage = (tapVoltage / nominalDeltaVoltage) × 100",
+        "example": "For 13,200 V nominal (Delta): Tap voltage 13,860 V → Percentage = (13860 / 13200) × 100 = 105.00"
+      },
+      "fields": [
+        {
+          "id": "tapConfig",
+          "label": "Tap Configuration",
+          "type": "select",
+          "required": false,
+          "options": ["+/-5%","-10%","J-tap","K-tap","Custom","None"],
+          "conditionalBehavior": [
+            { "value": "None",   "effect": "Tap table rows are hidden (no voltage/percentage inputs rendered)." },
+            { "value": "+/-5%",  "effect": "Auto-calculates tap voltages and percentages from HV Nominal Voltage (Delta). Voltage and Percentage fields are read-only." },
+            { "value": "-10%",   "effect": "Auto-calculates tap voltages and percentages from HV Nominal Voltage (Delta). Voltage and Percentage fields are read-only." },
+            { "value": "J-tap",  "effect": "Auto-calculates tap voltages and percentages from HV Nominal Voltage (Delta). Voltage and Percentage fields are read-only." },
+            { "value": "K-tap",  "effect": "Auto-calculates tap voltages and percentages from HV Nominal Voltage (Delta). Voltage and Percentage fields are read-only." },
+            { "value": "Custom", "effect": "Both the Voltage and Percentage columns become editable inputs for each tap row. Entering a voltage calculates the percentage; entering a percentage calculates the voltage." }
+          ]
+        },
+        {
+          "id": "numberOfTaps",
+          "label": "Number of Taps",
+          "type": "number",
+          "required": false,
+          "min": 0,
+          "max": 7,
+          "note": "Determines how many rows appear in the tap table (0 = no rows shown). Must be set before the tap table renders."
+        },
+        {
+          "id": "nominalTapPosition",
+          "label": "Nominal Tap Position",
+          "type": "number",
+          "required": false,
+          "note": "Indicates the center (rated) tap. Typically the middle tap number. Used to calculate auto-fill deviations above and below nominal."
+        },
+        {
+          "id": "taps",
+          "label": "Tap Rows",
+          "type": "array",
+          "maxItems": 7,
+          "itemSchema": {
+            "label": {
+              "type": "string",
+              "description": "Tap identifier, e.g. '1/A', '2/B', '3/C', '4/D', '5/E', '6/F', '7/G'.",
+              "readonly": true
+            },
+            "hvVoltage": {
+              "type": "number",
+              "description": "The HV tap voltage for this position, expressed as a line (Delta) voltage.",
+              "editableWhen": "tapConfig === 'Custom'",
+              "crossCalculation": "When edited, recalculates the Percentage as (hvVoltage / nominalDeltaVoltage) × 100.",
+              "validation": {
+                "expectedValue": {
+                  "description": "For standard configurations, the system calculates the expected voltage using the HV Delta nominal and the tap deviation. If the stored value differs, an 'Expected [value]' advisory is displayed.",
+                  "errorMessage": "Expected {calculatedVoltage}"
+                }
+              }
+            },
+            "percentage": {
+              "type": "number",
+              "label": "Percentage",
+              "description": "Absolute percentage of the HV nominal (Delta) voltage for this tap position. A value of 102.50 means the tap is at 102.5% of rated line voltage. A value of 97.50 means 97.5% of rated line voltage. This replaces the previous signed deviation format (which showed values like '+2.50' or '-2.50').",
+              "format": "Decimal number to 2 decimal places. Range typically 90.00–110.00 for standard taps.",
+              "unit": "%",
+              "editableWhen": "tapConfig === 'Custom'",
+              "crossCalculation": "When edited in Custom mode, recalculates hvVoltage as (percentage / 100) × nominalDeltaVoltage.",
+              "readonly": "tapConfig !== 'Custom'"
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "id": "lvRatings",
+      "title": "LV (Low Voltage) Ratings",
+      "uiLayout": {
+        "gridColumns": 3,
+        "columnWidth": "1fr",
+        "note": "All rows use a 3-column 1fr grid so every field is exactly 1/3 of the row width. The Delta Wye and Dual Voltage toggles share a single field slot as a paired half-width (1/6 each) sub-group."
+      },
+      "fields": [
+        {
+          "id": "lvNominalVoltage",
+          "label": "LV Nominal Voltage",
+          "type": "searchable-select",
+          "required": true,
+          "options": [
+            "120","208","240","277","480","600",
+            "208GRDY/120","480GRDY/277","600GRDY/347",
+            "2400GRDY/1386","4160GRDY/2400",
+            "240 X 120","480GRDY/277 X 240GRDY/138"
+          ],
+          "validation": { "errorMessage": "LV Nominal Voltage is required" }
+        },
+        {
+          "id": "lv1Config",
+          "label": "LV 1 Configuration",
+          "type": "select",
+          "required": false,
+          "options": ["GrdY","Y","DELTA"]
+        },
+        {
+          "id": "lvDeltaWye",
+          "label": "Delta Wye",
+          "type": "toggle",
+          "required": false,
+          "defaultValue": false,
+          "uiLayout": {
+            "slot": "paired-with:lvDualVoltage",
+            "slotWidth": "half",
+            "note": "Rendered as the left half of a single 1/3-wide field slot, side-by-side with the Dual Voltage toggle."
+          },
+          "validation": {
+            "integralDeltaWye": {
+              "description": "If an integral delta-wye configuration is detected on the LV side, this toggle is locked on and cannot be disabled.",
+              "errorMessage": "Integral Delta Wye detected"
+            }
+          }
+        },
+        {
+          "id": "lvDualVoltage",
+          "label": "Dual Voltage",
+          "type": "toggle",
+          "required": false,
+          "defaultValue": false,
+          "uiLayout": {
+            "slot": "paired-with:lvDeltaWye",
+            "slotWidth": "half",
+            "note": "Rendered as the right half of a single 1/3-wide field slot, side-by-side with the Delta Wye toggle."
+          },
+          "lockedTo": "hvDualVoltage",
+          "note": "LV Dual Voltage is locked to HV Dual Voltage. When HV Dual Voltage is off, this toggle is disabled. It can only be enabled when HV Dual Voltage is on."
+        },
+        {
+          "id": "lv2Config",
+          "label": "LV 2 Configuration",
+          "type": "select",
+          "required": false,
+          "options": ["GrdY","Y","DELTA"],
+          "visibilityCondition": { "field": "lvDualVoltage", "equals": true }
+        },
+        {
+          "id": "lv1DyDelta",
+          "label": "LV 1 DY Delta",
+          "type": "select",
+          "required": false,
+          "visibilityCondition": {
+            "and": [
+              { "field": "lvDeltaWye", "equals": true },
+              { "field": "isLvIntegral", "equals": false }
+            ]
+          },
+          "options": ["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]
+        },
+        {
+          "id": "lv1Wye",
+          "label": "LV 1 Wye",
+          "type": "select",
+          "required": false,
+          "visibilityCondition": { "field": "lv1Config", "in": ["GrdY","Y"] },
+          "options": ["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]
+        },
+        {
+          "id": "lv1Delta",
+          "label": "LV 1 Delta",
+          "type": "select",
+          "required": false,
+          "options": ["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]
+        },
+        {
+          "id": "lv2DyDelta",
+          "label": "LV 2 DY Delta",
+          "type": "select",
+          "required": false,
+          "visibilityCondition": {
+            "and": [
+              { "field": "lvDualVoltage", "equals": true },
+              { "field": "lvDeltaWye", "equals": true },
+              { "field": "isLvIntegral", "equals": false }
+            ]
+          },
+          "options": ["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]
+        },
+        {
+          "id": "lv2Wye",
+          "label": "LV 2 Wye",
+          "type": "select",
+          "required": false,
+          "visibilityCondition": {
+            "and": [
+              { "field": "lvDualVoltage", "equals": true },
+              { "field": "lv2Config", "in": ["GrdY","Y"] }
+            ]
+          },
+          "options": ["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]
+        },
+        {
+          "id": "lv2Delta",
+          "label": "LV 2 Delta",
+          "type": "select",
+          "required": false,
+          "visibilityCondition": { "field": "lvDualVoltage", "equals": true },
+          "options": ["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]
+        },
+        {
+          "id": "lvBil",
+          "label": "LV BIL (kV)",
+          "type": "select",
+          "required": false,
+          "unit": "kV",
+          "options": ["10","30","45","60","75","95","110","125","150","200","250","350"]
+        },
+        {
+          "id": "lvWindingMaterial",
+          "label": "LV Winding Material",
+          "type": "select",
+          "required": false,
+          "options": [
+            { "value": "CU", "label": "Copper" },
+            { "value": "AL", "label": "Aluminum" },
+            { "value": "UN", "label": "Unknown" }
+          ]
+        },
+        {
+          "id": "lvBaseVoltage",
+          "label": "LV Base Voltage",
+          "type": "number",
+          "required": false,
+          "defaultValue": 480,
+          "note": "Parsed automatically from LV Nominal Voltage. Used as the reference denominator for TTR (Turns Ratio Test) calculations on the Electrical page."
+        }
+      ]
+    }
+  ],
+
+  "globalValidation": {
+    "validationTrigger": {
+      "description": "Validation is only enforced after the user either completes an AI nameplate scan or manually confirms 'No Nameplate'. Before either action, fields are advisory only.",
+      "triggerConditions": ["nameplateScanned", "noNameplateConfirmed"]
+    },
+    "mandatoryFields": [
+      "manufacturer",
+      "serialNumber",
+      "unitType",
+      "kvaBase",
+      "frequency",
+      "hvNominalVoltage",
+      "lvNominalVoltage"
+    ],
+    "crossFieldRules": [
+      {
+        "id": "ltmSerialMatch",
+        "description": "The Serial Number must match the LTM (Load Management) record on file for the evaluation unit. A mismatch displays a blocking error until resolved.",
+        "fields": ["serialNumber"],
+        "errorMessage": "Must match LTM record: {LTM_SERIAL}"
+      },
+      {
+        "id": "oilVolumeCapacity",
+        "description": "Oil Volume must not exceed the maximum rated capacity for the unit's KVA rating and cooling class combination.",
+        "fields": ["oilVolume","kvaBase","coolingClass"],
+        "errorMessage": "Exceeds max capacity for {coolingClass} {kvaBase} kVA ({maxCapacity} gal)"
+      },
+      {
+        "id": "integralDeltaWye",
+        "description": "If dual voltage is enabled and hv1Config differs from hv2Config (or lv1Config from lv2Config), an integral delta-wye configuration is detected. Both Delta Wye toggles are locked on and cannot be disabled.",
+        "fields": ["hvDeltaWye","lvDeltaWye","hvDualVoltage","hv1Config","hv2Config"],
+        "errorMessage": "Integral Delta Wye detected"
+      },
+      {
+        "id": "lvDualVoltageLockedToHv",
+        "description": "LV Dual Voltage is always locked to mirror HV Dual Voltage. They cannot be set independently. The LV toggle is disabled when HV Dual Voltage is off.",
+        "fields": ["hvDualVoltage","lvDualVoltage"]
+      },
+      {
+        "id": "tapVoltageExpected",
+        "description": "For standard tap configurations (+/-5%, -10%, J-tap, K-tap), each tap's line voltage and percentage are calculated from the HV nominal Delta voltage (always the line voltage, never the Wye/neutral). If a stored value differs from the calculation, an 'Expected [value]' advisory is displayed.",
+        "fields": ["taps[*].hvVoltage","taps[*].percentage","hv1Delta","hv2Delta","hvDualVoltage","tapConfig"],
+        "nominalReference": "hvDualVoltage ? hv2Delta : hv1Delta",
+        "errorMessage": "Expected {calculatedVoltage}"
+      }
+    ]
+  },
+
+  "aiScanBehavior": {
+    "description": "The Nameplate page supports AI-assisted OCR scanning via a photo of the physical nameplate.",
+    "confidenceScores": {
+      "description": "Each section receives a confidence score (0-100%). Scores below the threshold display an amber warning icon.",
+      "lowConfidenceThreshold": 80
+    },
+    "aiHints": {
+      "description": "If the user modifies an AI-populated field, a sparkle icon appears. Tapping it reveals the original AI-extracted value and offers a 'Tap to restore' option."
+    },
+    "photoQualityAdvisories": ["Blurry","Underexposed","Off-angle"],
+    "scanDefaults": {
+      "lvBaseVoltage": 480,
+      "oilType": "Mineral Oil",
+      "stringFields": "",
+      "booleanFields": false
+    },
+    "noNameplatePath": {
+      "description": "If the physical nameplate is missing or unreadable, the user can confirm 'No Nameplate'. This bypasses the scan flow but still requires manual entry of all mandatory fields."
+    }
+  },
+
+  "downstreamDependencies": {
+    "description": "The following Nameplate fields are consumed by downstream evaluation pages as read-only constants.",
+    "usedBy": [
+      {
+        "page": "Electrical (TTR Test)",
+        "fields": ["hvNominalVoltage","hv1Delta","hv2Delta","hvDualVoltage","lvBaseVoltage","taps"],
+        "usage": "Tap line voltages and LV base voltage are used to calculate expected TTR (Turns Ratio) values for each tap position. The HV Delta field is the reference for all ratio calculations."
+      },
+      {
+        "page": "Electrical (Resistance Test)",
+        "fields": ["hvNominalVoltage","lvNominalVoltage"],
+        "usage": "Nominal voltages are displayed as reference values alongside resistance readings."
+      },
+      {
+        "page": "Condition Capture",
+        "fields": ["oilType","kvaBase","coolingClass"],
+        "usage": "Oil type and ratings inform condition scoring thresholds."
+      }
+    ]
+  },
+
+  "dataModel": {
+    "description": "The canonical TypeScript interface used in the application store (evalStore.ts). Only a subset of UI fields are persisted here; the rest are local form state.",
+    "interface": "NameplateData",
+    "persistedFields": [
+      { "key": "taps",             "type": "NameplateTapEntry[]", "description": "Array of tap entries, each with label and hvVoltage (line voltage)." },
+      { "key": "lvBaseVoltage",    "type": "number",              "description": "Parsed LV base voltage (e.g. 480)." },
+      { "key": "hvNominalVoltage", "type": "string",              "description": "Selected HV nominal voltage string." },
+      { "key": "lvNominalVoltage", "type": "string",              "description": "Selected LV nominal voltage string." },
+      { "key": "kvaBase",          "type": "string",              "description": "KVA base rating." },
+      { "key": "manufacturer",     "type": "string",              "description": "Selected or entered manufacturer name." },
+      { "key": "serialNumber",     "type": "string",              "description": "Unit serial number." },
+      { "key": "hvDualVoltage",    "type": "boolean (optional)",  "description": "Whether HV dual voltage is enabled." },
+      { "key": "hv1Config",        "type": "string (optional)",   "description": "HV 1 winding configuration (GrdY/Y/DELTA)." },
+      { "key": "hv1Delta",         "type": "string (optional)",   "description": "HV 1 line (Delta) voltage. Reference for all tap % calculations." },
+      { "key": "hv2Config",        "type": "string (optional)",   "description": "HV 2 winding configuration (GrdY/Y/DELTA)." },
+      { "key": "hv2Delta",         "type": "string (optional)",   "description": "HV 2 line (Delta) voltage. Used as tap % reference when Dual Voltage is enabled." },
+      { "key": "lv1Delta",         "type": "string (optional)",   "description": "LV 1 delta sub-voltage value." },
+      { "key": "lv2Delta",         "type": "string (optional)",   "description": "LV 2 delta sub-voltage value." },
+      { "key": "lv1Config",        "type": "string (optional)",   "description": "LV 1 winding configuration." },
+      { "key": "lv2Config",        "type": "string (optional)",   "description": "LV 2 winding configuration." },
+      { "key": "lvDualVoltage",    "type": "boolean (optional)",  "description": "Whether LV dual voltage is enabled." },
+      { "key": "oilType",          "type": "string (optional)",   "description": "Transformer oil type." }
+    ],
+    "tapEntryInterface": {
+      "label":     { "type": "string", "description": "Tap label, e.g. '1/A' through '7/G'." },
+      "hvVoltage": { "type": "number", "description": "HV line voltage for this tap position." }
+    }
+  }
+}
