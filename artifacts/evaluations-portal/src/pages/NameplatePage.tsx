@@ -298,7 +298,34 @@ function PairedToggles({
 }
 
 /* ─── Tap table ─────────────────────────────────────────────────────────────── */
-function TapTable({ taps, editMode, readonly }: { taps: typeof HV.taps; editMode: boolean; readonly?: boolean }) {
+function computeTapPercentage(tapConfig: string, numTaps: number, tapIndex: number): string | null {
+  if (numTaps <= 1) return "100.00";
+  const step = numTaps - 1;
+  const pmMatch = tapConfig.match(/^\+\/-(\d+(?:\.\d+)?)%$/);
+  const minusMatch = tapConfig.match(/^-(\d+(?:\.\d+)?)%$/);
+  if (pmMatch) {
+    const half = parseFloat(pmMatch[1]);
+    const pct = 100 + half - (tapIndex - 1) * ((2 * half) / step);
+    return pct.toFixed(2);
+  }
+  if (minusMatch) {
+    const range = parseFloat(minusMatch[1]);
+    const pct = 100 - (tapIndex - 1) * (range / step);
+    return pct.toFixed(2);
+  }
+  return null;
+}
+
+function TapTable({
+  taps, editMode, readonly, tapConfig, numberOfTaps,
+}: {
+  taps: typeof HV.taps;
+  editMode: boolean;
+  readonly?: boolean;
+  tapConfig: string;
+  numberOfTaps: string;
+}) {
+  const numTaps = parseInt(numberOfTaps) || 0;
   return (
     <div>
       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
@@ -314,26 +341,27 @@ function TapTable({ taps, editMode, readonly }: { taps: typeof HV.taps; editMode
             </TableRow>
           </TableHeader>
           <TableBody>
-            {taps.map((row) => (
-              <TableRow key={row.label} className="hover:bg-muted/30">
-                <TableCell className="font-semibold text-sm py-2">{row.label}</TableCell>
-                <TableCell className="text-sm py-2">
-                  {editMode && !readonly ? (
-                    <Input defaultValue={row.hvVoltage} className="h-7 text-xs bg-background max-w-[100px] shadow-none" />
-                  ) : row.hvVoltage}
-                </TableCell>
-                <TableCell className={cn(
-                  "text-sm font-medium py-2",
-                  row.percentage?.startsWith("+") ? "text-[#047857] dark:text-[#6EE7B7]"
-                    : row.percentage === "0.0" ? "text-foreground"
-                    : "text-destructive",
-                )}>
-                  {editMode && !readonly ? (
-                    <Input defaultValue={row.percentage} className="h-7 text-xs bg-background max-w-[80px] shadow-none" />
-                  ) : row.percentage}
-                </TableCell>
-              </TableRow>
-            ))}
+            {taps.map((row, idx) => {
+              const computed = tapConfig !== "Custom"
+                ? computeTapPercentage(tapConfig, numTaps, idx + 1)
+                : null;
+              const displayPct = computed ?? row.percentage;
+              return (
+                <TableRow key={row.label} className="hover:bg-muted/30">
+                  <TableCell className="font-semibold text-sm py-2">{row.label}</TableCell>
+                  <TableCell className="text-sm py-2">
+                    {editMode && !readonly ? (
+                      <Input defaultValue={row.hvVoltage} className="h-7 text-xs bg-background max-w-[100px] shadow-none" />
+                    ) : row.hvVoltage}
+                  </TableCell>
+                  <TableCell className="text-sm font-medium py-2 text-foreground">
+                    {editMode && !readonly ? (
+                      <Input defaultValue={displayPct} className="h-7 text-xs bg-background max-w-[80px] shadow-none" />
+                    ) : displayPct}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
@@ -1154,7 +1182,13 @@ export default function NameplatePage() {
                 </FieldGrid>
                 {parseInt(HV.numberOfTaps) > 0 && (
                   <div className="mt-4">
-                    <TapTable taps={HV.taps} editMode={editMode} readonly={HV.tapConfig !== "Custom"} />
+                    <TapTable
+                      taps={HV.taps}
+                      editMode={editMode}
+                      readonly={HV.tapConfig !== "Custom"}
+                      tapConfig={HV.tapConfig}
+                      numberOfTaps={HV.numberOfTaps}
+                    />
                   </div>
                 )}
               </Section>
