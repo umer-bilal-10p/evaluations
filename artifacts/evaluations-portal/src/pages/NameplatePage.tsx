@@ -100,6 +100,63 @@ const LV = {
 };
 
 const YEAR_OPTIONS = Array.from({ length: new Date().getFullYear() - 1949 }, (_, i) => String(new Date().getFullYear() - i));
+const TAP_LABELS = ["1/A","2/B","3/C","4/D","5/E","6/F","7/G"];
+
+/* ─── Voltage formatting helper ─────────────────────────────────────────────── */
+function fmtV(raw: number | string): string {
+  const n = typeof raw === "number" ? raw : parseFloat(String(raw).replace(/,/g, ""));
+  return isNaN(n) ? "" : n.toLocaleString("en-US");
+}
+
+/* ─── Nominal voltage parsers ──────────────────────────────────────────────── */
+interface HVParsed {
+  hv1Config: string; hv1Delta: string; hv1Wye: string;
+  hv2Config: string; hv2Delta: string; hv2Wye: string;
+  dualVoltage: boolean;
+}
+
+function parseHvNominal(v: string): HVParsed | null {
+  let m: RegExpMatchArray | null;
+  // "NGRDY/M X PGRDY/Q"
+  m = v.match(/^(\d+)GRDY\/(\d+)\s+X\s+(\d+)GRDY\/(\d+)$/);
+  if (m) return { hv1Config:"GrdY", hv1Delta:fmtV(m[1]), hv1Wye:fmtV(m[2]), hv2Config:"GrdY", hv2Delta:fmtV(m[3]), hv2Wye:fmtV(m[4]), dualVoltage:true };
+  // "N/MY/P X Q/RY/S"
+  m = v.match(/^(\d+)\/(\d+)Y\/(\d+)\s+X\s+(\d+)\/(\d+)Y\/(\d+)$/);
+  if (m) return { hv1Config:"DELTA", hv1Delta:fmtV(m[1]), hv1Wye:"", hv2Config:"GrdY", hv2Delta:fmtV(m[5]), hv2Wye:fmtV(m[6]), dualVoltage:true };
+  // "N/MY/P" — DELTA hv1 + GrdY hv2, dual
+  m = v.match(/^(\d+)\/(\d+)Y\/(\d+)$/);
+  if (m) return { hv1Config:"DELTA", hv1Delta:fmtV(m[1]), hv1Wye:"", hv2Config:"GrdY", hv2Delta:fmtV(m[2]), hv2Wye:fmtV(m[3]), dualVoltage:true };
+  // "NGRDY/M" — single GrdY
+  m = v.match(/^(\d+)GRDY\/(\d+)$/);
+  if (m) return { hv1Config:"GrdY", hv1Delta:fmtV(m[1]), hv1Wye:fmtV(m[2]), hv2Config:"", hv2Delta:"", hv2Wye:"", dualVoltage:false };
+  // Plain number — single DELTA
+  m = v.match(/^(\d+)$/);
+  if (m) return { hv1Config:"DELTA", hv1Delta:fmtV(m[1]), hv1Wye:"", hv2Config:"", hv2Delta:"", hv2Wye:"", dualVoltage:false };
+  return null;
+}
+
+interface LVParsed {
+  lv1Config: string; lv1Delta: string; lv1Wye: string;
+  lv2Config: string; lv2Delta: string; lv2Wye: string;
+  dualVoltage: boolean; lvBaseVoltage: string;
+}
+
+function parseLvNominal(v: string): LVParsed | null {
+  let m: RegExpMatchArray | null;
+  // "NGRDY/M X PGRDY/Q"
+  m = v.match(/^(\d+)GRDY\/(\d+)\s+X\s+(\d+)GRDY\/(\d+)$/);
+  if (m) return { lv1Config:"GrdY", lv1Delta:m[1], lv1Wye:m[2], lv2Config:"GrdY", lv2Delta:m[3], lv2Wye:m[4], dualVoltage:true, lvBaseVoltage:m[1] };
+  // "N X M" — two plain deltas
+  m = v.match(/^(\d+)\s+X\s+(\d+)$/);
+  if (m) return { lv1Config:"DELTA", lv1Delta:m[1], lv1Wye:"", lv2Config:"DELTA", lv2Delta:m[2], lv2Wye:"", dualVoltage:true, lvBaseVoltage:m[1] };
+  // "NGRDY/M"
+  m = v.match(/^(\d+)GRDY\/(\d+)$/);
+  if (m) return { lv1Config:"GrdY", lv1Delta:m[1], lv1Wye:m[2], lv2Config:"", lv2Delta:"", lv2Wye:"", dualVoltage:false, lvBaseVoltage:m[1] };
+  // Plain number
+  m = v.match(/^(\d+)$/);
+  if (m) return { lv1Config:"DELTA", lv1Delta:m[1], lv1Wye:"", lv2Config:"", lv2Delta:"", lv2Wye:"", dualVoltage:false, lvBaseVoltage:m[1] };
+  return null;
+}
 
 /* ─── Sub-components ────────────────────────────────────────────────────────── */
 
@@ -156,17 +213,20 @@ function FieldLabel({ label, required }: { label: string; required?: boolean }) 
 }
 
 function Field({
-  label, value, editMode, required, error, placeholder,
+  label, value, editMode, required, error, placeholder, onChange,
 }: {
   label: string; value: string; editMode: boolean; required?: boolean; error?: boolean; placeholder?: string;
+  onChange?: (v: string) => void;
 }) {
   return (
     <div>
       <FieldLabel label={label} required={required} />
       <Input
-        defaultValue={value}
+        value={onChange !== undefined ? value : undefined}
+        defaultValue={onChange === undefined ? value : undefined}
         readOnly={!editMode}
         placeholder={editMode ? placeholder : undefined}
+        onChange={onChange && editMode ? (e) => onChange(e.target.value) : undefined}
         className={cn(
           "h-9 text-sm shadow-none",
           !editMode && "bg-muted border-muted cursor-default focus-visible:ring-0 focus-visible:ring-offset-0",
@@ -180,9 +240,10 @@ function Field({
 
 /* ─── Unified Select ─────────────────────────────────────────────────────────── */
 function SelectField({
-  label, value, editMode, required, options,
+  label, value, editMode, required, options, onChange,
 }: {
   label: string; value: string; editMode: boolean; required?: boolean; options: string[];
+  onChange?: (v: string) => void;
 }) {
   if (!editMode) {
     return (
@@ -195,7 +256,11 @@ function SelectField({
   return (
     <div>
       <FieldLabel label={label} required={required} />
-      <Select defaultValue={value}>
+      <Select
+        value={onChange !== undefined ? value : undefined}
+        defaultValue={onChange === undefined ? value : undefined}
+        onValueChange={onChange}
+      >
         <SelectTrigger className="h-9 bg-background text-sm shadow-none">
           <SelectValue />
         </SelectTrigger>
@@ -298,22 +363,41 @@ function PairedToggles({
 }
 
 /* ─── Tap table ─────────────────────────────────────────────────────────────── */
-function computeTapPercentage(tapConfig: string, numTaps: number, tapIndex: number): string | null {
-  if (numTaps <= 1) return "100.00";
-  const step = numTaps - 1;
+function computeTapPercentage(tapConfig: string, numTaps: number, tapIndex: number, nominalPos?: number): string | null {
+  if (numTaps <= 0) return "100.00";
+  if (numTaps === 1) return "100.00";
+  const nom = (nominalPos != null && nominalPos >= 1 && nominalPos <= numTaps) ? nominalPos : Math.ceil(numTaps / 2);
   const pmMatch = tapConfig.match(/^\+\/-(\d+(?:\.\d+)?)%$/);
   const minusMatch = tapConfig.match(/^-(\d+(?:\.\d+)?)%$/);
   if (pmMatch) {
     const half = parseFloat(pmMatch[1]);
-    const pct = 100 + half - (tapIndex - 1) * ((2 * half) / step);
+    const stepsAbove = nom - 1;
+    const step = stepsAbove > 0 ? half / stepsAbove : 0;
+    const pct = 100 + (nom - tapIndex) * step;
     return pct.toFixed(2);
   }
   if (minusMatch) {
     const range = parseFloat(minusMatch[1]);
-    const pct = 100 - (tapIndex - 1) * (range / step);
+    const stepsBelow = numTaps - nom;
+    const step = stepsBelow > 0 ? range / stepsBelow : 0;
+    const pct = 100 - (tapIndex - nom) * step;
     return pct.toFixed(2);
   }
   return null;
+}
+
+function buildTapRows(
+  tapCfg: string,
+  numTaps: number,
+  nominalPos: number,
+  nominalDeltaStr: string,
+): Array<{ label: string; hvVoltage: string; percentage: string }> {
+  const delta = parseFloat(nominalDeltaStr.replace(/,/g, ""));
+  return Array.from({ length: numTaps }, (_, i) => {
+    const pct = parseFloat(computeTapPercentage(tapCfg, numTaps, i + 1, nominalPos) ?? "100");
+    const voltage = !isNaN(delta) ? Math.round(delta * pct / 100).toLocaleString("en-US") : "";
+    return { label: TAP_LABELS[i] ?? `${i + 1}`, hvVoltage: voltage, percentage: pct.toFixed(2) };
+  });
 }
 
 function TapTable({
@@ -720,14 +804,101 @@ export default function NameplatePage() {
   const [postingComment, setPostingComment] = useState(false);
   const [editingCommentIdx, setEditingCommentIdx] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  /* ── Toggle state ── */
   const [hvDeltaWye, setHvDeltaWye] = useState(HV.deltaWye);
   const [hvDualVoltage, setHvDualVoltage] = useState(HV.dualVoltage);
   const [lvDeltaWye, setLvDeltaWye] = useState(LV.deltaWye);
   const [lvDualVoltage, setLvDualVoltage] = useState(LV.dualVoltage);
 
+  /* ── HV rating state ── */
+  const [hvNominal, setHvNominal] = useState(HV.nominalVoltage);
+  const [hv1Config, setHv1Config] = useState(HV.hv1Config);
+  const [hv1Delta, setHv1Delta] = useState(HV.hv1Delta);
+  const [hv1Wye, setHv1Wye] = useState(HV.hv1Wye);
+  const [hv1DyDelta, setHv1DyDelta] = useState(HV.hv1DyDelta);
+  const [hv2Config, setHv2Config] = useState(HV.hv2Config);
+  const [hv2Delta, setHv2Delta] = useState(HV.hv2Delta);
+  const [hv2Wye, setHv2Wye] = useState(HV.hv2Wye);
+  const [hv2DyDelta, setHv2DyDelta] = useState(HV.hv2DyDelta);
+  const [hvBil, setHvBil] = useState(HV.bil);
+  const [hvWindingMaterial, setHvWindingMaterial] = useState(HV.windingMaterial === "AL" ? "Aluminum" : HV.windingMaterial === "CU" ? "Copper" : "Unknown");
+
+  /* ── Tap state ── */
+  const [tapConfig, setTapConfig] = useState(HV.tapConfig);
+  const [numberOfTaps, setNumberOfTaps] = useState(HV.numberOfTaps);
+  const [nominalTapPosition, setNominalTapPosition] = useState(HV.nominalTapPosition);
+  const [tapRows, setTapRows] = useState<Array<{ label: string; hvVoltage: string; percentage: string }>>(HV.taps);
+
+  /* ── LV rating state ── */
+  const [lvNominal, setLvNominal] = useState(LV.nominalVoltage);
+  const [lv1Config, setLv1Config] = useState(LV.lv1Config);
+  const [lv1Delta, setLv1Delta] = useState(LV.lv1Delta);
+  const [lv1Wye, setLv1Wye] = useState(LV.lv1Wye);
+  const [lv1DyDelta, setLv1DyDelta] = useState(LV.lv1DyDelta);
+  const [lv2Config, setLv2Config] = useState(LV.lv2Config);
+  const [lv2Delta, setLv2Delta] = useState(LV.lv2Delta);
+  const [lv2Wye, setLv2Wye] = useState(LV.lv2Wye);
+  const [lv2DyDelta, setLv2DyDelta] = useState(LV.lv2DyDelta);
+  const [lvBil, setLvBil] = useState(LV.bil);
+  const [lvWindingMaterial, setLvWindingMaterial] = useState(LV.windingMaterial === "AL" ? "Aluminum" : "Unknown");
+  const [lvBaseVoltage, setLvBaseVoltage] = useState(LV.lvBaseVoltage);
+
+  /* ── Derive HV sub-fields from Nominal Voltage selection ── */
+  const handleHvNominalChange = (v: string) => {
+    setHvNominal(v);
+    const p = parseHvNominal(v);
+    if (!p) return;
+    setHv1Config(p.hv1Config);
+    setHv1Delta(p.hv1Delta);
+    setHv1Wye(p.hv1Wye);
+    setHv1DyDelta(p.hv1Config === "DELTA" ? p.hv1Delta : "");
+    setHv2Config(p.hv2Config);
+    setHv2Delta(p.hv2Delta);
+    setHv2Wye(p.hv2Wye);
+    setHv2DyDelta(p.hv2Config === "DELTA" ? p.hv2Delta : "");
+    setHvDualVoltage(p.dualVoltage);
+  };
+
+  /* ── Derive LV sub-fields from Nominal Voltage selection ── */
+  const handleLvNominalChange = (v: string) => {
+    setLvNominal(v);
+    const p = parseLvNominal(v);
+    if (!p) return;
+    setLv1Config(p.lv1Config);
+    setLv1Delta(p.lv1Delta);
+    setLv1Wye(p.lv1Wye);
+    setLv1DyDelta(p.lv1Config === "DELTA" ? p.lv1Delta : "");
+    setLv2Config(p.lv2Config);
+    setLv2Delta(p.lv2Delta);
+    setLv2Wye(p.lv2Wye);
+    setLv2DyDelta(p.lv2Config === "DELTA" ? p.lv2Delta : "");
+    setLvDualVoltage(p.dualVoltage);
+    setLvBaseVoltage(p.lvBaseVoltage);
+  };
+
+  /* ── LV Dual Voltage mirrors HV ── */
   useEffect(() => {
     if (!hvDualVoltage) setLvDualVoltage(false);
   }, [hvDualVoltage]);
+
+  /* ── Integral Delta Wye: lock on when configs differ in dual-voltage mode ── */
+  useEffect(() => {
+    if (hvDualVoltage && hv1Config && hv2Config && hv1Config !== hv2Config) setHvDeltaWye(true);
+  }, [hvDualVoltage, hv1Config, hv2Config]);
+
+  useEffect(() => {
+    if (lvDualVoltage && lv1Config && lv2Config && lv1Config !== lv2Config) setLvDeltaWye(true);
+  }, [lvDualVoltage, lv1Config, lv2Config]);
+
+  /* ── Recompute tap rows whenever anything that drives them changes ── */
+  useEffect(() => {
+    if (tapConfig === "Custom" || tapConfig === "None") return;
+    const n = parseInt(numberOfTaps, 10);
+    if (!n || n <= 0) return;
+    const nom = parseInt(nominalTapPosition, 10) || Math.ceil(n / 2);
+    const refDelta = hvDualVoltage ? hv2Delta : hv1Delta;
+    setTapRows(buildTapRows(tapConfig, n, nom, refDelta));
+  }, [tapConfig, numberOfTaps, nominalTapPosition, hv1Delta, hv2Delta, hvDualVoltage]);
 
   /* Stepper state */
   const [activeStep, setActiveStep]       = useState(0);
@@ -1093,14 +1264,16 @@ export default function NameplatePage() {
               <Section>
                 <SectionHeader title="HV Ratings" confidence={96} />
                 {(() => {
-                  const hvIsIntegral = hvDualVoltage && HV.hv1Config !== HV.hv2Config;
+                  const hvIsIntegral = hvDualVoltage && hv1Config !== hv2Config;
                   const showHv1DyDelta = hvDeltaWye && !hvIsIntegral;
                   const showHv2DyDelta = hvDeltaWye && !hvIsIntegral;
+                  const hvVoltOptions = ["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"];
                   return (
                     <>
                       {/* Row 1: Nominal Voltage only */}
                       <FieldGrid>
-                        <SelectField label="HV Nominal Voltage" value={HV.nominalVoltage} editMode={editMode} required
+                        <SelectField label="HV Nominal Voltage" value={hvNominal} editMode={editMode} required
+                          onChange={handleHvNominalChange}
                           options={[
                             "2400GRDY/1386","4160GRDY/2400","7200GRDY/4157","12470GRDY/7200",
                             "13200GRDY/7620","13800GRDY/7967","24940GRDY/14400","34500GRDY/19920",
@@ -1113,54 +1286,60 @@ export default function NameplatePage() {
 
                       {/* Row 2: HV1 Config | Delta Wye + Dual Voltage | HV2 Config (conditional) */}
                       <FieldGrid className="mt-4">
-                        <SelectField label="HV 1 Configuration" value={HV.hv1Config} editMode={editMode}
+                        <SelectField label="HV 1 Configuration" value={hv1Config} editMode={editMode}
+                          onChange={(v) => { setHv1Config(v); setHv1DyDelta(v === "DELTA" ? hv1Delta : ""); }}
                           options={["GrdY","Y","DELTA"]} />
                         <PairedToggles
-                          leftLabel="Delta Wye" leftValue={hvDeltaWye} onLeftChange={setHvDeltaWye}
+                          leftLabel="Delta Wye" leftValue={hvDeltaWye}
+                          onLeftChange={hvIsIntegral ? undefined : setHvDeltaWye}
                           rightLabel="Dual Voltage" rightValue={hvDualVoltage} onRightChange={setHvDualVoltage}
                           editMode={editMode}
+                          rightDisabled={false}
                         />
                         {hvDualVoltage && (
-                          <SelectField label="HV 2 Configuration" value={HV.hv2Config} editMode={editMode}
+                          <SelectField label="HV 2 Configuration" value={hv2Config} editMode={editMode}
+                            onChange={(v) => { setHv2Config(v); setHv2DyDelta(v === "DELTA" ? hv2Delta : ""); }}
                             options={["GrdY","Y","DELTA"]} />
                         )}
                       </FieldGrid>
 
-                      {/* Row 3: HV1 Values — fields flow left; blanks collapse */}
+                      {/* Row 3: HV1 sub-voltages */}
                       <FieldGrid className="mt-4">
                         {showHv1DyDelta && (
-                          <SelectField label="HV 1 DY Delta" value={HV.hv1DyDelta} editMode={editMode}
-                            options={["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]} />
+                          <SelectField label="HV 1 DY Delta" value={hv1DyDelta} editMode={editMode}
+                            onChange={setHv1DyDelta} options={hvVoltOptions} />
                         )}
-                        {(HV.hv1Config === "GrdY" || HV.hv1Config === "Y") && (
-                          <SelectField label="HV 1 Wye" value={HV.hv1Wye} editMode={editMode}
-                            options={["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]} />
+                        {(hv1Config === "GrdY" || hv1Config === "Y") && (
+                          <SelectField label="HV 1 Wye" value={hv1Wye} editMode={editMode}
+                            onChange={setHv1Wye} options={hvVoltOptions} />
                         )}
-                        <SelectField label="HV 1 Delta" value={HV.hv1Delta} editMode={editMode}
-                          options={["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]} />
+                        <SelectField label="HV 1 Delta" value={hv1Delta} editMode={editMode}
+                          onChange={setHv1Delta} options={hvVoltOptions} />
                       </FieldGrid>
 
-                      {/* Row 4: HV2 Values — only when Dual Voltage on */}
+                      {/* Row 4: HV2 sub-voltages — only when Dual Voltage on */}
                       {hvDualVoltage && (
                         <FieldGrid className="mt-4">
                           {showHv2DyDelta && (
-                            <SelectField label="HV 2 DY Delta" value={HV.hv2DyDelta} editMode={editMode}
-                              options={["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]} />
+                            <SelectField label="HV 2 DY Delta" value={hv2DyDelta} editMode={editMode}
+                              onChange={setHv2DyDelta} options={hvVoltOptions} />
                           )}
-                          {(HV.hv2Config === "GrdY" || HV.hv2Config === "Y") && (
-                            <SelectField label="HV 2 Wye" value={HV.hv2Wye} editMode={editMode}
-                              options={["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]} />
+                          {(hv2Config === "GrdY" || hv2Config === "Y") && (
+                            <SelectField label="HV 2 Wye" value={hv2Wye} editMode={editMode}
+                              onChange={setHv2Wye} options={hvVoltOptions} />
                           )}
-                          <SelectField label="HV 2 Delta" value={HV.hv2Delta} editMode={editMode}
-                            options={["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]} />
+                          <SelectField label="HV 2 Delta" value={hv2Delta} editMode={editMode}
+                            onChange={setHv2Delta} options={hvVoltOptions} />
                         </FieldGrid>
                       )}
 
                       {/* BIL + Winding Material */}
                       <FieldGrid className="mt-4">
-                        <SelectField label="HV BIL (kV)" value={HV.bil} editMode={editMode}
+                        <SelectField label="HV BIL (kV)" value={hvBil} editMode={editMode}
+                          onChange={setHvBil}
                           options={["30","45","60","75","95","110","125","150","200","250","350"]} />
-                        <SelectField label="HV Winding Material" value={HV.windingMaterial === "AL" ? "Aluminum" : HV.windingMaterial === "CU" ? "Copper" : "Unknown"} editMode={editMode}
+                        <SelectField label="HV Winding Material" value={hvWindingMaterial} editMode={editMode}
+                          onChange={setHvWindingMaterial}
                           options={["Copper","Aluminum","Unknown"]} />
                       </FieldGrid>
                     </>
@@ -1175,19 +1354,37 @@ export default function NameplatePage() {
                   <span className="text-sm font-semibold text-foreground">Tap Table</span>
                 </div>
                 <FieldGrid>
-                  <SelectField label="Tap Configuration" value={HV.tapConfig} editMode={editMode}
+                  <SelectField label="Tap Configuration" value={tapConfig} editMode={editMode}
+                    onChange={(v) => {
+                      setTapConfig(v);
+                      if (v === "None") setTapRows([]);
+                    }}
                     options={["+/-5%","-10%","J-tap","K-tap","Custom","None"]} />
-                  <Field label="Number of Taps" value={HV.numberOfTaps} editMode={editMode} />
-                  <Field label="Nominal Tap Position" value={HV.nominalTapPosition} editMode={editMode} />
+                  <Field label="Number of Taps" value={numberOfTaps} editMode={editMode}
+                    onChange={(v) => {
+                      const n = parseInt(v, 10);
+                      setNumberOfTaps(v);
+                      if (tapConfig === "Custom" && n > 0) {
+                        const nom = parseInt(nominalTapPosition, 10) || Math.ceil(n / 2);
+                        setTapRows(Array.from({ length: n }, (_, i) => ({
+                          label: TAP_LABELS[i] ?? `${i+1}`,
+                          hvVoltage: tapRows[i]?.hvVoltage ?? "",
+                          percentage: tapRows[i]?.percentage ?? "100.00",
+                        })));
+                        setNominalTapPosition(String(Math.min(nom, n)));
+                      }
+                    }} />
+                  <Field label="Nominal Tap Position" value={nominalTapPosition} editMode={editMode}
+                    onChange={(v) => setNominalTapPosition(v)} />
                 </FieldGrid>
-                {parseInt(HV.numberOfTaps) > 0 && (
+                {parseInt(numberOfTaps) > 0 && tapConfig !== "None" && (
                   <div className="mt-4">
                     <TapTable
-                      taps={HV.taps}
+                      taps={tapRows}
                       editMode={editMode}
-                      readonly={HV.tapConfig !== "Custom"}
-                      tapConfig={HV.tapConfig}
-                      numberOfTaps={HV.numberOfTaps}
+                      readonly={tapConfig !== "Custom"}
+                      tapConfig={tapConfig}
+                      numberOfTaps={numberOfTaps}
                     />
                   </div>
                 )}
@@ -1198,70 +1395,78 @@ export default function NameplatePage() {
               <Section>
                 <SectionHeader title="LV Ratings" confidence={54} />
                 {(() => {
-                  const lvIsIntegral = lvDualVoltage && LV.lv1Config !== LV.lv2Config;
+                  const lvIsIntegral = lvDualVoltage && lv1Config !== lv2Config;
                   const showLv1DyDelta = lvDeltaWye && !lvIsIntegral;
                   const showLv2DyDelta = lvDeltaWye && !lvIsIntegral;
+                  const lvVoltOptions = ["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"];
                   return (
                     <>
                       {/* Row 1: Nominal Voltage only */}
                       <FieldGrid>
-                        <SelectField label="LV Nominal Voltage" value={LV.nominalVoltage} editMode={editMode} required
+                        <SelectField label="LV Nominal Voltage" value={lvNominal} editMode={editMode} required
+                          onChange={handleLvNominalChange}
                           options={["120","208","240","277","480","600","208GRDY/120","480GRDY/277","600GRDY/347","2400GRDY/1386","4160GRDY/2400","240 X 120","480GRDY/277 X 240GRDY/138"]} />
                       </FieldGrid>
 
                       {/* Row 2: LV1 Config | Delta Wye + Dual Voltage | LV2 Config (conditional) */}
                       <FieldGrid className="mt-4">
-                        <SelectField label="LV 1 Configuration" value={LV.lv1Config} editMode={editMode}
+                        <SelectField label="LV 1 Configuration" value={lv1Config} editMode={editMode}
+                          onChange={(v) => { setLv1Config(v); setLv1DyDelta(v === "DELTA" ? lv1Delta : ""); }}
                           options={["GrdY","Y","DELTA"]} />
                         <PairedToggles
-                          leftLabel="Delta Wye" leftValue={lvDeltaWye} onLeftChange={setLvDeltaWye}
+                          leftLabel="Delta Wye" leftValue={lvDeltaWye}
+                          onLeftChange={lvIsIntegral ? undefined : setLvDeltaWye}
                           rightLabel="Dual Voltage" rightValue={lvDualVoltage} onRightChange={setLvDualVoltage}
                           editMode={editMode}
                           rightDisabled={!hvDualVoltage}
                         />
                         {lvDualVoltage && (
-                          <SelectField label="LV 2 Configuration" value={LV.lv2Config} editMode={editMode}
+                          <SelectField label="LV 2 Configuration" value={lv2Config} editMode={editMode}
+                            onChange={(v) => { setLv2Config(v); setLv2DyDelta(v === "DELTA" ? lv2Delta : ""); }}
                             options={["GrdY","Y","DELTA"]} />
                         )}
                       </FieldGrid>
 
-                      {/* Row 3: LV1 Values — fields flow left; blanks collapse */}
+                      {/* Row 3: LV1 sub-voltages */}
                       <FieldGrid className="mt-4">
                         {showLv1DyDelta && (
-                          <SelectField label="LV 1 DY Delta" value={LV.lv1DyDelta} editMode={editMode}
-                            options={["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]} />
+                          <SelectField label="LV 1 DY Delta" value={lv1DyDelta} editMode={editMode}
+                            onChange={setLv1DyDelta} options={lvVoltOptions} />
                         )}
-                        {(LV.lv1Config === "GrdY" || LV.lv1Config === "Y") && (
-                          <SelectField label="LV 1 Wye" value={LV.lv1Wye} editMode={editMode}
-                            options={["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]} />
+                        {(lv1Config === "GrdY" || lv1Config === "Y") && (
+                          <SelectField label="LV 1 Wye" value={lv1Wye} editMode={editMode}
+                            onChange={setLv1Wye} options={lvVoltOptions} />
                         )}
-                        <SelectField label="LV 1 Delta" value={LV.lv1Delta} editMode={editMode}
-                          options={["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]} />
+                        <SelectField label="LV 1 Delta" value={lv1Delta} editMode={editMode}
+                          onChange={setLv1Delta} options={lvVoltOptions} />
                       </FieldGrid>
 
-                      {/* Row 4: LV2 Values — only when LV Dual Voltage on */}
+                      {/* Row 4: LV2 sub-voltages — only when LV Dual Voltage on */}
                       {lvDualVoltage && (
                         <FieldGrid className="mt-4">
                           {showLv2DyDelta && (
-                            <SelectField label="LV 2 DY Delta" value={LV.lv2DyDelta} editMode={editMode}
-                              options={["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]} />
+                            <SelectField label="LV 2 DY Delta" value={lv2DyDelta} editMode={editMode}
+                              onChange={setLv2DyDelta} options={lvVoltOptions} />
                           )}
-                          {(LV.lv2Config === "GrdY" || LV.lv2Config === "Y") && (
-                            <SelectField label="LV 2 Wye" value={LV.lv2Wye} editMode={editMode}
-                              options={["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]} />
+                          {(lv2Config === "GrdY" || lv2Config === "Y") && (
+                            <SelectField label="LV 2 Wye" value={lv2Wye} editMode={editMode}
+                              onChange={setLv2Wye} options={lvVoltOptions} />
                           )}
-                          <SelectField label="LV 2 Delta" value={LV.lv2Delta} editMode={editMode}
-                            options={["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]} />
+                          <SelectField label="LV 2 Delta" value={lv2Delta} editMode={editMode}
+                            onChange={setLv2Delta} options={lvVoltOptions} />
                         </FieldGrid>
                       )}
 
                       {/* BIL + Winding Material + Base Voltage */}
                       <FieldGrid className="mt-4">
-                        <SelectField label="LV BIL (kV)" value={LV.bil} editMode={editMode}
+                        <SelectField label="LV BIL (kV)" value={lvBil} editMode={editMode}
+                          onChange={setLvBil}
                           options={["10","30","45","60","75","95","110","125","150","200","250","350"]} />
-                        <SelectField label="LV Winding Material" value={LV.windingMaterial === "AL" ? "Aluminum" : LV.windingMaterial === "CU" ? "Copper" : "Unknown"} editMode={editMode}
+                        <SelectField label="LV Winding Material" value={lvWindingMaterial} editMode={editMode}
+                          onChange={setLvWindingMaterial}
                           options={["Copper","Aluminum","Unknown"]} />
-                        <Field label="LV Base Voltage" value={LV.lvBaseVoltage} editMode={editMode} />
+                        <Field label="LV Base Voltage" value={lvBaseVoltage} editMode={editMode}
+                          onChange={setLvBaseVoltage} />
                       </FieldGrid>
                     </>
                   );
