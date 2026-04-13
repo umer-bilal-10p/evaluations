@@ -557,20 +557,21 @@ function EvalStepper({
         const done = completedSteps.has(i);
         const active = activeStep === i;
         return (
-          <div key={step.id} className="flex">
-            {/* Connector + circle */}
-            <div className="flex flex-col items-center" style={{ width: 28, flexShrink: 0 }}>
-              {/* Top line */}
-              {i > 0 && (
-                <div
-                  style={{
-                    width: 2, height: 10, flexShrink: 0,
-                    background: completedSteps.has(i - 1) ? "#0047BB" : "rgba(255,255,255,0.12)",
-                    transition: "background 0.3s",
-                  }}
-                />
-              )}
-              {/* Circle — click to toggle complete; always shows step icon */}
+          <div key={step.id}>
+            {/* Connector line between steps */}
+            {i > 0 && (
+              <div style={{ display: "flex", paddingLeft: 11 }}>
+                <div style={{
+                  width: 2, height: 10,
+                  background: completedSteps.has(i - 1) ? "#0047BB" : "rgba(255,255,255,0.12)",
+                  transition: "background 0.3s",
+                }} />
+              </div>
+            )}
+
+            {/* Step row — circle + label + status all on one aligned row */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {/* Circle toggle */}
               <button
                 onClick={() => onToggleComplete(i)}
                 title={done ? "Mark incomplete" : "Mark complete"}
@@ -585,46 +586,23 @@ function EvalStepper({
               >
                 {step.icon}
               </button>
-              {/* Bottom line */}
-              {i < EVAL_STEPS.length - 1 && (
-                <div
-                  style={{
-                    width: 2, flex: 1, minHeight: 24, flexShrink: 0,
-                    background: done ? "#0047BB" : "rgba(255,255,255,0.12)",
-                    transition: "background 0.3s",
-                  }}
-                />
-              )}
-            </div>
 
-            {/* Step content — click to scroll */}
-            <div
-              style={{
-                paddingLeft: 10,
-                paddingTop: i === 0 ? 0 : 10,
-                paddingBottom: i < EVAL_STEPS.length - 1 ? 10 : 0,
-                flex: 1,
-                display: "flex", alignItems: "center", gap: 6,
-              }}
-            >
+              {/* Label */}
               <button
                 onClick={() => onStepClick(i)}
-                style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, flex: 1 }}
+                style={{ flex: 1, textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0 }}
               >
-                <div style={{
-                  fontSize: 12,
-                  fontWeight: active ? 600 : 400,
-                  lineHeight: 1.3,
+                <span style={{
+                  fontSize: 12, fontWeight: active ? 600 : 400,
                   color: active ? "#5b9cf6" : "rgba(255,255,255,0.85)",
                   transition: "color 0.15s",
                 }}>
                   {step.label}
-                </div>
+                </span>
               </button>
 
               {/* Right status indicator */}
               {done ? (
-                /* Green check — completed */
                 <div style={{
                   width: 16, height: 16, borderRadius: "50%", flexShrink: 0,
                   background: "#16a34a",
@@ -635,7 +613,6 @@ function EvalStepper({
                   </svg>
                 </div>
               ) : active ? (
-                /* Blue pulsing dot — in progress */
                 <div style={{
                   width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
                   background: "#5b9cf6",
@@ -679,27 +656,8 @@ export default function NameplatePage() {
   const lvRef      = useRef<HTMLDivElement>(null);
   const sectionRefs = [identRef, ratingsRef, hvRef, lvRef];
 
-  /* Auto-highlight active step as user scrolls */
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const idx = sectionRefs.findIndex((r) => r.current === entry.target);
-            if (idx >= 0) setActiveStep(idx);
-          }
-        });
-      },
-      { threshold: 0.25, rootMargin: "-80px 0px -55% 0px" }
-    );
-    sectionRefs.forEach((r) => { if (r.current) observer.observe(r.current); });
-    return () => observer.disconnect();
-  }, []);
-
-  const scrollToStep = (idx: number) => {
-    sectionRefs[idx]?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    setActiveStep(idx);
-  };
+  /* activeStep is fixed at 0 — the whole page is the Nameplate step */
+  const scrollToStep = (_idx: number) => { /* no-op: steps are workflow-level, not in-page sections */ };
 
 
   const toggleComplete = (idx: number) => {

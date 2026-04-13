@@ -74,7 +74,9 @@ export function Sidebar() {
       >
         <div style={{ padding: "12px 8px", width: EXPANDED_W }}>
           {NAV_ITEMS.map((item) => {
-            const isActive = currentPage === item.id;
+            /* When viewing a specific evaluation, highlight Evaluation History, not Nameplate */
+            const effectivePage = currentPage === "nameplate" ? "evaluations-history" : currentPage;
+            const isActive = effectivePage === item.id;
             return (
               <button
                 key={item.id}
