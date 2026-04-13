@@ -61,8 +61,10 @@ const HV = {
   hv2Config: "DELTA",
   deltaWye: true,
   dualVoltage: true,
+  hv1DyDelta: "12,470",
   hv1Delta: "12,470",
   hv1Wye: "7,200",
+  hv2DyDelta: "12,470",
   hv2Delta: "12,470",
   hv2Wye: "7,200",
   bil: "110",
@@ -84,8 +86,11 @@ const LV = {
   lv1Config: "GrdY",
   lv2Config: "GrdY",
   deltaWye: false,
+  dualVoltage: true,
+  lv1DyDelta: "",
   lv1Delta: "480",
   lv1Wye: "277",
+  lv2DyDelta: "",
   lv2Delta: "240",
   lv2Wye: "138",
   bil: "30",
@@ -245,9 +250,9 @@ function Section({ children }: { children: React.ReactNode }) {
   );
 }
 
-function FieldGrid({ children, cols = 3 }: { children: React.ReactNode; cols?: number }) {
+function FieldGrid({ children, cols = 3, className }: { children: React.ReactNode; cols?: number; className?: string }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: "16px 20px" }}>
+    <div className={className} style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: "16px 20px" }}>
       {children}
     </div>
   );
@@ -256,20 +261,20 @@ function FieldGrid({ children, cols = 3 }: { children: React.ReactNode; cols?: n
 /* ─── Paired toggles (Delta Wye + Dual Voltage in one 1/3-col slot) ─────────── */
 function PairedToggles({
   leftLabel, leftValue, rightLabel, rightValue,
-  editMode, onLeftChange, onRightChange, rightLocked,
+  editMode, onLeftChange, onRightChange, rightDisabled,
 }: {
   leftLabel: string; leftValue: boolean;
   rightLabel: string; rightValue: boolean;
   editMode: boolean;
   onLeftChange?: (v: boolean) => void;
   onRightChange?: (v: boolean) => void;
-  rightLocked?: boolean;
+  rightDisabled?: boolean;
 }) {
   return (
-    <div>
-      <FieldLabel label={`${leftLabel} / ${rightLabel}`} />
-      <div className="flex items-center h-9 gap-4">
-        <div className="flex items-center gap-1.5">
+    <div className="flex items-start gap-4">
+      <div className="flex flex-col min-w-0">
+        <FieldLabel label={leftLabel} />
+        <div className="flex items-center h-9 gap-1.5">
           <Switch
             checked={leftValue}
             onCheckedChange={editMode ? onLeftChange : undefined}
@@ -277,22 +282,24 @@ function PairedToggles({
             className={cn("data-[state=checked]:bg-[#0047BB]", !editMode && "opacity-100 cursor-default")}
           />
           <span className={cn("text-xs font-medium", leftValue ? "text-[#0047BB] dark:text-[#93C5FD]" : "text-muted-foreground")}>
-            {leftLabel.split(" ")[0]}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Switch
-            checked={rightValue}
-            onCheckedChange={(editMode && !rightLocked) ? onRightChange : undefined}
-            disabled={!editMode || rightLocked}
-            className={cn("data-[state=checked]:bg-[#0047BB]", (!editMode || rightLocked) && "opacity-100 cursor-default")}
-          />
-          <span className={cn("text-xs font-medium", rightValue ? "text-[#0047BB] dark:text-[#93C5FD]" : "text-muted-foreground")}>
-            {rightLabel.split(" ")[0]}
+            {leftValue ? "On" : "Off"}
           </span>
         </div>
       </div>
-      {rightLocked && <p className="text-[10px] text-muted-foreground mt-0.5">Locked to HV</p>}
+      <div className="flex flex-col min-w-0">
+        <FieldLabel label={rightLabel} />
+        <div className="flex items-center h-9 gap-1.5">
+          <Switch
+            checked={rightValue}
+            onCheckedChange={(editMode && !rightDisabled) ? onRightChange : undefined}
+            disabled={!editMode || rightDisabled}
+            className={cn("data-[state=checked]:bg-[#0047BB]", (!editMode || rightDisabled) && "opacity-100 cursor-default")}
+          />
+          <span className={cn("text-xs font-medium", rightValue ? "text-[#0047BB] dark:text-[#93C5FD]" : "text-muted-foreground")}>
+            {rightValue ? "On" : "Off"}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -695,6 +702,11 @@ export default function NameplatePage() {
   const [hvDeltaWye, setHvDeltaWye] = useState(HV.deltaWye);
   const [hvDualVoltage, setHvDualVoltage] = useState(HV.dualVoltage);
   const [lvDeltaWye, setLvDeltaWye] = useState(LV.deltaWye);
+  const [lvDualVoltage, setLvDualVoltage] = useState(LV.dualVoltage);
+
+  useEffect(() => {
+    if (!hvDualVoltage) setLvDualVoltage(false);
+  }, [hvDualVoltage]);
 
   /* Stepper state */
   const [activeStep, setActiveStep]       = useState(0);
@@ -1058,8 +1070,9 @@ export default function NameplatePage() {
               {/* ── HV RATINGS ── */}
               <div ref={hvRef}>
               <Section>
-                <SectionHeader title="HV (High Voltage) Ratings" confidence={96} />
-                {/* Row 1: Nominal Voltage | HV 1 Config | [Delta Wye / Dual Voltage paired] */}
+                <SectionHeader title="HV Ratings" confidence={96} />
+
+                {/* Row 1: Nominal Voltage only */}
                 <FieldGrid>
                   <SelectField label="HV Nominal Voltage" value={HV.nominalVoltage} editMode={editMode} required
                     options={[
@@ -1070,6 +1083,10 @@ export default function NameplatePage() {
                       "2400/4160Y/2400","4160/7200Y/4157","7200/12470Y/7200","13200/22860Y/13200",
                       "12470GRDY/7200 X 14400GRDY/8315","2400/4160Y/2400 X 7200/12470Y/7200",
                     ]} />
+                </FieldGrid>
+
+                {/* Row 2: HV1 Config | Delta Wye + Dual Voltage | HV2 Config (conditional) */}
+                <FieldGrid className="mt-4">
                   <SelectField label="HV 1 Configuration" value={HV.hv1Config} editMode={editMode}
                     options={["GrdY","Y","DELTA"]} />
                   <PairedToggles
@@ -1077,34 +1094,49 @@ export default function NameplatePage() {
                     rightLabel="Dual Voltage" rightValue={hvDualVoltage} onRightChange={setHvDualVoltage}
                     editMode={editMode}
                   />
-                </FieldGrid>
-                {/* Row 2 onwards: conditional fields */}
-                <div className="mt-4" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px 20px" }}>
-                  <div style={{ display: "contents" }}>
-                    {hvDualVoltage && (
-                      <SelectField label="HV 2 Configuration" value={HV.hv2Config} editMode={editMode}
+                  {hvDualVoltage
+                    ? <SelectField label="HV 2 Configuration" value={HV.hv2Config} editMode={editMode}
                         options={["GrdY","Y","DELTA"]} />
-                    )}
-                    {(HV.hv1Config === "GrdY" || HV.hv1Config === "Y") && (
-                      <SelectField label="HV 1 Wye" value={HV.hv1Wye} editMode={editMode}
+                    : <div />}
+                </FieldGrid>
+
+                {/* Row 3: HV1 Values — HV1 DY Delta | HV1 Wye | HV1 Delta */}
+                <FieldGrid className="mt-4">
+                  {hvDeltaWye
+                    ? <SelectField label="HV 1 DY Delta" value={HV.hv1DyDelta} editMode={editMode}
                         options={["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]} />
-                    )}
-                    <SelectField label="HV 1 Delta" value={HV.hv1Delta} editMode={editMode}
+                    : <div />}
+                  {(HV.hv1Config === "GrdY" || HV.hv1Config === "Y")
+                    ? <SelectField label="HV 1 Wye" value={HV.hv1Wye} editMode={editMode}
+                        options={["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]} />
+                    : <div />}
+                  <SelectField label="HV 1 Delta" value={HV.hv1Delta} editMode={editMode}
+                    options={["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]} />
+                </FieldGrid>
+
+                {/* Row 4: HV2 Values — only when Dual Voltage on */}
+                {hvDualVoltage && (
+                  <FieldGrid className="mt-4">
+                    {hvDeltaWye
+                      ? <SelectField label="HV 2 DY Delta" value={HV.hv2DyDelta} editMode={editMode}
+                          options={["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]} />
+                      : <div />}
+                    {(HV.hv2Config === "GrdY" || HV.hv2Config === "Y")
+                      ? <SelectField label="HV 2 Wye" value={HV.hv2Wye} editMode={editMode}
+                          options={["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]} />
+                      : <div />}
+                    <SelectField label="HV 2 Delta" value={HV.hv2Delta} editMode={editMode}
                       options={["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]} />
-                    {hvDualVoltage && (
-                      <SelectField label="HV 2 Delta" value={HV.hv2Delta} editMode={editMode}
-                        options={["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]} />
-                    )}
-                    {hvDualVoltage && (HV.hv2Config === "GrdY" || HV.hv2Config === "Y") && (
-                      <SelectField label="HV 2 Wye" value={HV.hv2Wye} editMode={editMode}
-                        options={["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]} />
-                    )}
-                    <SelectField label="HV BIL (kV)" value={HV.bil} editMode={editMode}
-                      options={["30","45","60","75","95","110","125","150","200","250","350"]} />
-                    <SelectField label="HV Winding Material" value={HV.windingMaterial === "AL" ? "Aluminum" : HV.windingMaterial === "CU" ? "Copper" : "Unknown"} editMode={editMode}
-                      options={["Copper","Aluminum","Unknown"]} />
-                  </div>
-                </div>
+                  </FieldGrid>
+                )}
+
+                {/* BIL + Winding Material */}
+                <FieldGrid className="mt-4">
+                  <SelectField label="HV BIL (kV)" value={HV.bil} editMode={editMode}
+                    options={["30","45","60","75","95","110","125","150","200","250","350"]} />
+                  <SelectField label="HV Winding Material" value={HV.windingMaterial === "AL" ? "Aluminum" : HV.windingMaterial === "CU" ? "Copper" : "Unknown"} editMode={editMode}
+                    options={["Copper","Aluminum","Unknown"]} />
+                </FieldGrid>
               </Section>
               </div>
 
@@ -1129,48 +1161,68 @@ export default function NameplatePage() {
               {/* ── LV RATINGS ── */}
               <div ref={lvRef}>
               <Section>
-                <SectionHeader title="LV (Low Voltage) Ratings" confidence={54} />
-                {/* Row 1: Nominal Voltage | LV 1 Config | [Delta Wye / Dual Voltage paired — DV locked to HV] */}
+                <SectionHeader title="LV Ratings" confidence={54} />
+
+                {/* Row 1: Nominal Voltage only */}
                 <FieldGrid>
                   <SelectField label="LV Nominal Voltage" value={LV.nominalVoltage} editMode={editMode} required
                     options={["120","208","240","277","480","600","208GRDY/120","480GRDY/277","600GRDY/347","2400GRDY/1386","4160GRDY/2400","240 X 120","480GRDY/277 X 240GRDY/138"]} />
+                </FieldGrid>
+
+                {/* Row 2: LV1 Config | Delta Wye + Dual Voltage | LV2 Config (conditional) */}
+                <FieldGrid className="mt-4">
                   <SelectField label="LV 1 Configuration" value={LV.lv1Config} editMode={editMode}
                     options={["GrdY","Y","DELTA"]} />
                   <PairedToggles
                     leftLabel="Delta Wye" leftValue={lvDeltaWye} onLeftChange={setLvDeltaWye}
-                    rightLabel="Dual Voltage" rightValue={hvDualVoltage}
+                    rightLabel="Dual Voltage" rightValue={lvDualVoltage} onRightChange={setLvDualVoltage}
                     editMode={editMode}
-                    rightLocked={true}
+                    rightDisabled={!hvDualVoltage}
                   />
-                </FieldGrid>
-                {/* Conditional: LV 2 Config, LV sub-voltages, BIL, material, base voltage */}
-                <div className="mt-4" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px 20px" }}>
-                  <div style={{ display: "contents" }}>
-                    {hvDualVoltage && (
-                      <SelectField label="LV 2 Configuration" value={LV.lv2Config} editMode={editMode}
+                  {lvDualVoltage
+                    ? <SelectField label="LV 2 Configuration" value={LV.lv2Config} editMode={editMode}
                         options={["GrdY","Y","DELTA"]} />
-                    )}
-                    {(LV.lv1Config === "GrdY" || LV.lv1Config === "Y") && (
-                      <SelectField label="LV 1 Wye" value={LV.lv1Wye} editMode={editMode}
+                    : <div />}
+                </FieldGrid>
+
+                {/* Row 3: LV1 Values — LV1 DY Delta | LV1 Wye | LV1 Delta */}
+                <FieldGrid className="mt-4">
+                  {lvDeltaWye
+                    ? <SelectField label="LV 1 DY Delta" value={LV.lv1DyDelta} editMode={editMode}
                         options={["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]} />
-                    )}
-                    <SelectField label="LV 1 Delta" value={LV.lv1Delta} editMode={editMode}
+                    : <div />}
+                  {(LV.lv1Config === "GrdY" || LV.lv1Config === "Y")
+                    ? <SelectField label="LV 1 Wye" value={LV.lv1Wye} editMode={editMode}
+                        options={["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]} />
+                    : <div />}
+                  <SelectField label="LV 1 Delta" value={LV.lv1Delta} editMode={editMode}
+                    options={["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]} />
+                </FieldGrid>
+
+                {/* Row 4: LV2 Values — only when LV Dual Voltage on */}
+                {lvDualVoltage && (
+                  <FieldGrid className="mt-4">
+                    {lvDeltaWye
+                      ? <SelectField label="LV 2 DY Delta" value={LV.lv2DyDelta} editMode={editMode}
+                          options={["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]} />
+                      : <div />}
+                    {(LV.lv2Config === "GrdY" || LV.lv2Config === "Y")
+                      ? <SelectField label="LV 2 Wye" value={LV.lv2Wye} editMode={editMode}
+                          options={["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]} />
+                      : <div />}
+                    <SelectField label="LV 2 Delta" value={LV.lv2Delta} editMode={editMode}
                       options={["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]} />
-                    {hvDualVoltage && (
-                      <SelectField label="LV 2 Delta" value={LV.lv2Delta} editMode={editMode}
-                        options={["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]} />
-                    )}
-                    {hvDualVoltage && (LV.lv2Config === "GrdY" || LV.lv2Config === "Y") && (
-                      <SelectField label="LV 2 Wye" value={LV.lv2Wye} editMode={editMode}
-                        options={["120","208","240","277","480","600","2,400","4,160","7,200","12,470","13,200"]} />
-                    )}
-                    <SelectField label="LV BIL (kV)" value={LV.bil} editMode={editMode}
-                      options={["10","30","45","60","75","95","110","125","150","200","250","350"]} />
-                    <SelectField label="LV Winding Material" value={LV.windingMaterial === "AL" ? "Aluminum" : LV.windingMaterial === "CU" ? "Copper" : "Unknown"} editMode={editMode}
-                      options={["Copper","Aluminum","Unknown"]} />
-                    <Field label="LV Base Voltage" value={LV.lvBaseVoltage} editMode={editMode} />
-                  </div>
-                </div>
+                  </FieldGrid>
+                )}
+
+                {/* BIL + Winding Material + Base Voltage */}
+                <FieldGrid className="mt-4">
+                  <SelectField label="LV BIL (kV)" value={LV.bil} editMode={editMode}
+                    options={["10","30","45","60","75","95","110","125","150","200","250","350"]} />
+                  <SelectField label="LV Winding Material" value={LV.windingMaterial === "AL" ? "Aluminum" : LV.windingMaterial === "CU" ? "Copper" : "Unknown"} editMode={editMode}
+                    options={["Copper","Aluminum","Unknown"]} />
+                  <Field label="LV Base Voltage" value={LV.lvBaseVoltage} editMode={editMode} />
+                </FieldGrid>
               </Section>
               </div>
 
