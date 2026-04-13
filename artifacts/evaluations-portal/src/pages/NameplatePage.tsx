@@ -40,12 +40,12 @@ const IDENTIFICATION = {
 const RATINGS = {
   kvaBase: "1,750",
   kvaFanBase: "",
-  kvaHigherRating: "",
-  kvaFanHigherRating: "",
+  kvaHigher: "",
+  kvaFanHigher: "",
   coolingClass: "ONAN",
   rise: "65",
   frequency: "60",
-  impedance: "5.75",
+  impedancePct: "5.75",
   oilType: "Mineral Oil",
   oilVolume: "210",
   oilVolumeError: "Exceeds max capacity for ONAN 1,750 kVA (220 gal)",
@@ -56,44 +56,39 @@ const RATINGS = {
 };
 
 const HV = {
-  nominalVoltage: "12470D X 12470GRD/Y/200",
-  dyDelta: "Delta",
-  hv1Config: "DELTA",
-  hv1Delta: "12,470",
-  hv3Config: "GY07",
-  hv2Delta: "12,470",
-  hv2Wye: "7,200",
+  nominalVoltage: "12470GRDY/7200",
+  hv1Config: "GrdY",
+  hv2Config: "GrdY",
   deltaWye: true,
   dualVoltage: true,
+  deltaSubVoltage: "12,470",
+  wyeSubVoltage: "7,200",
   bil: "110",
   windingMaterial: "AL",
   taps: [
-    { tap: "1/A", kvaRating: "12,979", deviation: "+4.0" },
-    { tap: "2/B", kvaRating: "12,724", deviation: "+2.0" },
-    { tap: "3/C", kvaRating: "12,470", deviation: "0.0" },
-    { tap: "4/D", kvaRating: "12,219", deviation: "-2.0" },
-    { tap: "5/E", kvaRating: "11,961", deviation: "-4.0" },
-    { tap: "6/F", kvaRating: "—", deviation: "—" },
-    { tap: "7/G", kvaRating: "—", deviation: "—" },
+    { label: "1/A", hvVoltage: "12,979", percentage: "+4.0" },
+    { label: "2/B", hvVoltage: "12,724", percentage: "+2.0" },
+    { label: "3/C", hvVoltage: "12,470", percentage: "0.0" },
+    { label: "4/D", hvVoltage: "12,219", percentage: "-2.0" },
+    { label: "5/E", hvVoltage: "11,961", percentage: "-4.0" },
   ],
+  tapConfig: "+/-5%",
   numberOfTaps: "5",
-  tapConfig: "1/A-5/E",
-  nominalTapPos: "3",
+  nominalTapPosition: "3",
 };
 
 const LV = {
-  nominalVoltage: "480GRD/Y/277 X 240GRD/Y/138",
-  lv1Config: "GY07",
+  nominalVoltage: "480GRDY/277",
+  lv1Config: "GrdY",
+  lv2Config: "GrdY",
   lv1Delta: "480",
-  lv1Wye: "277",
-  lv2Config: "GY07",
-  lv2Delta: "240",
-  lv2Wye: "138",
-  deltaWye: false,
-  dualVoltage: true,
+  lv2Delta: "277",
   bil: "30",
   windingMaterial: "AL",
+  lvBaseVoltage: "480",
 };
+
+const YEAR_OPTIONS = Array.from({ length: new Date().getFullYear() - 1949 }, (_, i) => String(new Date().getFullYear() - i));
 
 /* ─── Sub-components ────────────────────────────────────────────────────────── */
 
@@ -254,7 +249,7 @@ function FieldGrid({ children, cols = 3 }: { children: React.ReactNode; cols?: n
 }
 
 /* ─── Tap table ─────────────────────────────────────────────────────────────── */
-function TapTable({ taps, editMode }: { taps: typeof HV.taps; editMode: boolean }) {
+function TapTable({ taps, editMode, readonly }: { taps: typeof HV.taps; editMode: boolean; readonly?: boolean }) {
   return (
     <div>
       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
@@ -265,28 +260,28 @@ function TapTable({ taps, editMode }: { taps: typeof HV.taps; editMode: boolean 
           <TableHeader>
             <TableRow className="bg-muted hover:bg-muted">
               <TableHead className="h-8 text-[10px] font-bold uppercase tracking-wider w-16">TAP</TableHead>
-              <TableHead className="h-8 text-[10px] font-bold uppercase tracking-wider">KVA Rating</TableHead>
+              <TableHead className="h-8 text-[10px] font-bold uppercase tracking-wider">HV Voltage</TableHead>
               <TableHead className="h-8 text-[10px] font-bold uppercase tracking-wider">% Deviation</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {taps.map((row) => (
-              <TableRow key={row.tap} className="hover:bg-muted/30">
-                <TableCell className="font-semibold text-sm py-2">{row.tap}</TableCell>
+              <TableRow key={row.label} className="hover:bg-muted/30">
+                <TableCell className="font-semibold text-sm py-2">{row.label}</TableCell>
                 <TableCell className="text-sm py-2">
-                  {editMode ? (
-                    <Input defaultValue={row.kvaRating} className="h-7 text-xs bg-background max-w-[100px] shadow-none" />
-                  ) : row.kvaRating}
+                  {editMode && !readonly ? (
+                    <Input defaultValue={row.hvVoltage} className="h-7 text-xs bg-background max-w-[100px] shadow-none" />
+                  ) : row.hvVoltage}
                 </TableCell>
                 <TableCell className={cn(
                   "text-sm font-medium py-2",
-                  row.deviation.startsWith("+") ? "text-[#047857] dark:text-[#6EE7B7]"
-                    : row.deviation === "0.0" ? "text-foreground"
+                  row.percentage?.startsWith("+") ? "text-[#047857] dark:text-[#6EE7B7]"
+                    : row.percentage === "0.0" ? "text-foreground"
                     : "text-destructive",
                 )}>
-                  {editMode ? (
-                    <Input defaultValue={row.deviation} className="h-7 text-xs bg-background max-w-[80px] shadow-none" />
-                  ) : row.deviation}
+                  {editMode && !readonly ? (
+                    <Input defaultValue={row.percentage} className="h-7 text-xs bg-background max-w-[80px] shadow-none" />
+                  ) : row.percentage}
                 </TableCell>
               </TableRow>
             ))}
@@ -650,8 +645,6 @@ export default function NameplatePage() {
   const [editDraft, setEditDraft] = useState("");
   const [hvDeltaWye, setHvDeltaWye] = useState(HV.deltaWye);
   const [hvDualVoltage, setHvDualVoltage] = useState(HV.dualVoltage);
-  const [lvDeltaWye, setLvDeltaWye] = useState(LV.deltaWye);
-  const [lvDualVoltage, setLvDualVoltage] = useState(LV.dualVoltage);
 
   /* Stepper state */
   const [activeStep, setActiveStep]       = useState(0);
@@ -961,15 +954,15 @@ export default function NameplatePage() {
                 <SectionHeader title="Identification" confidence={87} />
                 <FieldGrid>
                   <SelectField label="Manufacturer" value={IDENTIFICATION.manufacturer} editMode={editMode} required
-                    options={["Siemens", "ABB", "Eaton", "General Electric", "Schneider Electric", "Square D"]} />
+                    options={["ABB","Eaton","GE","Hitachi","Siemens","SPX","Square D","Virginia Transformer","Other"]} />
                   <div>
                     <Field label="Serial Number" value={IDENTIFICATION.serialNumber} editMode={editMode} required />
                     <AiChip label={IDENTIFICATION.aiSerial} />
                   </div>
                   <SelectField label="Unit Type" value={IDENTIFICATION.unitType} editMode={editMode} required
-                    options={["Three-Phase Pad", "Single-Phase Pad", "Pole Mount"]} />
-                  <SelectField label="Year Manufactured" value={IDENTIFICATION.yearManufactured} editMode={editMode} required
-                    options={Array.from({ length: 40 }, (_, i) => String(2024 - i))} />
+                    options={["Three-Phase Pad","Single-Phase Pad","Underground","Network","Auto-Transformer"]} />
+                  <SelectField label="Year Manufactured" value={IDENTIFICATION.yearManufactured} editMode={editMode}
+                    options={YEAR_OPTIONS} />
                 </FieldGrid>
               </Section>
               </div>
@@ -979,19 +972,20 @@ export default function NameplatePage() {
               <Section>
                 <SectionHeader title="Ratings" confidence={91} />
                 <FieldGrid>
-                  <Field label="KVA Base" value={RATINGS.kvaBase} editMode={editMode} required />
-                  <Field label="KVA Fan Base" value={RATINGS.kvaFanBase} editMode={editMode} required placeholder="e.g. 2,000" />
-                  <Field label="KVA Higher Rating" value={RATINGS.kvaHigherRating} editMode={editMode} required placeholder="e.g. 2,100" />
-                  <Field label="KVA Fan Higher Rating" value={RATINGS.kvaFanHigherRating} editMode={editMode} required placeholder="e.g. 2,200" />
-                  <SelectField label="Cooling Class" value={RATINGS.coolingClass} editMode={editMode} required
-                    options={["ONAN", "ONAF", "ONAN/ONAF", "OFAF", "ODAF"]} />
-                  <Field label="Rise (°C)" value={RATINGS.rise} editMode={editMode} required />
-                  <Field label="Frequency" value={RATINGS.frequency} editMode={editMode} required />
-                  <Field label="Impedance %" value={RATINGS.impedance} editMode={editMode} required />
-                  <SelectField label="Oil Type" value={RATINGS.oilType} editMode={editMode} required
-                    options={["Mineral Oil", "Silicone", "Natural Ester", "Synthetic Ester"]} />
+                  <Field label="KVA Base (kVA)" value={RATINGS.kvaBase} editMode={editMode} required />
+                  <Field label="KVA Fan Base (kVA)" value={RATINGS.kvaFanBase} editMode={editMode} placeholder="—" />
+                  <Field label="KVA Higher Rating (kVA)" value={RATINGS.kvaHigher} editMode={editMode} placeholder="—" />
+                  <Field label="KVA Fan Higher Rating (kVA)" value={RATINGS.kvaFanHigher} editMode={editMode} placeholder="—" />
+                  <SelectField label="Cooling Class" value={RATINGS.coolingClass} editMode={editMode}
+                    options={["ONAN/ONAF","ONAN","ONAF","ONAF (FUT)","ONAN/ONAF/ONAF","ONAN/ONAF(F)/ONAF(F)","ONAN/OFAF","ONAN/ONAF/OFAF","OFAF","KNAN","KNAF","KNAF (FUT)","KNAN/KNAF/KNAF","KNAN/KNAF(F)/KNAF(F)","KNAN/KFAF","KNAN/KNAF/KFAF","KFAF"]} />
+                  <SelectField label="Rise (°C)" value={RATINGS.rise} editMode={editMode}
+                    options={["55","65","75","55/65","65/75"]} />
+                  <Field label="Frequency (Hz)" value={RATINGS.frequency} editMode={editMode} required />
+                  <Field label="Impedance %" value={RATINGS.impedancePct} editMode={editMode} />
+                  <SelectField label="Oil Type" value={RATINGS.oilType} editMode={editMode}
+                    options={["Mineral Oil","FR3","R-Temp","Silicone","BETA","Wecosol","Natural Ester","BIOTEMP"]} />
                   <div>
-                    <FieldLabel label="Oil Volume (Gallons)" required />
+                    <FieldLabel label="Oil Volume (Gal)" />
                     <Input
                       defaultValue={RATINGS.oilVolume}
                       readOnly={!editMode}
@@ -1003,10 +997,10 @@ export default function NameplatePage() {
                     />
                     {editMode && <ErrorMsg msg={RATINGS.oilVolumeError} />}
                   </div>
-                  <Field label="Core & Coils Weight (lbs)" value={RATINGS.coreCoilsWeight} editMode={editMode} required />
-                  <Field label="Oil Weight (lbs)" value={RATINGS.oilWeight} editMode={editMode} required />
-                  <Field label="Case/Tank Weight (lbs)" value={RATINGS.caseTankWeight} editMode={editMode} required />
-                  <Field label="Total Weight (lbs)" value={RATINGS.totalWeight} editMode={editMode} required />
+                  <Field label="Core & Coils Weight (lbs)" value={RATINGS.coreCoilsWeight} editMode={editMode} />
+                  <Field label="Oil Weight (lbs)" value={RATINGS.oilWeight} editMode={editMode} />
+                  <Field label="Case/Tank Weight (lbs)" value={RATINGS.caseTankWeight} editMode={editMode} />
+                  <Field label="Total Weight (lbs)" value={RATINGS.totalWeight} editMode={editMode} />
                 </FieldGrid>
               </Section>
               </div>
@@ -1014,55 +1008,79 @@ export default function NameplatePage() {
               {/* ── HV RATINGS ── */}
               <div ref={hvRef}>
               <Section>
-                <SectionHeader title="HV Ratings" confidence={96} />
+                <SectionHeader title="HV (High Voltage) Ratings" confidence={96} />
                 <FieldGrid>
                   <SelectField label="HV Nominal Voltage" value={HV.nominalVoltage} editMode={editMode} required
-                    options={[HV.nominalVoltage, "12470Y/7200", "13800", "4160"]} />
-                  <SelectField label="HV DY Delta" value={HV.dyDelta} editMode={editMode} required
-                    options={["Delta", "Wye", "Delta/Wye"]} />
-                  <Field label="HV 1 Configuration" value={HV.hv1Config} editMode={editMode} required />
-                  <Field label="HV 1 Delta" value={HV.hv1Delta} editMode={editMode} required />
-                  <Field label="HV 3 Configuration" value={HV.hv3Config} editMode={editMode} required />
-                  <Field label="HV 2 Delta" value={HV.hv2Delta} editMode={editMode} required />
-                  <Field label="HV 2 Wye" value={HV.hv2Wye} editMode={editMode} required />
-                  <SwitchField label="Delta Wye" value={hvDeltaWye} editMode={editMode} onChange={setHvDeltaWye} />
+                    options={[
+                      "2400GRDY/1386","4160GRDY/2400","7200GRDY/4157","12470GRDY/7200",
+                      "13200GRDY/7620","13800GRDY/7967","24940GRDY/14400","34500GRDY/19920",
+                      "69000GRDY/39840","115000GRDY/66395","138000GRDY/79674",
+                      "2400","4160","7200","12470","13200","13800","34500","69000",
+                      "2400/4160Y/2400","4160/7200Y/4157","7200/12470Y/7200","13200/22860Y/13200",
+                      "12470GRDY/7200 X 14400GRDY/8315","2400/4160Y/2400 X 7200/12470Y/7200",
+                    ]} />
+                  <SelectField label="HV 1 Configuration" value={HV.hv1Config} editMode={editMode}
+                    options={["GrdY","Y","DELTA"]} />
+                  <SelectField label="HV 2 Configuration" value={HV.hv2Config} editMode={editMode}
+                    options={["GrdY","Y","DELTA"]} />
+                  <SwitchField label="Delta-Wye" value={hvDeltaWye} editMode={editMode} onChange={setHvDeltaWye} />
                   <SwitchField label="Dual Voltage" value={hvDualVoltage} editMode={editMode} onChange={setHvDualVoltage} />
-                  <Field label="HV BIL (kV)" value={HV.bil} editMode={editMode} required />
-                  <SelectField label="HV Winding Material" value={HV.windingMaterial} editMode={editMode} required options={["AL", "CU"]} />
-                  <div />
+                  <SelectField label="HV Delta Voltage" value={HV.deltaSubVoltage} editMode={editMode}
+                    options={["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]} />
+                  <SelectField label="HV Wye Voltage" value={HV.wyeSubVoltage} editMode={editMode}
+                    options={["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]} />
+                  <SelectField label="HV BIL (kV)" value={HV.bil} editMode={editMode}
+                    options={["30","45","60","75","95","110","125","150","200","250","350"]} />
+                  <SelectField label="HV Winding Material" value={HV.windingMaterial === "AL" ? "Aluminum" : HV.windingMaterial === "CU" ? "Copper" : "Unknown"} editMode={editMode}
+                    options={["Copper","Aluminum","Unknown"]} />
                 </FieldGrid>
-                <div className="mt-5">
-                  <FieldGrid>
-                    <Field label="Number of Taps" value={HV.numberOfTaps} editMode={editMode} required />
-                    <SelectField label="Tap Configuration" value={HV.tapConfig} editMode={editMode} required
-                      options={["1/A-5/E", "1/A-7/G", "Full Range"]} />
-                    <Field label="Nominal Tap Position" value={HV.nominalTapPos} editMode={editMode} required />
-                  </FieldGrid>
-                </div>
-                <div className="mt-4">
-                  <TapTable taps={HV.taps.filter((t) => t.kvaRating !== "—")} editMode={editMode} />
-                </div>
               </Section>
               </div>
+
+              {/* ── TAP TABLE ── */}
+              <Section>
+                <div className="flex items-center justify-between pb-3 mb-4 border-b border-border">
+                  <span className="text-sm font-semibold text-foreground">Tap Table</span>
+                </div>
+                <FieldGrid>
+                  <SelectField label="Tap Configuration" value={HV.tapConfig} editMode={editMode}
+                    options={["+/-5%","-10%","J-tap","K-tap","Custom","None"]} />
+                  <Field label="Number of Taps" value={HV.numberOfTaps} editMode={editMode} />
+                  <Field label="Nominal Tap Position" value={HV.nominalTapPosition} editMode={editMode} />
+                </FieldGrid>
+                <div className="mt-4">
+                  <TapTable taps={HV.taps} editMode={editMode} readonly={HV.tapConfig !== "Custom"} />
+                </div>
+              </Section>
 
               {/* ── LV RATINGS ── */}
               <div ref={lvRef}>
               <Section>
-                <SectionHeader title="LV Ratings" confidence={54} />
+                <SectionHeader title="LV (Low Voltage) Ratings" confidence={54} />
                 <FieldGrid>
                   <SelectField label="LV Nominal Voltage" value={LV.nominalVoltage} editMode={editMode} required
-                    options={[LV.nominalVoltage, "208Y/120", "480Y/277", "240/120"]} />
-                  <Field label="LV 1 Configuration" value={LV.lv1Config} editMode={editMode} required />
-                  <Field label="LV1 Delta" value={LV.lv1Delta} editMode={editMode} required />
-                  <Field label="LV 1 Wye" value={LV.lv1Wye} editMode={editMode} required />
-                  <Field label="LV 2 Configuration" value={LV.lv2Config} editMode={editMode} required />
-                  <Field label="LV 2 Delta" value={LV.lv2Delta} editMode={editMode} required />
-                  <Field label="LV 2 Wye" value={LV.lv2Wye} editMode={editMode} required />
-                  <SwitchField label="Delta Wye" value={lvDeltaWye} editMode={editMode} onChange={setLvDeltaWye} />
-                  <SwitchField label="Dual Voltage" value={lvDualVoltage} editMode={editMode} onChange={setLvDualVoltage} />
-                  <Field label="LV BIL (kV)" value={LV.bil} editMode={editMode} required />
-                  <SelectField label="LV Winding Material" value={LV.windingMaterial} editMode={editMode} required options={["AL", "CU"]} />
-                  <div />
+                    options={["120","208","240","277","480","600","208GRDY/120","480GRDY/277","600GRDY/347","2400GRDY/1386","4160GRDY/2400","240 X 120","480GRDY/277 X 240GRDY/138"]} />
+                  <SelectField label="LV 1 Configuration" value={LV.lv1Config} editMode={editMode}
+                    options={["GrdY","Y","DELTA"]} />
+                  <SelectField label="LV 2 Configuration" value={LV.lv2Config} editMode={editMode}
+                    options={["GrdY","Y","DELTA"]} />
+                  <div>
+                    <SwitchField label="Delta-Wye" value={hvDeltaWye} editMode={false} />
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Locked to HV Delta-Wye</p>
+                  </div>
+                  <div>
+                    <SwitchField label="Dual Voltage" value={hvDualVoltage} editMode={false} />
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Locked to HV Dual Voltage</p>
+                  </div>
+                  <SelectField label="LV Delta Voltage" value={LV.lv1Delta} editMode={editMode}
+                    options={["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]} />
+                  <SelectField label="LV Wye Voltage" value={LV.lv2Delta} editMode={editMode}
+                    options={["2,400","4,160","7,200","7,620","12,470","13,200","13,800","14,400","22,000","24,940","34,500","46,000","69,000"]} />
+                  <SelectField label="LV BIL (kV)" value={LV.bil} editMode={editMode}
+                    options={["10","30","45","60","75","95","110","125","150","200","250","350"]} />
+                  <SelectField label="LV Winding Material" value={LV.windingMaterial === "AL" ? "Aluminum" : LV.windingMaterial === "CU" ? "Copper" : "Unknown"} editMode={editMode}
+                    options={["Copper","Aluminum","Unknown"]} />
+                  <Field label="LV Base Voltage" value={LV.lvBaseVoltage} editMode={editMode} />
                 </FieldGrid>
               </Section>
               </div>
