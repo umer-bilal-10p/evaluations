@@ -821,7 +821,7 @@ export default function NameplatePage() {
   const [hv2Wye, setHv2Wye] = useState(HV.hv2Wye);
   const [hv2DyDelta, setHv2DyDelta] = useState(HV.hv2DyDelta);
   const [hvBil, setHvBil] = useState(HV.bil);
-  const [hvWindingMaterial, setHvWindingMaterial] = useState(HV.windingMaterial === "AL" ? "Aluminum" : HV.windingMaterial === "CU" ? "Copper" : "Unknown");
+  const [hvWindingMaterial, setHvWindingMaterial] = useState(HV.windingMaterial);
 
   /* ── Tap state ── */
   const [tapConfig, setTapConfig] = useState(HV.tapConfig);
@@ -840,7 +840,7 @@ export default function NameplatePage() {
   const [lv2Wye, setLv2Wye] = useState(LV.lv2Wye);
   const [lv2DyDelta, setLv2DyDelta] = useState(LV.lv2DyDelta);
   const [lvBil, setLvBil] = useState(LV.bil);
-  const [lvWindingMaterial, setLvWindingMaterial] = useState(LV.windingMaterial === "AL" ? "Aluminum" : "Unknown");
+  const [lvWindingMaterial, setLvWindingMaterial] = useState(LV.windingMaterial);
   const [lvBaseVoltage, setLvBaseVoltage] = useState(LV.lvBaseVoltage);
 
   /* ── Derive HV sub-fields from Nominal Voltage selection ── */
@@ -1351,7 +1351,7 @@ export default function NameplatePage() {
                           options={["30","45","60","75","95","110","125","150","200","250","350"]} />
                         <SelectField label="HV Winding Material" value={hvWindingMaterial} editMode={editMode} required
                           onChange={setHvWindingMaterial}
-                          options={["Copper","Aluminum","Unknown"]} />
+                          options={["CU","AL","UN"]} />
                       </FieldGrid>
                     </>
                   );
@@ -1475,7 +1475,7 @@ export default function NameplatePage() {
                           options={["10","30","45","60","75","95","110","125","150","200","250","350"]} />
                         <SelectField label="LV Winding Material" value={lvWindingMaterial} editMode={editMode} required
                           onChange={setLvWindingMaterial}
-                          options={["Copper","Aluminum","Unknown"]} />
+                          options={["CU","AL","UN"]} />
                         <Field label="LV Base Voltage" value={lvBaseVoltage} editMode={editMode} required
                           onChange={setLvBaseVoltage} />
                       </FieldGrid>
