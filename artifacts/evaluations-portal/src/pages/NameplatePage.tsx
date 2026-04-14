@@ -955,12 +955,22 @@ export default function NameplatePage() {
 
             {/* Breadcrumb pills */}
             <div className="flex items-center gap-1.5 flex-wrap flex-1">
-              {/* Standalone value pills */}
-              {[unit.transformerType, unit.manufacturer].map((val, i) => (
-                <Badge key={i} variant="outline" className="text-xs font-semibold text-white/80 bg-white/7 border-white/12 rounded-md px-2.5 py-0.5">
-                  {val}
-                </Badge>
-              ))}
+              {/* Transformer type abbr + Manufacturer pill */}
+              {(() => {
+                const abbr: Record<string, string> = {
+                  "Three-Phase Pad": "3PPM",
+                  "Single-Phase Pad": "1PPM",
+                  "Underground": "URD",
+                  "Network": "NTX",
+                  "Auto-Transformer": "AUTO",
+                };
+                return (
+                  <Badge variant="outline" className="text-xs bg-white/7 border-white/12 rounded-md px-2.5 py-0.5 gap-1.5 font-medium">
+                    <span className="text-white/45">{abbr[unit.transformerType] ?? unit.transformerType}</span>
+                    <span className="text-white/85 font-semibold">{unit.manufacturer}</span>
+                  </Badge>
+                );
+              })()}
               {/* Label + value pills */}
               {([
                 ["IC", unit.icNumber],
