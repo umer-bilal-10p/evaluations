@@ -229,7 +229,7 @@ function Field({
         onChange={onChange && editMode ? (e) => onChange(e.target.value) : undefined}
         className={cn(
           "h-9 text-sm shadow-none",
-          !editMode && "bg-muted border-muted cursor-default focus-visible:ring-0 focus-visible:ring-offset-0",
+          !editMode && "bg-muted/40 cursor-default focus-visible:ring-0 focus-visible:ring-offset-0",
           editMode && "bg-background",
           error && editMode && "border-red-400 focus-visible:ring-red-400",
         )}
@@ -249,7 +249,7 @@ function SelectField({
     return (
       <div>
         <FieldLabel label={label} required={required} />
-        <Input value={value || "—"} readOnly className="h-9 text-sm shadow-none bg-muted border-muted cursor-default focus-visible:ring-0 focus-visible:ring-offset-0" />
+        <Input value={value || "—"} readOnly className="h-9 text-sm shadow-none bg-muted/40 cursor-default focus-visible:ring-0 focus-visible:ring-offset-0" />
       </div>
     );
   }
@@ -1245,7 +1245,7 @@ export default function NameplatePage() {
                       readOnly={!editMode}
                       className={cn(
                         "h-9 text-sm shadow-none",
-                        !editMode && "bg-muted border-muted cursor-default focus-visible:ring-0 focus-visible:ring-offset-0",
+                        !editMode && "bg-muted/40 cursor-default focus-visible:ring-0 focus-visible:ring-offset-0",
                         editMode && "bg-background border-red-400 focus-visible:ring-red-400",
                       )}
                     />
