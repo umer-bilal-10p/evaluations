@@ -373,7 +373,14 @@ function FlagIcon() {
   );
 }
 
-function IntakePills({ category, tags }: { category: IntakeCategory; tags: IntakeTag[] }) {
+function IntakePills({ category }: { category: IntakeCategory; tags?: IntakeTag[] }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 100 }}>
+      <span style={{ fontSize: 13, fontWeight: 500, color: "hsl(var(--foreground))" }}>{category}</span>
+    </div>
+  );
+}
+function _IntakePillsUnused({ category, tags }: { category: IntakeCategory; tags: IntakeTag[] }) {
   const dark = useIsDark();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 140 }}>

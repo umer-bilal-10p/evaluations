@@ -1354,12 +1354,6 @@ export default function NameplatePage() {
                   <span className="text-sm font-semibold text-foreground">Tap Table</span>
                 </div>
                 <FieldGrid>
-                  <SelectField label="Tap Configuration" value={tapConfig} editMode={editMode}
-                    onChange={(v) => {
-                      setTapConfig(v);
-                      if (v === "None") setTapRows([]);
-                    }}
-                    options={["+/-5%","-10%","J-tap","K-tap","Custom","None"]} />
                   <Field label="Number of Taps" value={numberOfTaps} editMode={editMode}
                     onChange={(v) => {
                       const n = parseInt(v, 10);
@@ -1374,6 +1368,12 @@ export default function NameplatePage() {
                         setNominalTapPosition(String(Math.min(nom, n)));
                       }
                     }} />
+                  <SelectField label="Tap Configuration" value={tapConfig} editMode={editMode}
+                    onChange={(v) => {
+                      setTapConfig(v);
+                      if (v === "None") setTapRows([]);
+                    }}
+                    options={["+/-5%","-10%","J-tap","K-tap","Custom","None"]} />
                   <Field label="Nominal Tap Position" value={nominalTapPosition} editMode={editMode}
                     onChange={(v) => setNominalTapPosition(v)} />
                 </FieldGrid>
