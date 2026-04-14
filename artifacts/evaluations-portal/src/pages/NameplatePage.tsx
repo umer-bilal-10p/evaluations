@@ -965,9 +965,10 @@ export default function NameplatePage() {
                   "Auto-Transformer": "AUTO",
                 };
                 return (
-                  <Badge variant="outline" className="text-xs bg-white/7 border-white/12 rounded-md px-2.5 py-0.5 gap-1.5 font-medium">
-                    <span className="text-white/45">{abbr[unit.transformerType] ?? unit.transformerType}</span>
-                    <span className="text-white/85 font-semibold">{unit.manufacturer}</span>
+                  <Badge variant="outline" className="text-xs font-medium text-white/80 bg-white/7 border-white/12 rounded-md px-2.5 py-0.5 gap-1.5">
+                    {abbr[unit.transformerType] ?? unit.transformerType}
+                    <span className="text-white/30">|</span>
+                    {unit.manufacturer}
                   </Badge>
                 );
               })()}
@@ -977,9 +978,10 @@ export default function NameplatePage() {
                 ["Serial", unit.mfgSerial],
                 ["kVA", unit.kva.toLocaleString()],
               ] as [string, string][]).map(([lbl, val]) => (
-                <Badge key={lbl} variant="outline" className="text-xs bg-white/7 border-white/12 rounded-md px-2.5 py-0.5 gap-1.5 font-medium">
-                  <span className="text-white/45">{lbl}</span>
-                  <span className="text-white/85 font-semibold">{val}</span>
+                <Badge key={lbl} variant="outline" className="text-xs font-medium text-white/80 bg-white/7 border-white/12 rounded-md px-2.5 py-0.5 gap-1.5">
+                  {lbl}
+                  <span className="text-white/30">|</span>
+                  {val}
                 </Badge>
               ))}
               {/* NPX intake tags — split on ": " into label + value */}
@@ -988,9 +990,9 @@ export default function NameplatePage() {
                 const lbl = sep !== -1 ? tag.slice(0, sep) : null;
                 const val = sep !== -1 ? tag.slice(sep + 2) : tag;
                 return (
-                  <Badge key={tag} variant="outline" className="text-xs bg-white/7 border-white/12 rounded-md px-2.5 py-0.5 gap-1.5 font-medium">
-                    {lbl && <span className="text-white/45">{lbl}</span>}
-                    <span className="text-white/85 font-semibold">{val}</span>
+                  <Badge key={tag} variant="outline" className="text-xs font-medium text-white/80 bg-white/7 border-white/12 rounded-md px-2.5 py-0.5 gap-1.5">
+                    {lbl && <>{lbl}<span className="text-white/30">|</span></>}
+                    {val}
                   </Badge>
                 );
               })}
