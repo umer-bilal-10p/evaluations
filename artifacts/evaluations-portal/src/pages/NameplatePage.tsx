@@ -8,7 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkle, Sparkles } from "lucide-react";
+import { Sparkle, Sparkles, Flag } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -955,31 +955,42 @@ export default function NameplatePage() {
 
             {/* Breadcrumb pills */}
             <div className="flex items-center gap-1.5 flex-wrap flex-1">
-              {[
-                unit.manufacturer,
-                `IC: ${unit.icNumber}`,
-                `Serial: ${unit.mfgSerial}`,
-                `KVA: ${unit.kva.toLocaleString()}`,
-                unit.transformerType,
-              ].map((label, i) => (
-                <Badge key={i} variant="outline" className="text-xs font-medium text-white/75 bg-white/7 border-white/12 rounded-md px-2 py-0.5">
-                  {label}
+              {/* Standalone value pills */}
+              {[unit.transformerType, unit.manufacturer].map((val, i) => (
+                <Badge key={i} variant="outline" className="text-xs font-semibold text-white/80 bg-white/7 border-white/12 rounded-md px-2.5 py-0.5">
+                  {val}
                 </Badge>
               ))}
+              {/* Label + value pills */}
+              {([
+                ["IC", unit.icNumber],
+                ["Serial", unit.mfgSerial],
+                ["kVA", unit.kva.toLocaleString()],
+              ] as [string, string][]).map(([lbl, val]) => (
+                <Badge key={lbl} variant="outline" className="text-xs bg-white/7 border-white/12 rounded-md px-2.5 py-0.5 gap-1.5 font-medium">
+                  <span className="text-white/45">{lbl}</span>
+                  <span className="text-white/85 font-semibold">{val}</span>
+                </Badge>
+              ))}
+              {/* NPX intake tags — split on ": " into label + value */}
+              {(unit.intakeTags ?? []).map((tag: string) => {
+                const sep = tag.indexOf(": ");
+                const lbl = sep !== -1 ? tag.slice(0, sep) : null;
+                const val = sep !== -1 ? tag.slice(sep + 2) : tag;
+                return (
+                  <Badge key={tag} variant="outline" className="text-xs bg-white/7 border-white/12 rounded-md px-2.5 py-0.5 gap-1.5 font-medium">
+                    {lbl && <span className="text-white/45">{lbl}</span>}
+                    <span className="text-white/85 font-semibold">{val}</span>
+                  </Badge>
+                );
+              })}
+              {/* Base Damage */}
               {unit.hasBaseDamage && (
-                <Badge className="text-xs font-semibold gap-1 rounded-md px-2 py-0.5 border-[rgba(234,88,12,0.45)] bg-[rgba(234,88,12,0.25)] text-[#FEF3C7]">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                  </svg>
+                <Badge className="text-xs font-semibold gap-1.5 rounded-md px-2.5 py-0.5 border-[rgba(234,88,12,0.45)] bg-[rgba(234,88,12,0.25)] text-[#FEF3C7]">
+                  <Flag size={11} strokeWidth={2} />
                   Base Damage
                 </Badge>
               )}
-              {(unit.intakeTags ?? []).map((tag: string) => (
-                <Badge key={tag} className="text-xs font-semibold rounded-md px-2 py-0.5 border-[rgba(14,165,233,0.35)] bg-[rgba(14,165,233,0.18)] text-[#E0F2FE]">
-                  {tag}
-                </Badge>
-              ))}
             </div>
 
             {/* Edit / Save / Discard */}
