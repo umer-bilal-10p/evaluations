@@ -991,7 +991,8 @@ export default function NameplatePage() {
                 const val = sep !== -1 ? tag.slice(sep + 2) : tag;
                 return (
                   <Badge key={tag} variant="outline" className="text-xs font-medium text-white/80 bg-white/7 border-white/12 rounded-md px-2.5 py-0.5 gap-1.5">
-                    {lbl && <>{lbl}<span className="text-white/30">|</span></>}
+                    {lbl}
+                    {lbl && <span className="text-white/30">|</span>}
                     {val}
                   </Badge>
                 );
