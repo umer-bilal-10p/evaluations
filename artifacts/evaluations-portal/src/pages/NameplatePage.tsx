@@ -212,26 +212,43 @@ function FieldLabel({ label, required }: { label: string; required?: boolean }) 
   );
 }
 
+/* ─── Shared read-only display ───────────────────────────────────────────────── */
+function ReadonlyValue({ value }: { value: string }) {
+  return (
+    <div className={cn(
+      "h-9 flex items-center px-3 rounded-md text-sm text-foreground select-none",
+      "bg-muted/50 border border-transparent",
+    )}>
+      {value || "—"}
+    </div>
+  );
+}
+
 function Field({
   label, value, editMode, required, error, placeholder, onChange,
 }: {
   label: string; value: string; editMode: boolean; required?: boolean; error?: boolean; placeholder?: string;
   onChange?: (v: string) => void;
 }) {
+  if (!editMode) {
+    return (
+      <div>
+        <FieldLabel label={label} required={required} />
+        <ReadonlyValue value={value} />
+      </div>
+    );
+  }
   return (
     <div>
       <FieldLabel label={label} required={required} />
       <Input
         value={onChange !== undefined ? value : undefined}
         defaultValue={onChange === undefined ? value : undefined}
-        readOnly={!editMode}
-        placeholder={editMode ? placeholder : undefined}
-        onChange={onChange && editMode ? (e) => onChange(e.target.value) : undefined}
+        placeholder={placeholder}
+        onChange={onChange ? (e) => onChange(e.target.value) : undefined}
         className={cn(
-          "h-9 text-sm shadow-none",
-          !editMode && "bg-muted border-muted cursor-default focus-visible:ring-0 focus-visible:ring-offset-0",
-          editMode && "bg-background",
-          error && editMode && "border-red-400 focus-visible:ring-red-400",
+          "h-9 text-sm shadow-none bg-background",
+          error && "border-red-400 focus-visible:ring-red-400",
         )}
       />
     </div>
@@ -249,7 +266,7 @@ function SelectField({
     return (
       <div>
         <FieldLabel label={label} required={required} />
-        <Input value={value || "—"} readOnly className="h-9 text-sm shadow-none bg-muted border-muted cursor-default focus-visible:ring-0 focus-visible:ring-offset-0" />
+        <ReadonlyValue value={value} />
       </div>
     );
   }
@@ -1240,16 +1257,17 @@ export default function NameplatePage() {
                     options={["Mineral Oil","FR3","R-Temp","Silicone","BETA","Wecosol","Natural Ester","BIOTEMP"]} />
                   <div>
                     <FieldLabel label="Oil Volume (Gal)" />
-                    <Input
-                      defaultValue={RATINGS.oilVolume}
-                      readOnly={!editMode}
-                      className={cn(
-                        "h-9 text-sm shadow-none",
-                        !editMode && "bg-muted border-muted cursor-default focus-visible:ring-0 focus-visible:ring-offset-0",
-                        editMode && "bg-background border-red-400 focus-visible:ring-red-400",
-                      )}
-                    />
-                    {editMode && <ErrorMsg msg={RATINGS.oilVolumeError} />}
+                    {editMode ? (
+                      <>
+                        <Input
+                          defaultValue={RATINGS.oilVolume}
+                          className="h-9 text-sm shadow-none bg-background border-red-400 focus-visible:ring-red-400"
+                        />
+                        <ErrorMsg msg={RATINGS.oilVolumeError} />
+                      </>
+                    ) : (
+                      <ReadonlyValue value={RATINGS.oilVolume} />
+                    )}
                   </div>
                   <Field label="Core & Coils Weight (lbs)" value={RATINGS.coreCoilsWeight} editMode={editMode} />
                   <Field label="Oil Weight (lbs)" value={RATINGS.oilWeight} editMode={editMode} />
