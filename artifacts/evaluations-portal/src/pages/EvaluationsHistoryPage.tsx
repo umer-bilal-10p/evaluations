@@ -791,7 +791,7 @@ export default function EvaluationsHistoryPage() {
                   <FInput value={filters.kva} onChange={(v) => setFilter("kva", v)} placeholder="Search KVA…" />
                 </div>
               </div>
-              {/* Row 2: Intake Type · Load # · Warehouse · Status · Site */}
+              {/* Row 2: Intake Type · Load # · Site · Warehouse · Status · Completed By */}
               <div style={{ display: "flex", alignItems: "flex-end", gap: 10, padding: "12px 20px 16px", borderTop: "1px solid hsl(var(--border))" }}>
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Intake Type</span>
@@ -802,16 +802,16 @@ export default function EvaluationsHistoryPage() {
                   <FInput value={filters.loadNumber} onChange={(v) => setFilter("loadNumber", v)} placeholder="Search load number…" />
                 </div>
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                  <span style={LABEL}>Site</span>
+                  <MultiSelect value={filters.site} onChange={(v) => setFilter("site", v)} options={SITES} placeholder="All Sites" style={{ width: "100%" }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Warehouse</span>
                   <MultiSelect value={filters.warehouse} onChange={(v) => setFilter("warehouse", v)} options={WAREHOUSES} placeholder="All" style={{ width: "100%" }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Status</span>
                   <MultiSelect value={filters.status} onChange={(v) => setFilter("status", v)} options={ALL_STATUSES} placeholder="All" style={{ width: "100%" }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-                  <span style={LABEL}>Site</span>
-                  <MultiSelect value={filters.site} onChange={(v) => setFilter("site", v)} options={SITES} placeholder="All Sites" style={{ width: "100%" }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                   <span style={LABEL}>Completed By</span>
@@ -852,9 +852,9 @@ export default function EvaluationsHistoryPage() {
                           </span>
                         </th>
                       )}
+                      {show.site        && <th style={thBase}>Site</th>}
                       {show.whs         && <th style={thBase}>WHS</th>}
                       {show.status      && <th style={thBase}>Status</th>}
-                      {show.site        && <th style={thBase}>Site</th>}
                       {show.completedOn && <th style={thBase}>Completed On</th>}
                       {show.completedBy && <th style={thBase}>Completed By</th>}
                       <th style={{ ...thBase, padding: "0 16px 0 8px" }}></th>
@@ -896,6 +896,8 @@ export default function EvaluationsHistoryPage() {
                           {show.kva        && <td className="px-4 py-3 font-medium" style={{ color: "hsl(var(--foreground))", whiteSpace: "nowrap", fontSize: 13 }}>{unit.kva.toLocaleString()}</td>}
                           {show.intake     && <td className="px-4 py-3"><IntakePills category={unit.intakeCategory} tags={unit.intakeTags} /></td>}
                           {show.load       && <td className="px-4 py-3 whitespace-nowrap" style={{ color: "hsl(var(--foreground))", fontSize: 13 }}>{unit.loadNumber}</td>}
+
+                          {show.site        && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", fontSize: 13, whiteSpace: "nowrap" }}>{site}</td>}
 
                           {show.whs && (
                             <td className="px-4 py-3" style={{ whiteSpace: "nowrap" }}>
@@ -954,7 +956,6 @@ export default function EvaluationsHistoryPage() {
                             </td>
                           )}
 
-                          {show.site        && <td className="px-4 py-3" style={{ color: "hsl(var(--foreground))", fontSize: 13, whiteSpace: "nowrap" }}>{site}</td>}
                           {show.completedOn && (
                             <td className="px-4 py-3" style={{ color: unit.completedOn ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))", fontSize: 13, whiteSpace: "nowrap" }}>
                               {unit.completedOn ? formatDate(unit.completedOn) : "—"}
