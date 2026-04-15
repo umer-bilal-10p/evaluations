@@ -23,11 +23,11 @@ function useIsDark() {
 /* ─── Types ──────────────────────────────────────────────────────────────────── */
 type EvalStatus = "Not Started" | "In Progress" | "Completed";
 type TransformerType = "Three-Phase Pad" | "Single-Phase Pad" | "Pole Mount";
-type IntakeCategory = "Surplus" | "Recycle";
+type IntakeCategory = "Surplus" | "Recycle" | "Repair";
 type IntakeTag = "Base Damage" | "NPX: Rewind" | "NPX: Repair" | "NPX: Scrap";
 
 const ALL_STATUSES: EvalStatus[]       = ["Not Started", "In Progress", "Completed"];
-const ALL_CATEGORIES: IntakeCategory[] = ["Surplus", "Recycle"];
+const ALL_CATEGORIES: IntakeCategory[] = ["Surplus", "Recycle", "Repair"];
 
 /* ─── Column definitions ─────────────────────────────────────────────────────── */
 const COL_DEFS = [
@@ -101,18 +101,18 @@ const SEED_UNITS: EvaluationUnit[] = [
     C("c1a", "Maria Santos",  "MS", "#7c3aed", "2024-07-24T09:15:00Z", "Tank exterior shows impact damage on the south panel. Flagged for structural review before proceeding."),
     C("c1b", "Carlos Rivera", "CR", "#0047BB", "2024-07-25T14:32:00Z", "Noted — holding intake until structural team signs off. Will update."),
   ]},
-  { id: "2",  dateReceived: "2024-08-20", timeReceived: "9:53 AM",  mfgSerial: "TF-9884-K", icNumber: "221083647", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 250,  intakeCategory: "Recycle", intakeTags: ["NPX: Repair"],                 loadNumber: 425019, warehouseNumber: 725, warehouse: "725 - Temple, TX Finished Goods",               site: "TXTE", status: "Not Started", completedOn: null, completedBy: null, activeUser: null, hasUnreadComment: false, comments: [] },
+  { id: "2",  dateReceived: "2024-08-20", timeReceived: "9:53 AM",  mfgSerial: "TF-9884-K", icNumber: "221083647", manufacturer: "GE",      transformerType: "Three-Phase Pad", kva: 250,  intakeCategory: "Repair",  intakeTags: ["NPX: Repair"],                 loadNumber: 425019, warehouseNumber: 725, warehouse: "725 - Temple, TX Finished Goods",               site: "TXTE", status: "Not Started", completedOn: null, completedBy: null, activeUser: null, hasUnreadComment: false, comments: [] },
   { id: "3",  dateReceived: "2024-11-05", timeReceived: "3:21 PM",  mfgSerial: "TF-5540-E", icNumber: "312048756", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 2000, intakeCategory: "Recycle", intakeTags: ["Base Damage", "NPX: Repair"],  loadNumber: 314087, warehouseNumber: 503, warehouse: "503 - Elba, AL  Yard",                          site: "ALEL", status: "Not Started", completedOn: null, completedBy: null, activeUser: null, hasUnreadComment: false, comments: [
     C("c3a", "James Mitchell", "JM", "#0047BB", "2024-11-06T10:00:00Z", "Confirmed base damage on bottom rail. Photos uploaded to SharePoint."),
   ]},
-  { id: "4",  dateReceived: "2024-11-18", timeReceived: "2:37 PM",  mfgSerial: "TF-9201-A", icNumber: "098432711", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Recycle", intakeTags: ["NPX: Rewind"],                 loadNumber: 203415, warehouseNumber: 952, warehouse: "952 - Temple, TX Repair",                       site: "TXTE", status: "Not Started", completedOn: null, completedBy: null, activeUser: null, hasUnreadComment: false, comments: [] },
+  { id: "4",  dateReceived: "2024-11-18", timeReceived: "2:37 PM",  mfgSerial: "TF-9201-A", icNumber: "098432711", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 500,  intakeCategory: "Repair",  intakeTags: ["NPX: Rewind"],                 loadNumber: 203415, warehouseNumber: 952, warehouse: "952 - Temple, TX Repair",                       site: "TXTE", status: "Not Started", completedOn: null, completedBy: null, activeUser: null, hasUnreadComment: false, comments: [] },
   { id: "5",  dateReceived: "2024-07-09", timeReceived: "6:47 PM",  mfgSerial: "TF-6551-N", icNumber: "093284756", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 400,  intakeCategory: "Recycle", intakeTags: ["Base Damage", "NPX: Scrap"],   loadNumber: 362780, warehouseNumber: 97,  warehouse: "97 - CO - Repair Equipment",                   site: "COGJ", status: "In Progress", completedOn: null, completedBy: null, activeUser: { name: "Carlos Rivera", initials: "CR", color: "#0047BB" }, hasUnreadComment: false, comments: [
     C("c5a", "Carlos Rivera", "CR", "#0047BB", "2024-07-12T11:20:00Z", "Evaluation started. Core appears intact but windings need closer inspection."),
   ]},
   { id: "6",  dateReceived: "2025-01-15", timeReceived: "10:12 AM", mfgSerial: "TF-3371-D", icNumber: "441928573", manufacturer: "Eaton",   transformerType: "Three-Phase Pad", kva: 1000, intakeCategory: "Surplus", intakeTags: ["Base Damage"],                 loadNumber: 119204, warehouseNumber: 99,  warehouse: "99 - KS - Repair Equipment",                   site: "KSSO", status: "Not Started", completedOn: null, completedBy: null, activeUser: null, hasUnreadComment: true,  comments: [
     C("c6a", "Maria Santos",  "MS", "#7c3aed", "2025-01-17T08:45:00Z", "Please prioritize this unit — customer is waiting on evaluation results before making a purchase decision."),
   ]},
-  { id: "7",  dateReceived: "2025-02-03", timeReceived: "8:05 AM",  mfgSerial: "TF-8831-G", icNumber: "554738201", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 750,  intakeCategory: "Recycle", intakeTags: ["NPX: Rewind", "NPX: Repair"],  loadNumber: 278456, warehouseNumber: 80,  warehouse: "80 - CO Dock Stock",                            site: "COGJ", status: "Not Started", completedOn: null, completedBy: null, activeUser: null, hasUnreadComment: false, comments: [] },
+  { id: "7",  dateReceived: "2025-02-03", timeReceived: "8:05 AM",  mfgSerial: "TF-8831-G", icNumber: "554738201", manufacturer: "Siemens", transformerType: "Three-Phase Pad", kva: 750,  intakeCategory: "Repair",  intakeTags: ["NPX: Rewind", "NPX: Repair"],  loadNumber: 278456, warehouseNumber: 80,  warehouse: "80 - CO Dock Stock",                            site: "COGJ", status: "Not Started", completedOn: null, completedBy: null, activeUser: null, hasUnreadComment: false, comments: [] },
   { id: "9",  dateReceived: "2025-03-14", timeReceived: "4:30 PM",  mfgSerial: "TF-2278-B", icNumber: "789042316", manufacturer: "ABB",     transformerType: "Three-Phase Pad", kva: 3000, intakeCategory: "Recycle", intakeTags: ["NPX: Scrap"],                  loadNumber: 451803, warehouseNumber: 607, warehouse: "607 - Valley  Dock Stock",                      site: "WASP", status: "In Progress", completedOn: null, completedBy: null, activeUser: { name: "Sarah Chen", initials: "SC", color: "#7c3aed" }, hasUnreadComment: false, comments: [
     C("c9a", "Sarah Chen",    "SC", "#7c3aed", "2025-03-15T13:30:00Z", "Initial assessment done. Unit is a strong scrap candidate — oil contaminated, core delaminated."),
     C("c9b", "James Mitchell","JM", "#0047BB", "2025-03-16T09:45:00Z", "Understood. Proceed with scrap evaluation pathway and document weight and materials."),
