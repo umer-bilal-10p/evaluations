@@ -1002,7 +1002,7 @@ function PhotoSourceModal({ onTakePhoto, onUpload, onWithoutPhoto, onCancel }: {
         <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
           {[
             { label: "Take Photo", icon: <Camera size={20} className="text-[#0047bb]" />, action: onTakePhoto },
-            { label: "Upload Photo", icon: <Upload size={20} className="text-[#0047bb]" />, action: onWithoutPhoto },
+            { label: "Upload Photo", icon: <Upload size={20} className="text-[#0047bb]" />, action: onUpload },
             { label: "Enter Without Photo", icon: <EyeOff size={20} className="text-[#0047bb]" />, action: onWithoutPhoto },
           ].map(({ label, icon, action }) => (
             <Button
@@ -1176,8 +1176,8 @@ export default function ConditionPage() {
       setSaveState("saved");
       setSavedTimestamp(Date.now());
       setEditMode(false);
-      setTimeout(() => setSaveState("savedAgo"), 2500);
-    }, 700);
+      setTimeout(() => setSaveState("savedAgo"), 2000);
+    }, 600);
   }
 
   function handleDiscard() {
