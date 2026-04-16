@@ -1,0 +1,1950 @@
+{
+  "_schema_version": "1.0.0",
+  "_generated_from": "EvalAI — client/src/pages/ConditionCapture.tsx",
+  "_description": "Complete blueprint for rebuilding the Condition Capture screen in a separate React/Shadcn web portal. All field names, option values, validation rules, component specs, and design tokens are sourced directly from the EvalAI source code.",
+  "_source_of_truth_priority": "When a conflict exists between visual styles (colours, spacing) and behavioural logic (validation rules, state transitions, workflow steps), treat the BEHAVIOUR as canonical. Visual tokens may be adjusted to fit your portal's design system; logic and field constraints should be followed exactly.",
+
+  "meta": {
+    "pageTitle": "Condition",
+    "pageSubtitle": "Document and photograph any physical damage found on this unit",
+    "routePattern": "/evaluation/:id/condition",
+    "canvasSize": { "width": 1366, "height": 1024, "unit": "px" },
+    "navigationStep": {
+      "current": 3,
+      "total": 3,
+      "sequence": ["nameplate", "electrical", "condition"],
+      "label": "Step 3 of 3"
+    },
+    "backDestination": "/evaluation/:id/electrical",
+    "nextDestination": "/evaluation/:id/electrical",
+    "_comment": "This is an iPad Pro fixed-canvas app. In a web portal you should adapt the layout to be responsive instead."
+  },
+
+  "dataModels": {
+    "DamageEntry": {
+      "_description": "One physical damage finding on the transformer. Created each time the user documents a damage location.",
+      "fields": {
+        "id": {
+          "type": "string",
+          "format": "timestamp-prefixed string",
+          "generated": "client-side via `dmg-${Date.now()}` — NOT a UUID. For the portal rebuild, you may use UUID v4 instead for better collision safety, but the current EvalAI source does not.",
+          "required": true
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL or data-URL of the damage photo. Empty string when the user chose 'Enter Without Photo'.",
+          "required": true,
+          "canBeEmpty": true
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name for the entry, e.g. 'Damage Photo' or 'Manual Entry'.",
+          "required": true
+        },
+        "aiDetected": {
+          "type": "boolean",
+          "description": "True when AI successfully analysed the photo and suggested damage details.",
+          "required": true
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "AI confidence percentage (0–100). Only present when aiDetected is true.",
+          "required": false
+        },
+        "damageType": {
+          "type": "string",
+          "enum": ["Rust", "Dent", "Leak", "Arc Damage", "Holes", "Tears", "None", ""],
+          "description": "Type of damage identified. Empty string means not yet selected.",
+          "required": true,
+          "validationRequired": true
+        },
+        "sectionLocation": {
+          "type": "string",
+          "enum": ["Tank", "Cabinet", "Radiator", ""],
+          "description": "Which major section of the transformer the damage is on.",
+          "required": true
+        },
+        "subLocation": {
+          "type": "string",
+          "description": "Specific part within the section (e.g. 'Base', 'Left Side Wall'). See enumerations.subLocations.",
+          "required": true,
+          "canBeEmpty": true
+        },
+        "location": {
+          "type": "string",
+          "description": "Derived display string combining sectionLocation and subLocation. Format: '{sectionLocation} — {subLocation}'. Set automatically when sectionLocation or subLocation changes.",
+          "required": true,
+          "derived": true,
+          "derivationRule": "subLocation ? `${sectionLocation} — ${subLocation}` : sectionLocation"
+        },
+        "assessment": {
+          "type": "string",
+          "enum": ["Repairable", "Non-Repairable", ""],
+          "description": "Whether the damage can be repaired. Required unless damageType is 'None'.",
+          "required": "conditional",
+          "requiredWhen": "damageType is not empty and damageType !== 'None'"
+        },
+        "damageAssessment": {
+          "type": "string",
+          "enum": ["Surface", "Structural", ""],
+          "description": "Severity classification — cosmetic vs structural. Required unless damageType is 'None'.",
+          "required": "conditional",
+          "requiredWhen": "damageType is not empty and damageType !== 'None'"
+        },
+        "grade": {
+          "type": "string",
+          "description": "AI-assigned grade string (e.g. 'G5', 'Level 2'). Currently stored but not rendered as an editable field in the UI. May be used for reporting.",
+          "required": false
+        },
+        "comments": {
+          "type": "string",
+          "description": "Free-text observation notes written by the inspector or pre-filled by AI.",
+          "required": false,
+          "canBeEmpty": true
+        },
+        "additionalPhotos": {
+          "type": "array",
+          "items": { "$ref": "#/dataModels/AdditionalPhoto" },
+          "description": "Additional related damage photos attached to this finding. Each has its own fields.",
+          "required": false,
+          "default": []
+        },
+        "aiOriginal": {
+          "type": "object",
+          "description": "Snapshot of AI-suggested values at the time of detection. Used to show 'AI: {value}' restore chips when the user deviates from the AI recommendation.",
+          "required": false,
+          "fields": {
+            "damageType": { "type": "string" },
+            "assessment": { "type": "string", "enum": ["Repairable", "Non-Repairable", ""] },
+            "damageAssessment": { "type": "string", "enum": ["Surface", "Structural", ""] },
+            "grade": { "type": "string" },
+            "comments": { "type": "string" }
+          }
+        }
+      }
+    },
+
+    "AdditionalPhoto": {
+      "_description": "A related damage photo nested inside a DamageEntry. Has its own damage type, assessment, and comments fields.",
+      "fields": {
+        "id": {
+          "type": "string",
+          "format": "timestamp-prefixed string",
+          "generated": "client-side via `ap-${Date.now()}` — NOT a UUID. Portal may use UUID v4 instead.",
+          "required": true
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL or data-URL. Can be empty if photo was not taken.",
+          "required": true,
+          "canBeEmpty": true
+        },
+        "damageType": {
+          "type": "string",
+          "enum": ["Rust", "Dent", "Leak", "Arc Damage", "Holes", "Tears", "None", ""],
+          "required": true,
+          "validationRequired": true
+        },
+        "location": {
+          "type": "string",
+          "description": "Copied from parent DamageEntry location.",
+          "required": false
+        },
+        "assessment": {
+          "type": "string",
+          "enum": ["Repairable", "Non-Repairable", ""],
+          "required": true,
+          "validationRequired": true
+        },
+        "damageAssessment": {
+          "type": "string",
+          "enum": ["Surface", "Structural", ""],
+          "required": true,
+          "validationRequired": true
+        },
+        "comments": {
+          "type": "string",
+          "required": false,
+          "canBeEmpty": true
+        }
+      }
+    }
+  },
+
+  "enumerations": {
+    "damageTypes": {
+      "_description": "All selectable damage types. Rust and Dent are AI-detectable from photos. Leak and Arc Damage require manual entry. 'None' disables the Repairability and Damage Assessment fields.",
+      "values": [
+        { "value": "Rust",       "description": "Oxidation or corrosion on metal surfaces.", "aiDetectable": true },
+        { "value": "Dent",       "description": "Physical deformation without material loss.", "aiDetectable": true },
+        { "value": "Leak",       "description": "Fluid or gas escaping from a sealed area.", "aiDetectable": false },
+        { "value": "Arc Damage", "description": "Electrical arc flash or discharge damage.", "aiDetectable": false },
+        { "value": "Holes",      "description": "Punctures or perforations through the material.", "aiDetectable": false },
+        { "value": "Tears",      "description": "Rips or cuts in sheet metal or gaskets.", "aiDetectable": false },
+        { "value": "None",       "description": "No damage found at this location. Selecting this disables Repairability and Damage Assessment.", "aiDetectable": false }
+      ]
+    },
+
+    "sectionLocations": {
+      "_description": "The three major physical sections of the transformer. Each has its own colour theme applied to the section card, header, and body.",
+      "values": [
+        {
+          "id": "Tank",
+          "label": "Tank",
+          "icon": "PanelBottomDashed",
+          "theme": {
+            "iconBg": "#fef9c3",
+            "iconColor": "#b45309",
+            "cardBorder": "1.5px solid rgba(180,83,9,0.22)",
+            "headerGradient": "linear-gradient(105deg, rgba(254,249,195,0.85) 0%, rgba(255,255,255,0.70) 100%)",
+            "bodyDivider": "1px solid rgba(180,83,9,0.15)",
+            "bodyBg": "rgba(254,249,195,0.18)",
+            "shadowColor": "rgba(180,83,9,0.08)"
+          }
+        },
+        {
+          "id": "Cabinet",
+          "label": "Cabinet",
+          "icon": "Box",
+          "theme": {
+            "iconBg": "#f3e8ff",
+            "iconColor": "#7c3aed",
+            "cardBorder": "1.5px solid rgba(124,58,237,0.24)",
+            "headerGradient": "linear-gradient(105deg, rgba(243,232,255,0.85) 0%, rgba(255,255,255,0.70) 100%)",
+            "bodyDivider": "1px solid rgba(124,58,237,0.15)",
+            "bodyBg": "rgba(243,232,255,0.18)",
+            "shadowColor": "rgba(124,58,237,0.08)"
+          }
+        },
+        {
+          "id": "Radiator",
+          "label": "Radiator",
+          "icon": "Layers",
+          "theme": {
+            "iconBg": "#dbeafe",
+            "iconColor": "#1d4ed8",
+            "cardBorder": "1.5px solid rgba(59,130,246,0.24)",
+            "headerGradient": "linear-gradient(105deg, rgba(219,234,254,0.85) 0%, rgba(255,255,255,0.70) 100%)",
+            "bodyDivider": "1px solid rgba(59,130,246,0.15)",
+            "bodyBg": "rgba(219,234,254,0.18)",
+            "shadowColor": "rgba(59,130,246,0.08)"
+          }
+        }
+      ]
+    },
+
+    "subLocations": {
+      "_description": "Specific locations within each section. These are the options shown in the Sublocation Selector Modal (Step 2) and the sublocation filter tabs.",
+      "Tank": [
+        { "label": "Base",            "icon": "Database"     },
+        { "label": "Left Side Wall",  "icon": "ChevronLeft"  },
+        { "label": "Right Side Wall", "icon": "ChevronRight" },
+        { "label": "Rear Wall",       "icon": "Minus"        },
+        { "label": "Front Wall",      "icon": "Tablet"       },
+        { "label": "Top",             "icon": "ArrowUp"      },
+        { "label": "Lifting Hooks",   "icon": "ChevronsUp"   }
+      ],
+      "Cabinet": [
+        { "label": "Left Door",            "icon": "DoorOpen",    "flip": false },
+        { "label": "Right Door",           "icon": "DoorOpen",    "flip": true  },
+        { "label": "Left Side",            "icon": "ChevronLeft"              },
+        { "label": "Right Side",           "icon": "ChevronRight"             },
+        { "label": "Top",                  "icon": "ArrowUp"                  },
+        { "label": "Sill (Bottom Plates)", "icon": "ArrowDown"                },
+        { "label": "False Bottom",         "icon": "ChevronsDown"             }
+      ],
+      "Radiator": [
+        { "label": "Left Side",  "icon": "ChevronLeft"  },
+        { "label": "Right Side", "icon": "ChevronRight" },
+        { "label": "Rear Side",  "icon": "Minus"        }
+      ]
+    },
+
+    "repairabilityOptions": {
+      "_description": "Segment control options for the Repairability field. Disabled (opacity 0.38, pointer-events none) when damageType === 'None'.",
+      "values": [
+        {
+          "value": "Repairable",
+          "description": "Damage can be fixed to restore the unit to acceptable service condition.",
+          "selectedBackgroundColor": "#16a34a",
+          "selectedTextColor": "#ffffff"
+        },
+        {
+          "value": "Non-Repairable",
+          "description": "Damage is too severe; the affected component or unit must be scrapped or replaced.",
+          "selectedBackgroundColor": "#dc2626",
+          "selectedTextColor": "#ffffff"
+        }
+      ]
+    },
+
+    "damageAssessmentOptions": {
+      "_description": "Segment control options for the Damage Assessment field. Disabled when damageType === 'None'.",
+      "values": [
+        {
+          "value": "Surface",
+          "description": "Damage is cosmetic — affects appearance but not structural integrity or performance.",
+          "selectedBackgroundColor": "#0047bb",
+          "selectedTextColor": "#ffffff"
+        },
+        {
+          "value": "Structural",
+          "description": "Damage compromises the physical structure, safety, or core function of the unit.",
+          "selectedBackgroundColor": "#b45309",
+          "selectedTextColor": "#ffffff"
+        }
+      ]
+    }
+  },
+
+  "pageLayout": {
+    "_description": "Top-to-bottom visual structure of the page. Adapt to a responsive layout for web portal.",
+    "statusBar": {
+      "height": 32,
+      "background": "#1B2038",
+      "left": ["currentTime", "currentDate"],
+      "right": ["signalStrength", "wifi", "batteryPercentage", "batteryIcon"],
+      "_webPortalNote": "Replace with a standard web header or omit entirely."
+    },
+    "sideNav": {
+      "component": "EvalModeNav",
+      "collapsedWidth": 64,
+      "expandedWidth": 240,
+      "defaultCollapsed": true,
+      "activeStep": "condition",
+      "completedSteps": ["nameplate", "electrical"],
+      "allSteps": ["nameplate", "electrical", "condition"],
+      "_webPortalNote": "Replace with a horizontal breadcrumb or stepper component using Shadcn."
+    },
+    "mainContent": {
+      "topOffset": 32,
+      "leftOffset": "sideNav.collapsedWidth (64px)",
+      "padding": "24px",
+      "pageHeader": {
+        "title": {
+          "text": "Condition",
+          "fontSize": "32px",
+          "fontWeight": "bold",
+          "color": "#1B2038",
+          "marginBottom": "4px"
+        },
+        "subtitle": {
+          "text": "Document and photograph any physical damage found on this unit",
+          "fontSize": "16px",
+          "color": "rgba(27,32,56,0.44)",
+          "fontWeight": "400"
+        },
+        "headerPills": {
+          "_description": "Right-aligned pill row showing transformer metadata for the current evaluation.",
+          "fields": ["manufacturer", "ic", "serial", "kva", "npxType"],
+          "flaggedBadge": {
+            "shown": "when row.flagged === true",
+            "icon": "Flag",
+            "label": "Flagged",
+            "color": "#d97706"
+          }
+        }
+      },
+      "glassFormCard": {
+        "background": "rgba(255,255,255,0.80)",
+        "backdropFilter": "blur(20px)",
+        "borderRadius": "20px",
+        "border": "1px solid rgba(255,255,255,0.70)",
+        "boxShadow": "0 4px 32px rgba(27,32,56,0.08), 0 1px 0 rgba(255,255,255,0.6) inset",
+        "layout": {
+          "type": "flex-column",
+          "scrollableBody": {
+            "padding": "28px 28px 8px 28px",
+            "overflowY": "auto",
+            "flex": 1
+          },
+          "fixedBottomActionBar": {
+            "padding": "16px 28px",
+            "borderTop": "1px solid rgba(0,0,0,0.06)",
+            "flexShrink": 0
+          }
+        }
+      }
+    }
+  },
+
+  "components": {
+
+    "documentDamageCTA": {
+      "_description": "Always-visible call-to-action at the top of the scrollable body. Persists even when findings exist.",
+      "marginBottom": "28px",
+
+      "idleState": {
+        "_description": "Default state — clickable glass card inviting the user to document a new damage.",
+        "container": {
+          "display": "flex",
+          "alignItems": "center",
+          "gap": "24px",
+          "background": "rgba(255,255,255,0.72)",
+          "backdropFilter": "blur(24px)",
+          "border": "1px solid rgba(255,255,255,0.85)",
+          "borderRadius": "20px",
+          "boxShadow": "0 8px 32px rgba(0,71,187,0.10), inset 0 1px 0 rgba(255,255,255,0.9)",
+          "padding": "20px 24px",
+          "cursor": "pointer"
+        },
+        "iconBlock": {
+          "width": "80px",
+          "height": "80px",
+          "borderRadius": "18px",
+          "background": "linear-gradient(145deg, rgba(59,130,246,0.18) 0%, rgba(99,160,255,0.10) 100%)",
+          "backdropFilter": "blur(12px)",
+          "border": "1px solid rgba(147,197,253,0.55)",
+          "icon": "Camera",
+          "iconSize": 34,
+          "iconColor": "#2563eb"
+        },
+        "textBlock": {
+          "title": { "text": "Document Damage", "fontSize": "20px", "fontWeight": "bold", "color": "#1B2038" },
+          "subtitle": { "text": "Take a clear photo of the damage. AI will automatically detect the damage type and severity.", "fontSize": "15px", "color": "rgba(27,32,56,0.52)" }
+        },
+        "actionButton": {
+          "label": "Document Damage",
+          "icon": "Camera",
+          "iconSize": 17,
+          "height": "48px",
+          "borderRadius": "100px",
+          "background": "linear-gradient(135deg, #0047bb 0%, #0065ff 100%)",
+          "boxShadow": "0 4px 20px rgba(0,71,187,0.38), inset 0 1px 0 rgba(255,255,255,0.22)",
+          "border": "1px solid rgba(255,255,255,0.18)",
+          "color": "#ffffff",
+          "fontSize": "15px",
+          "fontWeight": "600",
+          "onClick": "opens LocationSelectorModal (Step 1 of the Document Damage flow)"
+        }
+      },
+
+      "scanningState": {
+        "_description": "Non-interactive scanning indicator shown while the AI analyses a newly taken photo (~1.8s).",
+        "container": "same styles as idleState but not clickable",
+        "iconBlock": {
+          "same": "as idleState but with a horizontal progress bar below Camera icon",
+          "progressBar": {
+            "width": "44px",
+            "height": "3px",
+            "background": "rgba(147,197,253,0.4)",
+            "filledColor": "#2563eb",
+            "animation": "fills left-to-right over 1.8s (CSS keyframes: scanProgress 0%→100%)"
+          }
+        },
+        "title": { "text": "Analyzing…", "fontSize": "20px", "fontWeight": "bold" },
+        "subtitle": { "text": "AI is examining the photo for damage type and severity.", "fontSize": "15px" }
+      }
+    },
+
+    "baseInspectionCard": {
+      "_description": "Shown only inside the Tank section. Tracks whether the tank base has been inspected. Has three distinct visual states.",
+      "testId": "card-base-inspection",
+      "containerBase": {
+        "display": "flex",
+        "gap": "24px",
+        "padding": "24px",
+        "borderRadius": "14px",
+        "background": "white",
+        "boxShadow": "0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)"
+      },
+
+      "states": {
+        "pending": {
+          "_description": "Initial state — inspector hasn't made a decision yet.",
+          "border": "2.5px solid #fde047",
+          "iconBlock": {
+            "width": "88px",
+            "height": "88px",
+            "borderRadius": "14px",
+            "background": "#fefce8",
+            "icon": "PanelBottomDashed",
+            "iconSize": 36,
+            "iconColor": "#ca8a04"
+          },
+          "titleText": "Tank Inspection (Required)",
+          "titleColor": "#171717",
+          "subtitleText": "If you have access to the tank during transportation, take a photo, or upload a photo taken during available access.",
+          "actionButtons": {
+            "layout": "flex-column, gap 12px, width 248px",
+            "noIssues": {
+              "label": "No Damage Found",
+              "icon": "Check",
+              "height": "52px",
+              "borderRadius": "9999px",
+              "background": "#16a34a",
+              "color": "white",
+              "boxShadow": "0 4px 16px rgba(22,163,74,0.28)",
+              "testId": "button-base-no-damage",
+              "onClick": "sets baseStatus = 'clean'"
+            },
+            "documentDamage": {
+              "label": "Document Tank Damage",
+              "icon": "Camera",
+              "height": "52px",
+              "borderRadius": "9999px",
+              "background": "#0047bb",
+              "color": "white",
+              "boxShadow": "0 4px 16px rgba(0,71,187,0.28)",
+              "testId": "button-base-document-damage",
+              "onClick": "triggers contextual damage flow for Tank section"
+            }
+          }
+        },
+        "clean": {
+          "border": "2.5px solid #16a34a",
+          "iconBg": "rgba(22,163,74,0.08)",
+          "icon": "Check",
+          "iconColor": "#16a34a",
+          "titleText": "Tank Inspection — No Damage",
+          "titleColor": "#15803d",
+          "subtitleText": "Tank confirmed clean. No corrosion or damage found."
+        },
+        "damaged": {
+          "border": "2.5px solid #3b82f6",
+          "iconBg": "rgba(59,130,246,0.08)",
+          "icon": "Camera",
+          "iconColor": "#3b82f6",
+          "titleText": "Tank Inspection — Damage Documented",
+          "titleColor": "#1d4ed8",
+          "subtitleText": "Tank damage has been documented below.",
+          "cursor": "pointer",
+          "onClick": "dismisses the card (sets baseStatus = 'dismissed')",
+          "title_tooltip": "Tap to dismiss"
+        }
+      }
+    },
+
+    "sectionCard": {
+      "_description": "One expandable/collapsible card per transformer section (Tank, Cabinet, Radiator). Colour-themed per section.",
+      "renderOrder": ["Tank", "Cabinet", "Radiator"],
+      "containerStyles": {
+        "background": "white",
+        "borderRadius": "18px",
+        "border": "from sectionLocations[section].theme.cardBorder",
+        "overflow": "hidden",
+        "boxShadow": "0 2px 16px {shadowColor}, 0 1px 3px rgba(0,0,0,0.05)"
+      },
+
+      "header": {
+        "_description": "Clickable row that collapses/expands the section body.",
+        "padding": "14px 16px",
+        "background": "from sectionLocations[section].theme.headerGradient",
+        "cursor": "pointer",
+        "testId": "section-header-{section.toLowerCase()}",
+        "elements": [
+          {
+            "type": "iconBlock",
+            "width": 36,
+            "height": 36,
+            "borderRadius": "12px",
+            "background": "sectionInfo.iconBg",
+            "icon": "sectionInfo.icon",
+            "iconSize": 18,
+            "iconColor": "sectionInfo.iconColor"
+          },
+          {
+            "type": "label",
+            "text": "section name",
+            "fontSize": "18px",
+            "fontWeight": "600",
+            "color": "#1B2038"
+          },
+          {
+            "type": "findingCount",
+            "text": "{n} finding(s) | 'no findings'",
+            "fontSize": "13px",
+            "color": "rgba(27,32,56,0.50)"
+          },
+          { "type": "spacer", "flex": 1 },
+          {
+            "type": "collapseChevron",
+            "icon": "ChevronDown (collapsed) | ChevronUp (expanded)",
+            "size": 28,
+            "border": "1.5px solid sectionInfo.iconColor",
+            "borderRadius": "8px",
+            "color": "sectionInfo.iconColor"
+          }
+        ]
+      },
+
+      "body": {
+        "_description": "Hidden when the section header is clicked to collapse.",
+        "borderTop": "from sectionLocations[section].theme.bodyDivider",
+        "padding": "14px 14px 16px",
+        "background": "from sectionLocations[section].theme.bodyBg",
+
+        "sublocationTabs": {
+          "_description": "Horizontal pill tabs that appear once findings exist with sublocation data. Tabs = ['All', ...distinct subLocations with findings].",
+          "showWhen": "sublocsWithFindings.length > 0",
+          "layout": "flex row, items-center, justify-between, gap 12px",
+          "tabPill": {
+            "padding": "6px 14px",
+            "borderRadius": "100px",
+            "fontSize": "13px",
+            "cursor": "pointer",
+            "activeState": {
+              "background": "sectionInfo.iconColor",
+              "color": "white",
+              "fontWeight": "600",
+              "boxShadow": "0 2px 8px rgba(0,0,0,0.15)",
+              "border": "none"
+            },
+            "inactiveState": {
+              "background": "white",
+              "color": "#525252",
+              "fontWeight": "500",
+              "border": "1px solid rgba(0,0,0,0.10)"
+            },
+            "countBadge": {
+              "shownOn": "non-All tabs",
+              "content": "number of findings for this sublocation",
+              "style": "marginLeft 6px, opacity 0.7, fontSize 12px"
+            },
+            "testId": "tab-{section.toLowerCase()}-{tab.toLowerCase().replace(spaces, '-')}"
+          }
+        },
+
+        "contextualDamageButton": {
+          "_description": "Outlined pill button to add damage for this section. Label changes based on active sublocation tab.",
+          "idleLabel": "Document {Section} Damage",
+          "activeTabLabel": "Document {Section} {Sublocation} Damage",
+          "icon": "Camera",
+          "iconSize": 16,
+          "height": "44px",
+          "borderRadius": "100px",
+          "background": "transparent",
+          "border": "1.5px solid sectionInfo.iconColor",
+          "color": "sectionInfo.iconColor",
+          "fontSize": "15px",
+          "fontWeight": "600",
+          "position": "right side of tabs row (when tabs exist) | below findings (when no tabs)",
+          "testId": "button-document-contextual-{section.toLowerCase()}"
+        },
+
+        "emptyPlaceholder": {
+          "shownWhen": "no entries exist for the section (or active tab has none)",
+          "padding": "12px 16px",
+          "background": "rgba(255,255,255,0.40)",
+          "borderRadius": "12px",
+          "border": "1.5px dashed rgba(0,0,0,0.10)",
+          "textMessages": {
+            "noSectionFindings": "No findings yet for this section",
+            "noSubLocationFindings": "No findings for this sublocation"
+          },
+          "textStyle": { "fontSize": "15px", "color": "rgba(27,32,56,0.45)" }
+        },
+
+        "pendingEntrySlot": {
+          "_description": "The newest DamageCard being reviewed sits below confirmed entries, with isPending=true styling.",
+          "shownWhen": "currentEntry.sectionLocation === section",
+          "marginTop": "16px"
+        }
+      }
+    },
+
+    "damageCard": {
+      "_description": "One card per DamageEntry. Covers both confirmed entries (in sections) and the pending entry being reviewed.",
+      "testId": "damage-card-{entry.id}",
+
+      "containerStyles": {
+        "default": {
+          "borderRadius": "14px",
+          "border": "1px solid rgba(0,0,0,0.08)",
+          "background": "white",
+          "overflow": "hidden"
+        },
+        "pending": {
+          "border": "1.5px solid #86efac",
+          "_comment": "Green border indicates this is the newly captured entry awaiting review."
+        }
+      },
+
+      "aiDetectionBanner": {
+        "_description": "Top banner shown only when the card is pending (newly created). Green = AI detected. Blue = no AI detection.",
+        "shownWhen": "isPending === true",
+        "height": "44px",
+        "variants": {
+          "aiDetected": {
+            "background": "#dcfce7",
+            "borderBottom": "1px solid #86efac",
+            "icon": "Check",
+            "iconColor": "#16a34a",
+            "message": "AI detected {damageType} damage — review details below.",
+            "textColor": "#14532d",
+            "confidenceBadge": "shown on the right when entry.confidence is defined"
+          },
+          "noAiDetection": {
+            "background": "#f0f9ff",
+            "borderBottom": "1px solid #7dd3fc",
+            "icon": "Camera",
+            "iconColor": "#0369a1",
+            "message": "Photo captured — AI could not detect damage type. Fill in details manually.",
+            "textColor": "#0c4a6e"
+          }
+        }
+      },
+
+      "header": {
+        "paddingExpanded": "16px 20px",
+        "paddingCollapsed": "10px 16px 10px 12px",
+        "borderBottom": "1px solid rgba(0,0,0,0.06) (hidden when collapsed)",
+        "elements": {
+          "thumbnailWhenCollapsed": {
+            "shownWhen": "collapsed && entry.imageUrl is non-empty",
+            "size": "72×72px",
+            "borderRadius": "10px",
+            "objectFit": "cover",
+            "border": "1px solid rgba(0,0,0,0.08)"
+          },
+          "smartTitle": {
+            "_description": "Dynamically built from available data. Falls back gracefully.",
+            "rule": "entry.damageType ? `{damageType} - {sectionLocation} {subLocation} #{N}` : (locationPart ? `{locationPart} #{N}` : `Finding #{N}`)",
+            "fontSize": "16px",
+            "fontWeight": "600",
+            "color": "#1B2038",
+            "flex": 1
+          },
+          "confidenceBadge": {
+            "shownWhen": "!isPending && entry.aiDetected && entry.confidence is defined"
+          },
+          "manualEntryBadge": {
+            "shownWhen": "!isPending && !entry.aiDetected",
+            "label": "Manual Entry",
+            "style": "13px, grey pill (#f5f5f5 bg, #e5e5e5 border, #737373 text, 26px height)"
+          },
+          "retakeButton": {
+            "shownWhen": "isPending",
+            "label": "entry.imageUrl ? 'Retake' : 'Add Photo'",
+            "icon": "entry.imageUrl ? RotateCcw : Camera",
+            "iconSize": 13,
+            "height": "34px",
+            "borderRadius": "8px",
+            "border": "1px solid rgba(0,0,0,0.12)",
+            "color": "#525252",
+            "fontSize": "13px",
+            "testId": "entry.imageUrl ? retake-damage-{id} : add-photo-pending-{id}"
+          },
+          "addPhotoButton": {
+            "shownWhen": "!isPending && !entry.imageUrl && onAddPhoto prop is provided",
+            "label": "Add Photo",
+            "icon": "Camera",
+            "style": "same as retakeButton",
+            "testId": "add-photo-damage-{id}"
+          },
+          "actionsMenu": {
+            "trigger": {
+              "icon": "Settings2",
+              "label": "Actions",
+              "trailingIcon": "ChevronDown",
+              "height": "34px",
+              "borderRadius": "8px",
+              "border": "1px solid rgba(0,0,0,0.12)",
+              "testId": "actions-damage-{id}"
+            },
+            "dropdown": {
+              "background": "white",
+              "border": "1px solid rgba(0,0,0,0.10)",
+              "borderRadius": "10px",
+              "boxShadow": "0 8px 24px rgba(0,0,0,0.12)",
+              "minWidth": "176px",
+              "position": "absolute right-0 top-full mt-1.5",
+              "items": [
+                {
+                  "label": "Change Location",
+                  "icon": "MapPin",
+                  "action": "toggles the inline location picker row",
+                  "testId": "action-change-location-{id}"
+                },
+                { "type": "divider" },
+                {
+                  "label": "Delete",
+                  "icon": "Trash2",
+                  "color": "#ef4444",
+                  "hoverBg": "#fef2f2",
+                  "action": "calls onDelete(entry.id)",
+                  "testId": "action-delete-damage-{id}"
+                }
+              ]
+            }
+          },
+          "collapseToggle": {
+            "icon": "ChevronDown (when expanded) | ChevronUp (when collapsed)",
+            "size": "34×34px",
+            "borderRadius": "8px",
+            "border": "1px solid rgba(0,0,0,0.10)",
+            "color": "#737373",
+            "testId": "collapse-finding-{id}"
+          }
+        }
+      },
+
+      "collapsedSummaryView": {
+        "_description": "Shown below the header when the card is collapsed. Quick-glance summary of findings.",
+        "padding": "10px 20px 14px",
+        "layout": "flex wrap, gap 8px, items-center",
+        "chipStyle": {
+          "fontSize": "13px",
+          "height": "26px",
+          "padding": "0 12px",
+          "borderRadius": "9999px",
+          "background": "#f5f5f5",
+          "border": "1px solid #e5e5e5",
+          "color": "#525252"
+        },
+        "chips": ["damageType", "location", "assessment", "damageAssessment"],
+        "additionalPhotosChip": {
+          "shownWhen": "additionalPhotos.length > 0",
+          "text": "+{n} more photo(s)",
+          "icon": "Plus",
+          "iconSize": 11
+        },
+        "missingMandatoryWarning": {
+          "shownWhen": "damageCardMissingMandatory === true",
+          "text": "Details pending",
+          "icon": "AlertCircle",
+          "iconSize": 11,
+          "color": "#ef4444",
+          "position": "ml-auto flex-shrink-0"
+        }
+      },
+
+      "locationPickerRow": {
+        "_description": "Inline location editor shown via Actions → Change Location. Appears above the expanded body.",
+        "shownWhen": "showLocationPicker && !collapsed",
+        "padding": "16px 20px",
+        "background": "rgba(248,250,252,0.80)",
+        "borderBottom": "1px solid rgba(0,0,0,0.07)",
+        "layout": "flex items-end gap 12px",
+        "fields": [
+          {
+            "label": "Location",
+            "required": true,
+            "component": "FormSelect",
+            "options": "sectionLocations.values[].id",
+            "placeholder": "Select section",
+            "testId": "select-section-location-{id}"
+          },
+          {
+            "label": "Sublocation",
+            "required": true,
+            "component": "FormSelect",
+            "options": "subLocations[entry.sectionLocation][].label",
+            "placeholder": "entry.sectionLocation ? 'Select sublocation' : 'Select a location first'",
+            "testId": "select-sub-location-{id}"
+          }
+        ],
+        "confirmButton": {
+          "icon": "Check",
+          "size": "38×42px",
+          "borderRadius": "8px",
+          "border": "1px solid rgba(0,0,0,0.10)",
+          "onClick": "closes the location picker row"
+        }
+      },
+
+      "expandedBody": {
+        "rowA": {
+          "_description": "Three-column grid of the three main fields.",
+          "layout": "grid grid-cols-3 gap-4 p-5 pb-0",
+          "columns": [
+            {
+              "field": "damageType",
+              "label": "Damage Type",
+              "labelSuffix": "* (required)",
+              "component": "FormSelect",
+              "options": "enumerations.damageTypes.values[].value",
+              "placeholder": "Select type",
+              "hasTooltip": true,
+              "tooltipItems": "enumerations.damageTypes.values (term + description)",
+              "aiRestoreChip": "shown when entry.aiOriginal.damageType exists and differs from current value",
+              "testId": "select-damage-type-{id}",
+              "onChange": "also clears assessment and damageAssessment when value changes to 'None'"
+            },
+            {
+              "field": "assessment",
+              "label": "Repairability",
+              "labelSuffix": "* (required, unless damageType='None')",
+              "component": "SegmentControl",
+              "options": "enumerations.repairabilityOptions.values",
+              "disabledWhen": "damageType === 'None'",
+              "disabledStyle": "opacity 0.38, pointer-events none",
+              "hasTooltip": true,
+              "tooltipItems": "enumerations.repairabilityOptions.values (term + description)",
+              "aiSuggestedIndicator": "purple border on option when entry.aiOriginal.assessment matches and user hasn't selected yet",
+              "aiDeviationLine": "shown below when user's value differs from aiOriginal.assessment",
+              "height": "44px",
+              "testId": "assessment-{option}-{id}"
+            },
+            {
+              "field": "damageAssessment",
+              "label": "Damage Assessment",
+              "labelSuffix": "* (required, unless damageType='None')",
+              "component": "SegmentControl",
+              "options": "enumerations.damageAssessmentOptions.values",
+              "disabledWhen": "damageType === 'None'",
+              "hasTooltip": true,
+              "tooltipItems": "enumerations.damageAssessmentOptions.values (term + description)",
+              "aiSuggestedIndicator": "same pattern as assessment",
+              "aiDeviationLine": "shown when user value differs from aiOriginal.damageAssessment",
+              "height": "44px",
+              "testId": "damage-assessment-{option}-{id}"
+            }
+          ]
+        },
+
+        "rowB": {
+          "_description": "Photo thumbnail on the left, comments textarea on the right.",
+          "layout": "flex items-start gap-5 p-5",
+          "photoSlot": {
+            "width": "176px",
+            "height": "132px",
+            "paddingTop": "26px",
+            "withImage": {
+              "borderRadius": "12px",
+              "border": "1px solid #bfdbfe",
+              "cursor": "zoom-in",
+              "overlay": {
+                "icon": "Maximize2",
+                "iconSize": 13,
+                "iconColor": "white",
+                "bg": "rgba(0,0,0,0.42)",
+                "size": "26×26px",
+                "borderRadius": "6px",
+                "position": "absolute top-8 right-8"
+              },
+              "onClick": "opens ImageLightbox",
+              "testId": "photo-thumb-{id}"
+            },
+            "withoutImage": {
+              "border": "1.5px dashed rgba(0,0,0,0.15)",
+              "background": "rgba(0,0,0,0.025)",
+              "icon": "Camera",
+              "iconSize": 24,
+              "iconColor": "rgba(0,0,0,0.22)",
+              "label": "No Photo",
+              "labelStyle": "12px, rgba(0,0,0,0.32)",
+              "testId": "photo-placeholder-{id}"
+            }
+          },
+          "commentsTextarea": {
+            "label": "Comments",
+            "labelIcon": "Sparkles (shown when aiOriginal.comments exists)",
+            "rows": 4,
+            "resize": "none",
+            "padding": "12px 16px",
+            "borderRadius": "10px",
+            "border": "1px solid #e5e5e5",
+            "background": "white",
+            "fontSize": "15px",
+            "minHeight": "132px",
+            "placeholder": "Add observation notes…",
+            "aiDeviationLine": "shown when entry.comments !== entry.aiOriginal.comments",
+            "testId": "textarea-comments-{id}"
+          }
+        },
+
+        "photoQualityAdvisory": {
+          "_description": "Amber warning strip shown when a photo is attached, to flag common image quality problems.",
+          "shownWhen": "entry.imageUrl is non-empty",
+          "margin": "0 20px 12px",
+          "padding": "8px 12px",
+          "borderRadius": "8px",
+          "background": "rgba(254,243,199,0.65)",
+          "border": "1px solid rgba(251,191,36,0.25)",
+          "icon": "AlertCircle",
+          "iconColor": "#b45309",
+          "label": "Image issues detected:",
+          "issueBadges": ["Blurry", "Low light", "Off-angle"],
+          "badgeStyle": {
+            "height": "18px",
+            "padding": "0 8px",
+            "borderRadius": "9999px",
+            "background": "rgba(180,83,9,0.10)",
+            "color": "#92400e",
+            "border": "1px solid rgba(180,83,9,0.18)",
+            "fontSize": "11px"
+          },
+          "suffix": "— may reduce AI accuracy",
+          "testId": "card-photo-quality-advisory-{id}"
+        }
+      }
+    },
+
+    "additionalPhotoRow": {
+      "_description": "Related damage entry nested inside a DamageCard. Has its own photo, damage type, assessment, and comments.",
+      "testId": "additional-photo-row-{photo.id}",
+      "borderTop": "1px solid rgba(0,0,0,0.06)",
+
+      "subHeader": {
+        "padding": "12px 20px",
+        "borderBottom": "1px solid rgba(0,0,0,0.06)",
+        "label": { "text": "Related Damage", "fontSize": "14px", "fontWeight": "600", "color": "#525252" },
+        "deleteButton": {
+          "label": "Delete",
+          "icon": "Trash2",
+          "iconSize": 13,
+          "height": "32px",
+          "padding": "0 12px",
+          "borderRadius": "8px",
+          "border": "1px solid rgba(239,68,68,0.20)",
+          "color": "#ef4444",
+          "hoverBg": "#fef2f2",
+          "testId": "delete-additional-{photo.id}"
+        }
+      },
+
+      "body": {
+        "layout": "flex items-start gap-24px padding-20px",
+        "photoThumbnail": {
+          "width": "200px",
+          "height": "152px",
+          "borderRadius": "12px",
+          "border": "1px solid #bfdbfe",
+          "cursor": "zoom-in",
+          "overlay": "same as damageCard photoSlot overlay",
+          "testId": "photo-thumb-additional-{photo.id}"
+        },
+        "fields": [
+          {
+            "field": "damageType",
+            "label": "Damage Type",
+            "required": true,
+            "component": "FormSelect",
+            "options": "enumerations.damageTypes.values[].value",
+            "testId": "select-additional-type-{photo.id}"
+          },
+          {
+            "field": "assessment",
+            "label": "Repairability Assessment",
+            "required": true,
+            "component": "SegmentControl",
+            "options": "enumerations.repairabilityOptions.values",
+            "height": "48px",
+            "testId": "additional-assessment-{option}-{photo.id}"
+          },
+          {
+            "field": "damageAssessment",
+            "label": "Damage Assessment",
+            "required": true,
+            "component": "SegmentControl",
+            "options": "enumerations.damageAssessmentOptions.values",
+            "height": "48px",
+            "testId": "additional-damage-assessment-{option}-{photo.id}"
+          },
+          {
+            "field": "comments",
+            "label": "Comments",
+            "required": false,
+            "component": "textarea",
+            "rows": 3,
+            "testId": "textarea-additional-comments-{photo.id}"
+          }
+        ]
+      }
+    },
+
+    "formSelect": {
+      "_description": "Reusable custom dropdown. Renders a styled trigger button; options appear in a portal-mounted dropdown.",
+      "trigger": {
+        "height": "52px",
+        "borderRadius": "10px",
+        "background": "#f8fafc",
+        "border": { "default": "1px solid #e5e5e5", "error": "1.5px solid #ef4444" },
+        "boxShadow": "0px 1px 2px 0px rgba(0,0,0,0.05)",
+        "padding": "0 16px",
+        "trailingIcon": "ChevronDown, size 17, color #a3a3a3",
+        "valueStyle": { "fontSize": "16px", "color": "#171717", "fontWeight": 500 },
+        "placeholderStyle": { "color": "#a3a3a3" }
+      },
+      "portalDropdown": {
+        "borderRadius": "12px",
+        "background": "rgba(249,249,249,0.97)",
+        "backdropFilter": "blur(30px)",
+        "border": "1px solid rgba(0,0,0,0.10)",
+        "boxShadow": "0 8px 24px rgba(0,0,0,0.12)",
+        "zIndex": 9999,
+        "position": "fixed, below trigger",
+        "option": {
+          "height": "44px",
+          "padding": "0 16px",
+          "fontSize": "15px",
+          "fontWeight": 500,
+          "borderTop": "1px solid rgba(0,0,0,0.07) (first option: none)",
+          "activeColor": "#0047bb",
+          "defaultColor": "#171717",
+          "hoverBg": "rgba(0,0,0,0.05)"
+        }
+      },
+      "aiRestoreChip": {
+        "_description": "Shown below the trigger when the current value differs from the AI's original suggestion.",
+        "shownWhen": "aiOriginal is defined, aiOriginal !== '', value !== aiOriginal",
+        "height": "22px",
+        "padding": "0 10px",
+        "borderRadius": "9999px",
+        "background": "rgba(124,58,237,0.08)",
+        "border": "1px solid rgba(124,58,237,0.22)",
+        "icon": "Sparkles",
+        "iconSize": 10,
+        "iconColor": "#7c3aed",
+        "text": "AI: {aiOriginal}",
+        "textStyle": { "fontSize": "12px", "color": "#7c3aed", "fontWeight": 600 },
+        "onClick": "restores the field to aiOriginal value"
+      }
+    },
+
+    "segmentControl": {
+      "_description": "Toggle control with 2 options. Used for Repairability and Damage Assessment. Similar to a pill-button group.",
+      "container": {
+        "display": "flex",
+        "borderRadius": "100px",
+        "background": "rgba(118,118,128,0.12)",
+        "padding": "3px",
+        "gap": "3px",
+        "height": "44px (main card) | 48px (additionalPhotoRow)"
+      },
+      "option": {
+        "flex": 1,
+        "borderRadius": "100px",
+        "fontSize": "13px (main) | 15px (additionalPhotoRow)",
+        "cursor": "pointer",
+        "transition": "all",
+        "selectedState": {
+          "background": "from enumerations (green/red for Repairability, blue/amber for Damage Assessment)",
+          "color": "white",
+          "fontWeight": 600,
+          "boxShadow": "0 1px 4px rgba(0,0,0,0.18)",
+          "leadingIcon": "Check, size 12, strokeWidth 2.5"
+        },
+        "unselectedState": {
+          "background": "transparent",
+          "color": "rgba(0,0,0,0.50)",
+          "fontWeight": 500
+        },
+        "aiSuggestedState": {
+          "_description": "When the option matches aiOriginal but the user hasn't selected yet.",
+          "border": "1px solid rgba(124,58,237,0.35)",
+          "leadingIcon": "Sparkles, size 12, color #7c3aed"
+        }
+      },
+      "deviationLine": {
+        "shownWhen": "value !== '' && aiOriginal exists && value !== aiOriginal",
+        "icon": "Sparkles",
+        "text": "AI detected: {aiOriginal}",
+        "style": { "fontSize": "12px", "color": "#7c3aed", "fontWeight": 500 },
+        "marginTop": "2px"
+      }
+    },
+
+    "fieldTooltip": {
+      "_description": "? help icon next to certain field labels. Opens a portal tooltip with term/description pairs.",
+      "trigger": {
+        "type": "button",
+        "size": "20×20px",
+        "borderRadius": "50%",
+        "icon": "HelpCircle",
+        "iconSize": 14,
+        "iconColor": "rgba(27,32,56,0.30)",
+        "testId": "help-{label.toLowerCase().replace(spaces, '-')}"
+      },
+      "tooltip": {
+        "width": "360px",
+        "background": "rgba(255,255,255,0.98)",
+        "backdropFilter": "blur(20px)",
+        "borderRadius": "14px",
+        "border": "1px solid rgba(0,0,0,0.08)",
+        "boxShadow": "0 8px 40px rgba(0,0,0,0.14)",
+        "padding": "16px 18px",
+        "zIndex": 9999,
+        "titleRow": {
+          "icon": "HelpCircle, size 13, color COBALT",
+          "label": "uppercase tracking-[0.6px], 12px, color COBALT, fontWeight 600",
+          "borderBottom": "1px solid rgba(0,0,0,0.06)"
+        },
+        "itemsGrid": {
+          "display": "grid",
+          "gridTemplateColumns": "max-content 1fr",
+          "rowGap": "8px",
+          "columnGap": "12px",
+          "termStyle": { "fontSize": "13px", "color": "#1B2038", "fontWeight": 600, "whiteSpace": "nowrap" },
+          "descStyle": { "fontSize": "13px", "color": "rgba(27,32,56,0.58)" }
+        }
+      }
+    },
+
+    "confidenceBadge": {
+      "_description": "Purple badge showing AI confidence percentage. Shown on AI-detected DamageCards.",
+      "height": "30px",
+      "padding": "0 14px",
+      "borderRadius": "9999px",
+      "background": "rgba(107,33,168,0.07)",
+      "border": "1px solid rgba(139,92,246,0.30)",
+      "icon": "Sparkles",
+      "iconSize": 14,
+      "iconColor": "#6b21a8",
+      "text": "{score}% Confidence",
+      "textStyle": { "fontSize": "14px", "color": "#6b21a8", "fontWeight": 600 }
+    },
+
+    "imageLightbox": {
+      "_description": "Full-screen image viewer rendered in a portal. Clicking the backdrop closes it.",
+      "backdrop": {
+        "background": "rgba(0,0,0,0.82)",
+        "backdropFilter": "blur(10px)",
+        "zIndex": 9999,
+        "testId": "lightbox-overlay"
+      },
+      "imageStyles": {
+        "borderRadius": "16px",
+        "maxWidth": "1100px",
+        "maxHeight": "820px",
+        "objectFit": "contain",
+        "boxShadow": "0 24px 80px rgba(0,0,0,0.50)"
+      },
+      "closeButton": {
+        "size": "36×36px",
+        "borderRadius": "50%",
+        "background": "rgba(255,255,255,0.18)",
+        "position": "absolute top-12 right-12",
+        "icon": "✕ (text)",
+        "color": "white",
+        "testId": "lightbox-close"
+      }
+    }
+  },
+
+  "bottomActionBar": {
+    "_description": "Fixed bar at the bottom of the glass form card. Contains navigation and save controls.",
+    "padding": "16px 28px",
+    "borderTop": "1px solid rgba(0,0,0,0.06)",
+    "layout": "flex items-center justify-between",
+
+    "leftGroup": {
+      "layout": "flex items-center gap 12px",
+      "buttons": [
+        {
+          "id": "back",
+          "label": "Back",
+          "icon": "ChevronLeft",
+          "iconSize": 18,
+          "height": "52px",
+          "padding": "0 20px",
+          "borderRadius": "9999px",
+          "background": "rgba(27,32,56,0.07)",
+          "border": "1px solid rgba(27,32,56,0.09)",
+          "color": "#1B2038",
+          "fontSize": "16px",
+          "fontWeight": "600",
+          "testId": "button-back",
+          "onClick": "commits pending entry, navigates to /evaluation/:id/electrical"
+        },
+        {
+          "id": "saveDraft",
+          "label": "Save Draft",
+          "icon": "Save",
+          "iconSize": 17,
+          "height": "52px",
+          "padding": "0 24px",
+          "borderRadius": "9999px",
+          "background": "#1B2038",
+          "color": "white",
+          "fontSize": "16px",
+          "fontWeight": "600",
+          "boxShadow": "0 2px 10px rgba(27,32,56,0.22)",
+          "testId": "button-save-draft",
+          "states": {
+            "idle": { "label": "Save Draft", "icon": "Save", "cursor": "pointer" },
+            "saving": { "label": "Saving…", "icon": "Loader2 (spinning)", "cursor": "default", "duration": "1500ms" },
+            "saved": {
+              "label": "Save Draft",
+              "externalIndicator": { "icon": "CheckCircle2", "text": "Draft saved", "color": "#16a34a", "fontSize": "14px" }
+            },
+            "savedAgo": {
+              "externalIndicator": { "text": "Last saved 5s ago", "color": "rgba(27,32,56,0.44)", "fontSize": "13px" }
+            }
+          }
+        }
+      ]
+    },
+
+    "nextButton": {
+      "id": "next",
+      "label": "Next: Electrical",
+      "trailingIcon": "ChevronRight",
+      "iconSize": 18,
+      "height": "52px",
+      "padding": "0 28px",
+      "borderRadius": "9999px",
+      "fontSize": "16px",
+      "fontWeight": "600",
+      "testId": "button-next-electrical",
+      "enabledState": {
+        "background": "#0047bb",
+        "boxShadow": "0 4px 16px rgba(0,71,187,0.28)",
+        "color": "white",
+        "cursor": "pointer"
+      },
+      "disabledState": {
+        "background": "#94a3b8",
+        "boxShadow": "none",
+        "color": "white",
+        "cursor": "not-allowed",
+        "opacity": 0.65
+      },
+      "disabledWhen": "hasUnconfirmedAssessments (see validationRules.nextButtonBlocked)",
+      "tooltip": "Confirm all assessments before proceeding"
+    }
+  },
+
+  "modals": {
+
+    "photoSourceModal": {
+      "_description": "Bottom sheet shown when the user needs to choose how to add a photo. Slides up from the bottom.",
+      "type": "bottom-sheet",
+      "backdrop": "rgba(0,0,0,0.48)",
+      "sheet": {
+        "maxWidth": "420px",
+        "marginBottom": "48px",
+        "borderRadius": "20px",
+        "overflow": "hidden",
+        "background": "rgba(242,242,247,0.96)",
+        "backdropFilter": "blur(40px)",
+        "boxShadow": "0 24px 60px rgba(0,0,0,0.28)"
+      },
+      "titleRow": {
+        "title": "Add a Photo",
+        "titleStyle": "17px, #1c1c1e, fontWeight 600, letterSpacing -0.43px",
+        "subtitle": "How would you like to document this damage?",
+        "subtitleStyle": "13px, #6c6c70, text-center",
+        "padding": "20px 24px 14px",
+        "borderBottom": "1px solid rgba(0,0,0,0.12)"
+      },
+      "options": {
+        "padding": "12px",
+        "gap": "8px",
+        "buttonStyle": {
+          "height": "56px",
+          "borderRadius": "14px",
+          "border": "none",
+          "background": "white",
+          "fontSize": "17px",
+          "letterSpacing": "-0.43px",
+          "fontWeight": 500
+        },
+        "items": [
+          {
+            "label": "Take Photo",
+            "icon": "Camera",
+            "color": "#0047bb",
+            "testId": "button-take-photo",
+            "action": "closes modal, opens ConditionCameraViewer"
+          },
+          {
+            "label": "Upload Photo",
+            "icon": "Upload",
+            "color": "#0047bb",
+            "testId": "button-upload-photo",
+            "action": "checks _photoLibraryGranted. If not granted → opens PhotoLibraryPermissionModal. If granted → proceeds to capture."
+          },
+          {
+            "label": "Enter Without Photo",
+            "icon": "EyeOff",
+            "color": "#0047bb",
+            "testId": "button-enter-without-photo",
+            "action": "creates a manual DamageEntry with empty imageUrl"
+          },
+          { "type": "divider", "margin": "2px 0", "background": "rgba(0,0,0,0.08)" },
+          {
+            "label": "Cancel",
+            "icon": null,
+            "color": "#3c3c43",
+            "testId": "button-photo-modal-cancel",
+            "action": "closes modal without action"
+          }
+        ]
+      }
+    },
+
+    "photoLibraryPermissionModal": {
+      "_description": "iOS-style center alert requesting permission to access the photo library.",
+      "type": "center-alert",
+      "width": "300px",
+      "borderRadius": "34px",
+      "overflow": "hidden",
+      "background": "rgba(249,249,249,0.94)",
+      "backdropFilter": "blur(40px)",
+      "boxShadow": "0 8px 40px rgba(0,0,0,0.22)",
+      "border": "0.5px solid rgba(255,255,255,0.6)",
+      "testId": "photo-library-permission-overlay",
+      "content": {
+        "iconCircle": {
+          "size": "62px",
+          "borderRadius": "50%",
+          "background": "#0091FF",
+          "icon": "Upload",
+          "iconSize": 28,
+          "iconColor": "white",
+          "boxShadow": "0 4px 16px rgba(0,145,255,0.35)"
+        },
+        "title": "\"EvalAI\" Would Like to Access Your Photos",
+        "titleStyle": "17px, #1c1c1e, fontWeight 600, letterSpacing -0.43px",
+        "body": "Photo library access is needed to upload damage documentation photos during evaluations.",
+        "bodyStyle": "13px, #3c3c43, letterSpacing -0.08px"
+      },
+      "buttons": [
+        {
+          "label": "Allow Access",
+          "background": "#0091FF",
+          "color": "white",
+          "borderRadius": "9999px",
+          "height": "52px",
+          "testId": "button-photo-library-allow",
+          "action": "grants permission, closes modal, proceeds with photo capture"
+        },
+        {
+          "label": "Don't Allow",
+          "background": "rgba(120,120,128,0.16)",
+          "color": "#1c1c1e",
+          "borderRadius": "9999px",
+          "height": "50px",
+          "testId": "button-photo-library-deny",
+          "action": "closes modal without granting permission"
+        }
+      ]
+    },
+
+    "locationSelectorModal": {
+      "_description": "Step 1 of the Document Damage flow. User picks which major section the damage is on.",
+      "type": "center-modal",
+      "width": "520px",
+      "borderRadius": "24px",
+      "overflow": "hidden",
+      "background": "rgba(242,242,247,0.97)",
+      "backdropFilter": "blur(40px)",
+      "boxShadow": "0 24px 60px rgba(0,0,0,0.30)",
+      "backdrop": "rgba(0,0,0,0.50)",
+      "title": "Where is the damage?",
+      "titleStyle": "24px, #1c1c1e, fontWeight bold, letterSpacing -0.5px",
+      "subtitle": "Select the section of the transformer",
+      "subtitleStyle": "16px, #3c3c43",
+      "locationGrid": {
+        "columns": 3,
+        "gap": "14px",
+        "padding": "0 20px 18px",
+        "card": {
+          "padding": "28px 16px",
+          "borderRadius": "18px",
+          "background": "white",
+          "border": "1.5px solid rgba(0,0,0,0.10)",
+          "boxShadow": "0 2px 12px rgba(0,0,0,0.08)",
+          "cursor": "pointer",
+          "hoverScale": 1.02,
+          "activeScale": 0.98,
+          "iconBlock": {
+            "size": "84×84px",
+            "borderRadius": "16px",
+            "background": "sectionInfo.iconBg",
+            "icon": "sectionInfo.icon",
+            "iconSize": 38,
+            "iconColor": "sectionInfo.iconColor"
+          },
+          "label": { "fontSize": "18px", "color": "#1c1c1e", "fontWeight": 600 },
+          "testId": "location-card-{section.toLowerCase()}"
+        }
+      },
+      "cancelButton": {
+        "label": "Cancel",
+        "height": "56px",
+        "borderRadius": "16px",
+        "background": "rgba(120,120,128,0.12)",
+        "color": "#3c3c43",
+        "fontSize": "17px",
+        "testId": "button-location-modal-cancel"
+      }
+    },
+
+    "sublocationSelectorModal": {
+      "_description": "Step 2 of the Document Damage flow. User picks the specific sub-location within the chosen section.",
+      "type": "center-modal",
+      "width": "580px",
+      "borderRadius": "24px",
+      "background": "rgba(242,242,247,0.97)",
+      "backdropFilter": "blur(40px)",
+      "boxShadow": "0 24px 60px rgba(0,0,0,0.30)",
+      "titleArea": {
+        "sectionBreadcrumb": "sectionInfo.icon + section name, coloured with sectionInfo.iconColor",
+        "title": "Select Sub-location",
+        "titleStyle": "24px, #1c1c1e, fontWeight bold",
+        "subtitle": "Where exactly is the damage located?",
+        "subtitleStyle": "16px, #3c3c43"
+      },
+      "sublocationGrid": {
+        "columns": "Math.min(subLocs.length, 4)",
+        "gap": "12px",
+        "padding": "0 20px 18px",
+        "card": {
+          "padding": "20px 8px",
+          "borderRadius": "16px",
+          "background": "white",
+          "border": "1.5px solid rgba(0,0,0,0.10)",
+          "boxShadow": "0 2px 12px rgba(0,0,0,0.08)",
+          "cursor": "pointer",
+          "iconBlock": {
+            "size": "56×56px",
+            "borderRadius": "12px",
+            "background": "sectionInfo.iconBg",
+            "icon": "subLoc.icon (may be flipped scaleX(-1) when flip:true)",
+            "iconSize": 26,
+            "iconColor": "sectionInfo.iconColor"
+          },
+          "label": {
+            "fontSize": "14px",
+            "color": "#1c1c1e",
+            "fontWeight": 600,
+            "textAlign": "center",
+            "lineHeight": 1.35,
+            "wordWrap": "2-word labels split onto 2 lines, 3-word labels: first 2 words + line break + last word"
+          },
+          "testId": "sublocation-card-{label.toLowerCase().replace(spaces, '-')}"
+        }
+      },
+      "actionRow": {
+        "layout": "flex gap-12px padding 0 20px 24px",
+        "backButton": {
+          "label": "Back",
+          "icon": "ChevronLeft",
+          "height": "56px",
+          "flex": 1,
+          "borderRadius": "16px",
+          "background": "rgba(120,120,128,0.12)",
+          "color": "#3c3c43",
+          "testId": "button-sublocation-back"
+        },
+        "cancelButton": {
+          "label": "Cancel",
+          "height": "56px",
+          "flex": 1,
+          "borderRadius": "16px",
+          "background": "rgba(120,120,128,0.08)",
+          "color": "#3c3c43",
+          "testId": "button-sublocation-cancel"
+        }
+      }
+    },
+
+    "relatedDamageSheet": {
+      "_description": "Bottom sheet offering to document additional damage at the same location, optionally reusing the same photo.",
+      "type": "bottom-sheet",
+      "maxWidth": "480px",
+      "borderRadius": "24px",
+      "background": "rgba(242,242,247,0.97)",
+      "backdropFilter": "blur(40px)",
+      "titleRow": {
+        "title": "Add Additional {subLocationLabel} Damage",
+        "subtitle": "This will be added as a separate finding.",
+        "borderBottom": "1px solid rgba(0,0,0,0.12)"
+      },
+      "options": [
+        {
+          "id": "useSamePhoto",
+          "type": "rich-option",
+          "thumbnail": { "size": "52×44px", "borderRadius": "8px", "src": "parentImageUrl" },
+          "label": "Use This Photo",
+          "sublabel": "Reuse the same image as this finding",
+          "testId": "button-related-use-same-photo"
+        },
+        { "type": "divider" },
+        {
+          "id": "newPhoto",
+          "label": "Take / Upload New Photo",
+          "icon": "Camera",
+          "testId": "button-related-new-photo"
+        },
+        {
+          "id": "cancel",
+          "label": "Cancel",
+          "color": "#3c3c43",
+          "testId": "button-related-damage-cancel"
+        }
+      ]
+    },
+
+    "aiAnalyzingOverlay": {
+      "_description": "Full-area translucent overlay with a center card shown while AI processes the captured photo (~1.8s).",
+      "overlay": {
+        "background": "rgba(27,32,56,0.38)",
+        "position": "absolute, covers content area",
+        "zIndex": 200,
+        "display": "flex items-center justify-center"
+      },
+      "card": {
+        "background": "rgba(255,255,255,0.94)",
+        "backdropFilter": "blur(32px)",
+        "borderRadius": "28px",
+        "border": "1px solid rgba(255,255,255,0.90)",
+        "boxShadow": "0 24px 80px rgba(0,0,0,0.18), 0 4px 16px rgba(0,71,187,0.12)",
+        "padding": "52px 64px 44px",
+        "minWidth": "360px",
+        "layout": "flex-column, items-center, gap 24px"
+      },
+      "closeButton": {
+        "size": "36×36px",
+        "position": "absolute top-14 right-14",
+        "borderRadius": "50%",
+        "background": "rgba(255,255,255,0.65)",
+        "icon": "X",
+        "testId": "button-cancel-scan",
+        "action": "cancels the scan, resets scanState to 'idle'"
+      },
+      "spinner": {
+        "type": "iOS-style 8-spoke tick spinner",
+        "size": "36×36px",
+        "implementation": "SVG with 8 rect elements rotated 45° each, opacity decreasing for trailing spokes",
+        "animation": "ios-spin 0.8s steps(8, end) infinite"
+      },
+      "title": "AI is analysing the image.",
+      "titleStyle": "20px, #1B2038, fontWeight 600",
+      "subtitle": "Please hold on.",
+      "subtitleStyle": "15px, rgba(27,32,56,0.56)"
+    },
+
+    "unsavedChangesAlert": {
+      "_description": "Shown when the user taps the sidebar back button and there are unsaved changes.",
+      "type": "center-alert",
+      "width": "320px",
+      "borderRadius": "34px",
+      "background": "rgba(249,249,249,0.92)",
+      "backdropFilter": "blur(40px)",
+      "boxShadow": "0 8px 40px rgba(0,0,0,0.22)",
+      "border": "0.5px solid rgba(255,255,255,0.6)",
+      "title": "Unsaved Changes",
+      "titleStyle": "17px, #1c1c1e, fontWeight 600, letterSpacing -0.43px",
+      "body": "Would you like to save your progress as a draft before leaving?",
+      "bodyStyle": "15px, #3c3c43, letterSpacing -0.24px",
+      "buttons": [
+        {
+          "label": "Save as Draft",
+          "background": "#0091FF",
+          "color": "white",
+          "borderRadius": "9999px",
+          "height": "52px",
+          "testId": "button-alert-save-draft",
+          "action": "saves draft and navigates to /evaluation-queue"
+        },
+        {
+          "label": "Discard & Exit",
+          "background": "rgba(120,120,128,0.16)",
+          "color": "#1c1c1e",
+          "borderRadius": "9999px",
+          "height": "50px",
+          "testId": "button-alert-discard",
+          "action": "discards changes and navigates to /evaluation-queue"
+        },
+        {
+          "label": "Cancel",
+          "background": "rgba(120,120,128,0.10)",
+          "color": "#3c3c43",
+          "borderRadius": "9999px",
+          "height": "50px",
+          "fontSize": "15px",
+          "testId": "button-alert-cancel",
+          "action": "closes alert, stays on the Condition page"
+        }
+      ]
+    },
+
+    "baseDamageAlert": {
+      "_description": "Warning shown when the transformer is flagged for base damage but no Tank findings have been documented. Fires on Next click.",
+      "shownWhen": "row.flagged === true AND no DamageEntry has sectionLocation === 'Tank'",
+      "type": "center-alert",
+      "width": "340px",
+      "borderRadius": "34px",
+      "background": "rgba(249,249,249,0.92)",
+      "backdropFilter": "blur(40px)",
+      "iconCircle": {
+        "size": "52×52px",
+        "borderRadius": "50%",
+        "background": "#fef3c7",
+        "icon": "Flag",
+        "iconSize": 22,
+        "iconColor": "#d97706"
+      },
+      "title": "Base Damage Not Documented",
+      "titleStyle": "17px, #1c1c1e, fontWeight 600",
+      "body": "We noticed this transformer is flagged with Base Damage, and no Tank damage has been documented. Would you still like to proceed?",
+      "bodyStyle": "15px, #3c3c43",
+      "buttons": [
+        {
+          "label": "Proceed Anyway",
+          "background": "#d97706",
+          "color": "white",
+          "borderRadius": "9999px",
+          "height": "52px",
+          "testId": "button-base-damage-alert-proceed",
+          "action": "proceeds to next page despite missing Tank documentation"
+        },
+        {
+          "label": "Go Back & Document",
+          "background": "rgba(120,120,128,0.16)",
+          "color": "#1c1c1e",
+          "borderRadius": "9999px",
+          "height": "50px",
+          "testId": "button-base-damage-alert-go-back",
+          "action": "closes alert, keeps user on Condition page"
+        }
+      ]
+    }
+  },
+
+  "validationRules": {
+    "damageCardMissingMandatory": {
+      "_description": "A DamageCard is considered incomplete ('Details pending') if it is missing required fields.",
+      "condition": "!entry.damageType || (entry.damageType !== 'None' && (!entry.assessment || !entry.damageAssessment))",
+      "uiEffect": "collapsed view shows 'Details pending' chip with AlertCircle icon in red",
+      "doesNotBlockNavigation": true,
+      "_note": "This is a card-level indicator only. Navigation is blocked by nextButtonBlocked."
+    },
+
+    "nextButtonBlocked": {
+      "_description": "The 'Next: Electrical' button is disabled when any entry has unfilled mandatory fields.",
+      "condition": "allEntries.some(e => e.assessment === '' || e.damageAssessment === '')",
+      "where": "allEntries = [...confirmedEntries, ...(pendingEntry ? [pendingEntry] : [])]",
+      "uiEffect": {
+        "button": "background #94a3b8, opacity 0.65, cursor not-allowed",
+        "tooltip": "Confirm all assessments before proceeding"
+      }
+    },
+
+    "baseDamageGate": {
+      "_description": "For flagged transformers, clicking Next when no Tank findings exist shows a warning alert.",
+      "condition": "row.flagged === true AND !allEntries.some(e => e.sectionLocation === 'Tank')",
+      "action": "shows BaseDamageAlert modal instead of navigating",
+      "userCanOverride": true
+    },
+
+    "noneTypeDisablesFields": {
+      "_description": "Selecting 'None' as damage type automatically disables and clears the Repairability and Damage Assessment fields.",
+      "condition": "entry.damageType === 'None'",
+      "uiEffect": "opacity: 0.38, pointer-events: none on Repairability and Damage Assessment columns",
+      "sideEffect": "sets assessment = '' and damageAssessment = '' on the entry when 'None' is selected"
+    }
+  },
+
+  "workflows": {
+    "_description": "All user-initiated flows as ordered step sequences.",
+
+    "documentDamageFlow": {
+      "_description": "Primary flow to document a new damage finding from the main CTA.",
+      "trigger": "User taps the 'Document Damage' CTA button",
+      "steps": [
+        { "step": 1, "action": "LocationSelectorModal opens — user picks a section (Tank / Cabinet / Radiator)" },
+        { "step": 2, "action": "SublocationSelectorModal opens — user picks a sublocation for the chosen section" },
+        { "step": 3, "action": "PhotoSourceModal opens — user picks Take Photo, Upload Photo, or Enter Without Photo" },
+        { "step": "3a", "branch": "Take Photo", "action": "ConditionCameraViewer opens (simulated camera with poor-light → focusing → ready → shutter → processing phases)" },
+        { "step": "3b", "branch": "Upload Photo", "action": "Checks _photoLibraryGranted flag. If false → PhotoLibraryPermissionModal. After Allow → proceeds to capture. If already granted → proceeds directly." },
+        { "step": "3c", "branch": "Enter Without Photo", "action": "Creates a manual DamageEntry with imageUrl='' and isPending=true. Skips AI analysis." },
+        { "step": 4, "action": "For Take/Upload paths: AI Analyzing overlay shown for ~1.8s while demo scenario data is applied to the new DamageEntry" },
+        { "step": 5, "action": "New DamageCard appears in the correct section with isPending=true styling (green border, AI detection banner)" },
+        { "step": 6, "action": "User fills in Damage Type, Repairability, Damage Assessment, and optional Comments" },
+        { "step": 7, "action": "When all mandatory fields are completed, the entry is considered valid and 'Next: Electrical' becomes enabled" }
+      ]
+    },
+
+    "contextualDocumentFlow": {
+      "_description": "Faster path to document damage initiated from within a section card, optionally skipping one or both modals.",
+      "variants": [
+        {
+          "trigger": "User taps contextual button with no active sublocation tab",
+          "action": "Skips LocationSelectorModal (section already known), opens SublocationSelectorModal"
+        },
+        {
+          "trigger": "User taps contextual button with an active sublocation tab",
+          "action": "Skips both modals (section + sublocation known), opens PhotoSourceModal directly"
+        }
+      ]
+    },
+
+    "retakeFlow": {
+      "_description": "Replaces a pending entry's photo.",
+      "trigger": "User taps 'Retake' on a pending DamageCard",
+      "steps": [
+        { "step": 1, "action": "Current pending entry is discarded (currentEntry set to null)" },
+        { "step": 2, "action": "PhotoSourceModal opens with the same section and sublocation pre-filled" },
+        { "step": 3, "action": "New capture replaces the discarded entry" }
+      ]
+    },
+
+    "relatedDamageFlow": {
+      "_description": "Adds a second (related) finding at the same location as an existing entry.",
+      "trigger": "User opens RelatedDamageSheet from within a DamageCard",
+      "steps": [
+        { "step": 1, "action": "RelatedDamageSheet opens, showing the parent entry's photo and sublocation" },
+        { "step": "2a", "branch": "Use This Photo", "action": "New DamageEntry created with the parent's imageUrl, same section/sublocation" },
+        { "step": "2b", "branch": "Take / Upload New Photo", "action": "PhotoSourceModal opens for a fresh photo" }
+      ]
+    },
+
+    "changeLocationFlow": {
+      "_description": "Inline location editor accessible from the Actions menu on any DamageCard.",
+      "trigger": "User opens Actions menu → Change Location",
+      "steps": [
+        { "step": 1, "action": "Location picker row expands inline within the card body" },
+        { "step": 2, "action": "User picks a new Location (section) via FormSelect" },
+        { "step": 3, "action": "Sublocation options update to match the new section. User picks a new sublocation." },
+        { "step": 4, "action": "User taps the Confirm (✓) button to close the picker" }
+      ],
+      "sideEffect": "entry.location is derived: subLocation ? `${sectionLocation} — ${subLocation}` : sectionLocation"
+    },
+
+    "saveDraftFlow": {
+      "_description": "Saves the current state of all entries as a draft.",
+      "trigger": "User taps 'Save Draft'",
+      "steps": [
+        { "step": 1, "state": "saving", "duration": "1500ms", "indicator": "Loader2 spinner in button" },
+        { "step": 2, "state": "saved", "indicator": "'Draft saved' text with CheckCircle2 icon in green" },
+        { "step": 3, "state": "savedAgo", "duration": "after 2500ms total", "indicator": "'Last saved 5s ago' in muted grey" }
+      ]
+    },
+
+    "backNavigationFlow": {
+      "_description": "Two different back paths with different behaviours.",
+      "bottomBackButton": {
+        "trigger": "User taps the 'Back' button in the bottom action bar",
+        "action": "Commits any pending entry to the entries list, then navigates to /evaluation/:id/electrical"
+      },
+      "sidebarBackButton": {
+        "trigger": "User taps the back arrow in the sidebar nav",
+        "condition": {
+          "hasChanges": "shows UnsavedChangesAlert",
+          "noChanges": "navigates directly to /evaluation-queue"
+        }
+      }
+    }
+  },
+
+  "designTokens": {
+    "_description": "Core visual values. Adapt these to your portal's design system variables.",
+
+    "colors": {
+      "navy": "#1B2038",
+      "cobalt": "#0047bb",
+      "focus": "#0091FF",
+      "darkBg": "#0E1220",
+      "pageBackground": "linear-gradient(150deg, #e4ecf7 0%, #eef1f8 50%, #f3f5fa 100%)",
+
+      "status": {
+        "amber": "#d97706",
+        "amberBorder": "#f59e0b",
+        "amberSurface": "#fef3c7",
+        "amberText": "#92400e",
+        "red": "#ef4444",
+        "redSurface": "#fee2e2",
+        "redText": "#991b1b",
+        "green": "#16a34a",
+        "greenSurface": "#d1fae5",
+        "greenText": "#059669",
+        "purple": "#7c3aed",
+        "purpleSurface": "rgba(107,33,168,0.07)",
+        "purpleBorder": "rgba(139,92,246,0.30)",
+        "purpleText": "#6b21a8"
+      }
+    },
+
+    "typography": {
+      "fontFamily": "'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif",
+      "_webPortalNote": "SF Pro is an Apple system font. Use Inter or a similar geometric sans-serif in web contexts.",
+      "weights": {
+        "regular": 400,
+        "medium": 500,
+        "semibold": 600,
+        "bold": 700
+      },
+      "fieldLabel": {
+        "fontSize": "13px",
+        "fontWeight": 600,
+        "textTransform": "uppercase",
+        "letterSpacing": "0.8px",
+        "color": "#94a3b8"
+      },
+      "fieldValue": {
+        "fontSize": "16px",
+        "fontWeight": 500,
+        "color": "#171717"
+      },
+      "sectionTitle": {
+        "fontSize": "18px",
+        "fontWeight": 600,
+        "color": "#1B2038"
+      },
+      "pageTitle": {
+        "fontSize": "32px",
+        "fontWeight": 700,
+        "color": "#1B2038"
+      }
+    },
+
+    "borderRadius": {
+      "pill": "9999px",
+      "modal": "34px",
+      "card": "20px",
+      "sectionCard": "18px",
+      "damageCard": "14px",
+      "input": "10px",
+      "button": "8px",
+      "badge": "9999px"
+    },
+
+    "shadows": {
+      "modal": "0 8px 40px rgba(0,0,0,0.22)",
+      "card": "0 8px 40px rgba(0,0,0,0.14)",
+      "dropdown": "0 8px 24px rgba(0,0,0,0.12)",
+      "button": "0 2px 6px rgba(0,0,0,0.22)",
+      "focusRing": "0 0 0 3px rgba(0,145,255,0.13)"
+    },
+
+    "glassEffect": {
+      "_description": "Frosted glass card pattern used for the main form card and the document-damage CTA.",
+      "background": "rgba(255,255,255,0.80)",
+      "backdropFilter": "blur(20px)",
+      "WebkitBackdropFilter": "blur(20px)",
+      "border": "1px solid rgba(255,255,255,0.70)",
+      "boxShadow": "0 4px 32px rgba(27,32,56,0.08), 0 1px 0 rgba(255,255,255,0.6) inset"
+    },
+
+    "segmentControl": {
+      "container": {
+        "borderRadius": "100px",
+        "background": "rgba(118,118,128,0.12)",
+        "padding": "3px",
+        "gap": "3px",
+        "height": "44px"
+      },
+      "option": { "borderRadius": "100px" }
+    },
+
+    "formSelect": {
+      "height": "52px",
+      "borderRadius": "10px",
+      "background": "#f8fafc",
+      "border": "1px solid #e5e5e5",
+      "errorBorder": "1.5px solid #ef4444"
+    },
+
+    "zIndex": {
+      "_source": "client/src/lib/tokens.ts — zIndex constant",
+      "portal": 9999,
+      "modal": 10000,
+      "fullscreen": 10001,
+      "_note": "In EvalAI source, portal covers tooltips/dropdowns (9999), modal covers full-screen dialogs (10000), fullscreen covers camera/full-bleed overlays (10001). The aiAnalyzingOverlay uses zIndex 200 relative to its container, not a portal — it is not absolutely global."
+    },
+
+    "sectionColors": {
+      "_note": "Full section colour tokens are in enumerations.sectionLocations[].theme",
+      "Tank": { "iconBg": "#fef9c3", "iconColor": "#b45309" },
+      "Cabinet": { "iconBg": "#f3e8ff", "iconColor": "#7c3aed" },
+      "Radiator": { "iconBg": "#dbeafe", "iconColor": "#1d4ed8" }
+    }
+  }
+}
