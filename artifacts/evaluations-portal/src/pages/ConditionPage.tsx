@@ -11,17 +11,15 @@ import {
   Upload, EyeOff, X, Maximize2, Plus, Package2, Box, Layers, Database, ArrowUp, ArrowDown,
   ChevronsUp, ChevronsDown, Minus, DoorOpen, HelpCircle,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 /* ─── Types ─────────────────────────────────────────────────────────────────── */
 type SectionId = "Tank" | "Cabinet" | "Radiator";
 type DamageType = "Rust" | "Dent" | "Leak" | "Arc Damage" | "Holes" | "Tears" | "None" | "";
 type Assessment = "Repairable" | "Non-Repairable" | "";
 type DamageAssessment = "Surface" | "Structural" | "";
-// pending = not yet inspected; damaged = entries documented; clean = no damage; dismissed = card hidden
 type BaseStatus = "pending" | "damaged" | "clean" | "dismissed";
 type SaveDraftState = "idle" | "saving" | "saved" | "savedAgo";
-type ModalStep = "location" | "sublocation" | "photoSource" | "aiAnalyzing" | "baseDamageAlert" | "lightbox" | null;
+type ModalStep = "location" | "sublocation" | "photoSource" | "aiAnalyzing" | "baseDamageAlert" | null;
 
 interface AIOriginal {
   damageType: DamageType;
@@ -73,24 +71,24 @@ type SectionTheme = {
 };
 const SECTION_INFO: Record<SectionId, SectionTheme> = {
   Tank: {
-    id: "Tank", iconBg: "#fef9c3", iconColor: "#b45309",
+    id: "Tank", iconBg: "rgba(254,249,195,0.80)", iconColor: "#b45309",
     cardBorder: "1.5px solid rgba(180,83,9,0.22)",
-    headerGradient: "linear-gradient(105deg, rgba(254,249,195,0.85) 0%, rgba(255,255,255,0.70) 100%)",
-    bodyDivider: "1px solid rgba(180,83,9,0.15)", bodyBg: "rgba(254,249,195,0.18)", shadowColor: "rgba(180,83,9,0.08)",
+    headerGradient: "linear-gradient(105deg, rgba(254,249,195,0.60) 0%, transparent 100%)",
+    bodyDivider: "1px solid rgba(180,83,9,0.15)", bodyBg: "rgba(254,249,195,0.08)", shadowColor: "rgba(180,83,9,0.08)",
     icon: <Package2 size={18} />,
   },
   Cabinet: {
-    id: "Cabinet", iconBg: "#f3e8ff", iconColor: "#7c3aed",
+    id: "Cabinet", iconBg: "rgba(243,232,255,0.80)", iconColor: "#7c3aed",
     cardBorder: "1.5px solid rgba(124,58,237,0.24)",
-    headerGradient: "linear-gradient(105deg, rgba(243,232,255,0.85) 0%, rgba(255,255,255,0.70) 100%)",
-    bodyDivider: "1px solid rgba(124,58,237,0.15)", bodyBg: "rgba(243,232,255,0.18)", shadowColor: "rgba(124,58,237,0.08)",
+    headerGradient: "linear-gradient(105deg, rgba(243,232,255,0.60) 0%, transparent 100%)",
+    bodyDivider: "1px solid rgba(124,58,237,0.15)", bodyBg: "rgba(243,232,255,0.08)", shadowColor: "rgba(124,58,237,0.08)",
     icon: <Box size={18} />,
   },
   Radiator: {
-    id: "Radiator", iconBg: "#dbeafe", iconColor: "#1d4ed8",
+    id: "Radiator", iconBg: "rgba(219,234,254,0.80)", iconColor: "#1d4ed8",
     cardBorder: "1.5px solid rgba(59,130,246,0.24)",
-    headerGradient: "linear-gradient(105deg, rgba(219,234,254,0.85) 0%, rgba(255,255,255,0.70) 100%)",
-    bodyDivider: "1px solid rgba(59,130,246,0.15)", bodyBg: "rgba(219,234,254,0.18)", shadowColor: "rgba(59,130,246,0.08)",
+    headerGradient: "linear-gradient(105deg, rgba(219,234,254,0.60) 0%, transparent 100%)",
+    bodyDivider: "1px solid rgba(59,130,246,0.15)", bodyBg: "rgba(219,234,254,0.08)", shadowColor: "rgba(59,130,246,0.08)",
     icon: <Layers size={18} />,
   },
 };
@@ -125,19 +123,17 @@ const SUB_LOCATIONS: Record<SectionId, SubLocDef[]> = {
   ],
 };
 
-/* AI mock response per section */
 const MOCK_AI: Record<SectionId, { damageType: DamageType; assessment: Assessment; damageAssessment: DamageAssessment; confidence: number; comments: string }> = {
-  Tank:    { damageType: "Dent",  assessment: "Repairable",     damageAssessment: "Surface",    confidence: 87, comments: "Minor deformation detected on panel surface. Appears to be from impact during transport." },
-  Cabinet: { damageType: "Rust",  assessment: "Repairable",     damageAssessment: "Surface",    confidence: 74, comments: "Surface corrosion visible on door frame. Does not appear to affect structural integrity." },
+  Tank:    { damageType: "Rust",  assessment: "Repairable",     damageAssessment: "Surface",    confidence: 87, comments: "Surface corrosion detected near base weld line. Appears containable — recommend grinding and repainting." },
+  Cabinet: { damageType: "Dent",  assessment: "Non-Repairable", damageAssessment: "Structural", confidence: 68, comments: "Large dent on door panel — hinge misaligned. May compromise cabinet sealing." },
   Radiator:{ damageType: "Dent",  assessment: "Non-Repairable", damageAssessment: "Structural", confidence: 62, comments: "Significant deformation across fin array. May compromise thermal performance." },
 };
 
-/* ─── Seed data — pre-populates demo state ─────────────────────────────────── */
+/* ─── Seed data ──────────────────────────────────────────────────────────────── */
 function makeSeedEntry(
   id: string, sec: SectionId, sub: string, imageUrl: string, aiDetected: boolean,
   damageType: DamageType, assessment: Assessment, damageAssessment: DamageAssessment,
-  confidence: number | undefined, comments: string,
-  aiOriginal?: AIOriginal,
+  confidence: number | undefined, comments: string, aiOriginal?: AIOriginal,
 ): DamageEntry {
   return {
     id, imageUrl, name: aiDetected ? "Damage Photo" : "Manual Entry", aiDetected, confidence,
@@ -147,20 +143,17 @@ function makeSeedEntry(
   };
 }
 
-const AI_ORIG_TANK: AIOriginal   = { damageType: "Dent",  assessment: "Repairable",     damageAssessment: "Surface",    comments: "Minor deformation detected on panel surface. Appears to be from impact during transport." };
-const AI_ORIG_CAB: AIOriginal    = { damageType: "Rust",  assessment: "Repairable",     damageAssessment: "Surface",    comments: "Surface corrosion visible on door frame. Does not appear to affect structural integrity." };
+const AI_ORIG_TANK: AIOriginal = { damageType: "Rust", assessment: "Repairable", damageAssessment: "Surface", comments: "Surface corrosion detected near base weld line. Appears containable — recommend grinding and repainting." };
 
 const SEED_ENTRIES: DamageEntry[] = [
-  makeSeedEntry("dmg-seed-1", "Tank",    "Base",      "/nameplate.png", true,  "Dent", "Repairable",  "Surface",    87, "Minor deformation detected on panel surface. Appears to be from impact during transport.", AI_ORIG_TANK),
-  makeSeedEntry("dmg-seed-2", "Cabinet", "Left Door", "",               false, "Rust", "Repairable",  "Surface",    undefined, "Visible surface rust on left door hinge. Manually documented — no photo available.", undefined),
+  // Tank / Base — AI detected Rust, Repairable, Surface @ 87% (confirmed)
+  makeSeedEntry("dmg-seed-1", "Tank", "Base", "/nameplate.png", true, "Rust", "Repairable", "Surface", 87, "Surface corrosion detected near base weld line. Appears containable — recommend grinding and repainting.", AI_ORIG_TANK),
+  // Cabinet / Left Door — manual Dent, Non-Repairable, Structural (no photo, no AI)
+  makeSeedEntry("dmg-seed-2", "Cabinet", "Left Door", "", false, "Dent", "Non-Repairable", "Structural", undefined, "Large dent on left door panel — hinge is misaligned and door no longer closes flush. Structural concern.", undefined),
 ];
 
-// Pending entry for Radiator Left Side — assessment fields blank (triggers "Next" disabled state)
-const SEED_PENDING: DamageEntry = makeSeedEntry(
-  "dmg-seed-3", "Radiator", "Left Side", "", true, "Dent", "", "", 62,
-  "Significant deformation across fin array. May compromise thermal performance.",
-  { damageType: "Dent", assessment: "Non-Repairable", damageAssessment: "Structural", comments: "Significant deformation across fin array. May compromise thermal performance." },
-);
+// Radiator / Left Side — fully blank (triggers Next: disabled)
+const SEED_PENDING: DamageEntry = makeSeedEntry("dmg-seed-3", "Radiator", "Left Side", "", false, "", "", "", undefined, "", undefined);
 
 function deriveLocation(section: string, sub: string) {
   return sub ? `${section} — ${sub}` : section;
@@ -181,7 +174,6 @@ function newEntry(section: SectionId, sub: string, imageUrl: string, aiDetected:
 }
 
 /* ─── SegmentControl ─────────────────────────────────────────────────────────── */
-// T is inferred from options — do NOT pass T explicitly to avoid empty-string key issues
 function SegmentControl<T extends string>({
   options, value, onChange, disabled, activeColors, aiOriginal, size = "sm",
 }: {
@@ -197,7 +189,7 @@ function SegmentControl<T extends string>({
   const fs = size === "md" ? 15 : 13;
   return (
     <div style={{ opacity: disabled ? 0.38 : 1, pointerEvents: disabled ? "none" : "auto" }}>
-      <div style={{ display: "flex", borderRadius: 100, background: "rgba(118,118,128,0.12)", padding: 3, gap: 3, height: h }}>
+      <div style={{ display: "flex", borderRadius: 100, background: "hsl(var(--muted))", padding: 3, gap: 3, height: h }}>
         {options.map((opt) => {
           const isSelected = value === opt;
           const isAiSuggested = !value && aiOriginal === opt;
@@ -209,7 +201,7 @@ function SegmentControl<T extends string>({
                 flex: 1, borderRadius: 100, fontSize: fs, cursor: "pointer", border: "none",
                 transition: "all 0.15s",
                 background: isSelected ? (activeColors[opt] ?? "#0047bb") : "transparent",
-                color: isSelected ? "white" : "rgba(0,0,0,0.50)",
+                color: isSelected ? "white" : "hsl(var(--muted-foreground))",
                 fontWeight: isSelected ? 600 : 500,
                 boxShadow: isSelected ? "0 1px 4px rgba(0,0,0,0.18)" : "none",
                 outline: isAiSuggested ? "1px solid rgba(124,58,237,0.35)" : "none",
@@ -239,21 +231,21 @@ function FieldTooltip({ label, items }: { label: string; items: Record<string, s
   return (
     <div style={{ position: "relative", display: "inline-flex" }}>
       <button onClick={() => setOpen((v) => !v)} style={{ width: 20, height: 20, borderRadius: "50%", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
-        <HelpCircle size={14} color="rgba(27,32,56,0.30)" />
+        <HelpCircle size={14} className="text-muted-foreground/50" />
       </button>
       {open && (
         <>
           <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={() => setOpen(false)} />
-          <div style={{ position: "absolute", left: 24, top: 0, zIndex: 9999, width: 340, background: "rgba(255,255,255,0.98)", backdropFilter: "blur(20px)", borderRadius: 14, border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 8px 40px rgba(0,0,0,0.14)", padding: "16px 18px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, paddingBottom: 8, borderBottom: "1px solid rgba(0,0,0,0.06)", marginBottom: 10 }}>
+          <div style={{ position: "absolute", left: 24, top: 0, zIndex: 9999, width: 340, background: "hsl(var(--popover))", backdropFilter: "blur(20px)", borderRadius: 14, border: "1px solid hsl(var(--border))", boxShadow: "0 8px 40px rgba(0,0,0,0.22)", padding: "16px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, paddingBottom: 8, borderBottom: "1px solid hsl(var(--border))", marginBottom: 10 }}>
               <HelpCircle size={13} color="#0047BB" />
               <span style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.6px", color: "#0047BB" }}>{label}</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "max-content 1fr", rowGap: 8, columnGap: 12 }}>
               {Object.entries(items).map(([term, desc]) => (
                 <>
-                  <span key={`t-${term}`} style={{ fontSize: 13, color: "#1B2038", fontWeight: 600, whiteSpace: "nowrap" }}>{term}</span>
-                  <span key={`d-${term}`} style={{ fontSize: 13, color: "rgba(27,32,56,0.58)" }}>{desc}</span>
+                  <span key={`t-${term}`} className="text-sm font-semibold text-foreground whitespace-nowrap">{term}</span>
+                  <span key={`d-${term}`} className="text-sm text-muted-foreground">{desc}</span>
                 </>
               ))}
             </div>
@@ -323,8 +315,8 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }:
   }
 
   return (
-    <div style={{ borderRadius: 14, overflow: "hidden", border: isPending ? "1.5px solid #86efac" : "1px solid rgba(0,0,0,0.08)", background: "white" }}>
-      {/* AI Detection Banner (pending only) */}
+    <div className="rounded-2xl overflow-hidden border" style={{ borderColor: isPending ? "#86efac" : "hsl(var(--border))", borderWidth: isPending ? 1.5 : 1, background: "hsl(var(--card))" }}>
+      {/* AI Detection Banner */}
       {isPending && (
         <div style={{ height: 44, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", background: entry.aiDetected ? "#dcfce7" : "#f0f9ff", borderBottom: entry.aiDetected ? "1px solid #86efac" : "1px solid #7dd3fc" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -340,20 +332,20 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }:
       )}
 
       {/* Card header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: collapsed ? "10px 12px" : "16px 20px", borderBottom: collapsed ? "none" : "1px solid rgba(0,0,0,0.06)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: collapsed ? "10px 12px" : "16px 20px", borderBottom: collapsed ? "none" : "1px solid hsl(var(--border))" }}>
         {collapsed && entry.imageUrl && (
-          <img src={entry.imageUrl} alt="" style={{ width: 72, height: 72, borderRadius: 10, objectFit: "cover", border: "1px solid rgba(0,0,0,0.08)", flexShrink: 0 }} />
+          <img src={entry.imageUrl} alt="" style={{ width: 72, height: 72, borderRadius: 10, objectFit: "cover", border: "1px solid hsl(var(--border))", flexShrink: 0 }} />
         )}
-        <span style={{ fontSize: 16, fontWeight: 600, color: "#1B2038", flex: 1 }} onClick={() => setCollapsed((c) => !c)}>
+        <span className="text-foreground" style={{ fontSize: 16, fontWeight: 600, flex: 1 }} onClick={() => setCollapsed((c) => !c)}>
           {smartTitle}
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           {!isPending && entry.aiDetected && entry.confidence != null && !collapsed && <ConfBadge score={entry.confidence} />}
           {!isPending && !entry.aiDetected && !collapsed && (
-            <div style={{ display: "inline-flex", alignItems: "center", height: 26, padding: "0 10px", borderRadius: 9999, background: "#f5f5f5", border: "1px solid #e5e5e5", fontSize: 12, color: "#737373", fontWeight: 500 }}>Manual Entry</div>
+            <div className="text-muted-foreground" style={{ display: "inline-flex", alignItems: "center", height: 26, padding: "0 10px", borderRadius: 9999, background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))", fontSize: 12, fontWeight: 500 }}>Manual Entry</div>
           )}
           {isPending && (
-            <button onClick={() => {}} style={{ display: "flex", alignItems: "center", gap: 5, height: 34, padding: "0 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.12)", background: "white", cursor: "pointer", fontSize: 13, color: "#525252", fontWeight: 500 }}>
+            <button className="text-muted-foreground" onClick={() => {}} style={{ display: "flex", alignItems: "center", gap: 5, height: 34, padding: "0 12px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))", cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
               {entry.imageUrl ? <RotateCcw size={13} /> : <Camera size={13} />}
               {entry.imageUrl ? "Retake" : "Add Photo"}
             </button>
@@ -361,27 +353,28 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }:
           {!isPending && (
             <div style={{ position: "relative" }}>
               <button
+                className="text-muted-foreground"
                 onClick={() => setShowActionsMenu((v) => !v)}
-                style={{ display: "flex", alignItems: "center", gap: 5, height: 34, padding: "0 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.12)", background: "white", cursor: "pointer", fontSize: 13, color: "#525252", fontWeight: 500 }}
+                style={{ display: "flex", alignItems: "center", gap: 5, height: 34, padding: "0 12px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))", cursor: "pointer", fontSize: 13, fontWeight: 500 }}
               >
                 <Settings2 size={13} /> Actions <ChevronDown size={13} />
               </button>
               {showActionsMenu && (
                 <>
                   <div style={{ position: "fixed", inset: 0, zIndex: 49 }} onClick={() => setShowActionsMenu(false)} />
-                  <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 50, background: "white", border: "1px solid rgba(0,0,0,0.10)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", minWidth: 176, overflow: "hidden" }}>
+                  <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 50, background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.18)", minWidth: 176, overflow: "hidden" }}>
                     <button
                       onClick={() => { setShowLocationPicker(true); setShowActionsMenu(false); if (collapsed) setCollapsed(false); }}
-                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 16px", border: "none", background: "white", cursor: "pointer", fontSize: 14, color: "#171717" }}
+                      className="text-foreground hover:bg-accent w-full flex items-center gap-2 h-11 px-4 text-sm border-none cursor-pointer bg-transparent"
                     >
                       <MapPin size={14} /> Change Location
                     </button>
-                    <div style={{ height: 1, background: "rgba(0,0,0,0.07)" }} />
+                    <div style={{ height: 1, background: "hsl(var(--border))" }} />
                     <button
                       onClick={() => { onDelete(); setShowActionsMenu(false); }}
-                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 16px", border: "none", background: "white", cursor: "pointer", fontSize: 14, color: "#ef4444" }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#fef2f2"; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "white"; }}
+                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 16px", border: "none", background: "transparent", cursor: "pointer", fontSize: 14, color: "#ef4444" }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(239,68,68,0.08)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
                     >
                       <Trash2 size={14} /> Delete
                     </button>
@@ -390,20 +383,24 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }:
               )}
             </div>
           )}
-          <button onClick={() => setCollapsed((c) => !c)} style={{ width: 34, height: 34, borderRadius: 8, border: "1px solid rgba(0,0,0,0.10)", background: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#737373" }}>
+          <button
+            className="text-muted-foreground"
+            onClick={() => setCollapsed((c) => !c)}
+            style={{ width: 34, height: 34, borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+          >
             {collapsed ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
           </button>
         </div>
       </div>
 
-      {/* Collapsed summary */}
+      {/* Collapsed summary chips */}
       {collapsed && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", padding: "10px 20px 14px" }}>
           {[entry.damageType, entry.location, entry.assessment, entry.damageAssessment].filter(Boolean).map((chip, i) => (
-            <span key={i} style={{ fontSize: 13, height: 26, padding: "0 12px", borderRadius: 9999, background: "#f5f5f5", border: "1px solid #e5e5e5", color: "#525252", display: "inline-flex", alignItems: "center" }}>{chip}</span>
+            <span key={i} className="text-muted-foreground" style={{ fontSize: 13, height: 26, padding: "0 12px", borderRadius: 9999, background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))", display: "inline-flex", alignItems: "center" }}>{chip}</span>
           ))}
           {entry.additionalPhotos.length > 0 && (
-            <span style={{ fontSize: 13, height: 26, padding: "0 12px", borderRadius: 9999, background: "#f5f5f5", border: "1px solid #e5e5e5", color: "#525252", display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <span className="text-muted-foreground" style={{ fontSize: 13, height: 26, padding: "0 12px", borderRadius: 9999, background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))", display: "inline-flex", alignItems: "center", gap: 4 }}>
               <Plus size={11} /> +{entry.additionalPhotos.length} more photo(s)
             </span>
           )}
@@ -420,37 +417,37 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }:
         <>
           {/* Inline location picker */}
           {showLocationPicker && (
-            <div style={{ padding: "16px 20px", background: "rgba(248,250,252,0.80)", borderBottom: "1px solid rgba(0,0,0,0.07)", display: "flex", alignItems: "flex-end", gap: 12 }}>
+            <div style={{ padding: "16px 20px", background: "hsl(var(--muted))", borderBottom: "1px solid hsl(var(--border))", display: "flex", alignItems: "flex-end", gap: 12 }}>
               <div style={{ flex: 1 }}>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Location *</label>
+                <label className="text-muted-foreground" style={{ display: "block", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Location *</label>
                 <Select value={lpSection} onValueChange={(v) => { setLpSection(v as SectionId); setLpSub(""); }}>
                   <SelectTrigger className="h-9 bg-background text-sm shadow-none"><SelectValue /></SelectTrigger>
                   <SelectContent>{(["Tank", "Cabinet", "Radiator"] as SectionId[]).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div style={{ flex: 1 }}>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Sublocation *</label>
+                <label className="text-muted-foreground" style={{ display: "block", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Sublocation *</label>
                 <Select value={lpSub} onValueChange={setLpSub}>
                   <SelectTrigger className="h-9 bg-background text-sm shadow-none"><SelectValue placeholder={lpSection ? "Select sublocation" : "Select a location first"} /></SelectTrigger>
                   <SelectContent>{(SUB_LOCATIONS[lpSection] || []).map((s) => <SelectItem key={s.label} value={s.label}>{s.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <button onClick={confirmLocationPicker} style={{ width: 38, height: 42, borderRadius: 8, border: "1px solid rgba(0,0,0,0.10)", background: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button onClick={confirmLocationPicker} style={{ width: 38, height: 42, borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Check size={16} color="#16a34a" />
               </button>
             </div>
           )}
 
-          {/* Row A: three-column fields */}
+          {/* Three-column fields */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, padding: "20px 20px 0" }}>
             {/* Damage Type */}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94a3b8" }}>Damage Type *</label>
+                <label className="text-muted-foreground" style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Damage Type *</label>
                 <FieldTooltip label="Damage Types" items={DAMAGE_TYPE_DESCS} />
               </div>
               <Select value={entry.damageType || ""} onValueChange={(v) => handleDamageTypeChange(v as DamageType)}>
-                <SelectTrigger style={{ height: 52, borderRadius: 10, background: "#f8fafc", border: "1px solid #e5e5e5", fontSize: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
+                <SelectTrigger className="h-[52px] rounded-xl bg-muted text-foreground text-base shadow-none border-border">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>{DAMAGE_TYPES.map((dt) => <SelectItem key={dt} value={dt}>{dt}</SelectItem>)}</SelectContent>
@@ -463,7 +460,7 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }:
             {/* Repairability */}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94a3b8" }}>
+                <label className="text-muted-foreground" style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>
                   Repairability{entry.damageType !== "None" ? " *" : ""}
                 </label>
                 <FieldTooltip label="Repairability" items={REPAIRABILITY_DESCS} />
@@ -481,7 +478,7 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }:
             {/* Damage Assessment */}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94a3b8" }}>
+                <label className="text-muted-foreground" style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>
                   Damage Assessment{entry.damageType !== "None" ? " *" : ""}
                 </label>
                 <FieldTooltip label="Damage Assessment" items={DAMAGE_ASSESSMENT_DESCS} />
@@ -497,27 +494,27 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }:
             </div>
           </div>
 
-          {/* Row B: photo + comments */}
+          {/* Photo + Comments */}
           <div style={{ display: "flex", alignItems: "flex-start", gap: 20, padding: 20 }}>
             <div style={{ width: 176, flexShrink: 0 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94a3b8", marginBottom: 6 }}>Photo</label>
+              <label className="text-muted-foreground" style={{ display: "block", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Photo</label>
               {entry.imageUrl ? (
-                <div style={{ width: 176, height: 132, borderRadius: 12, border: "1px solid #bfdbfe", cursor: "zoom-in", position: "relative", overflow: "hidden" }} onClick={() => onLightbox(entry.imageUrl)}>
+                <div style={{ width: 176, height: 132, borderRadius: 12, border: "1px solid hsl(var(--border))", cursor: "zoom-in", position: "relative", overflow: "hidden" }} onClick={() => onLightbox(entry.imageUrl)}>
                   <img src={entry.imageUrl} alt="damage" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   <div style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 6, background: "rgba(0,0,0,0.42)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Maximize2 size={13} color="white" />
                   </div>
                 </div>
               ) : (
-                <div style={{ width: 176, height: 132, borderRadius: 12, border: "1.5px dashed rgba(0,0,0,0.15)", background: "rgba(0,0,0,0.025)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                  <Camera size={24} color="rgba(0,0,0,0.22)" />
-                  <span style={{ fontSize: 12, color: "rgba(0,0,0,0.32)" }}>No Photo</span>
+                <div style={{ width: 176, height: 132, borderRadius: 12, border: "1.5px dashed hsl(var(--border))", background: "hsl(var(--muted)/0.4)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  <Camera size={24} className="text-muted-foreground/40" />
+                  <span className="text-muted-foreground/50" style={{ fontSize: 12 }}>No Photo</span>
                 </div>
               )}
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94a3b8" }}>Comments</label>
+                <label className="text-muted-foreground" style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Comments</label>
                 {entry.aiOriginal?.comments && <Sparkles size={12} color="#7c3aed" />}
               </div>
               <Textarea
@@ -525,8 +522,8 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }:
                 onChange={(e) => update({ comments: e.target.value })}
                 placeholder="Add observation notes…"
                 rows={4}
-                style={{ borderRadius: 10, border: "1px solid #e5e5e5", background: "white", fontSize: 15, minHeight: 132, resize: "none", padding: "12px 16px" }}
-                className="shadow-none"
+                className="rounded-xl shadow-none bg-muted text-foreground border-border resize-none"
+                style={{ fontSize: 15, minHeight: 132, padding: "12px 16px" }}
               />
               {entry.comments !== entry.aiOriginal?.comments && entry.aiOriginal?.comments && (
                 <div className="mt-1"><AiRestoreChip aiValue="original comment" onRestore={() => update({ comments: entry.aiOriginal!.comments })} /></div>
@@ -559,26 +556,27 @@ function BaseInspectionCard({ status, onClean, onDocumentDamage, onDismiss }: {
   onDismiss: () => void;
 }) {
   const cfg = {
-    pending:  { border: "#fde047", iconBg: "#fefce8", iconColor: "#ca8a04", title: "Tank Inspection (Required)", titleColor: "#171717", subtitle: "If you have access to the tank during transportation, take a photo, or upload a photo taken during available access." },
-    damaged:  { border: "#3b82f6", iconBg: "rgba(59,130,246,0.08)", iconColor: "#3b82f6", title: "Tank Inspection — Damage Documented", titleColor: "#1d4ed8", subtitle: "Tank damage has been documented below." },
-    clean:    { border: "#16a34a", iconBg: "rgba(22,163,74,0.08)", iconColor: "#16a34a", title: "Tank Inspection — No Damage", titleColor: "#15803d", subtitle: "Tank confirmed clean. No corrosion or damage found." },
-    dismissed:{ border: "#e5e7eb", iconBg: "#f9fafb", iconColor: "#9ca3af", title: "Tank Inspection — Dismissed", titleColor: "#6b7280", subtitle: "" },
+    pending:  { border: "#fde047", iconBg: "rgba(254,249,195,0.70)", iconColor: "#ca8a04", title: "Tank Inspection (Required)", titleCls: "text-foreground", subtitle: "If you have access to the tank during transportation, take a photo, or upload a photo taken during available access." },
+    damaged:  { border: "#3b82f6", iconBg: "rgba(59,130,246,0.12)", iconColor: "#3b82f6", title: "Tank Inspection — Damage Documented", titleCls: "text-blue-600 dark:text-blue-400", subtitle: "Tank damage has been documented below." },
+    clean:    { border: "#16a34a", iconBg: "rgba(22,163,74,0.12)", iconColor: "#16a34a", title: "Tank Inspection — No Damage", titleCls: "text-green-700 dark:text-green-400", subtitle: "Tank confirmed clean. No corrosion or damage found." },
+    dismissed:{ border: "hsl(var(--border))", iconBg: "hsl(var(--muted))", iconColor: "hsl(var(--muted-foreground))", title: "Tank Inspection — Dismissed", titleCls: "text-muted-foreground", subtitle: "" },
   }[status];
 
   return (
     <div
-      style={{ display: "flex", gap: 24, padding: 24, borderRadius: 14, background: "white", boxShadow: "0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)", border: `2.5px solid ${cfg.border}`, cursor: status === "damaged" ? "pointer" : "default" }}
+      className="rounded-2xl"
+      style={{ display: "flex", gap: 24, padding: 24, background: "hsl(var(--card))", boxShadow: "0 1px 3px rgba(0,0,0,0.08)", border: `2.5px solid ${cfg.border}`, cursor: status === "damaged" ? "pointer" : "default" }}
       onClick={status === "damaged" ? onDismiss : undefined}
       title={status === "damaged" ? "Tap to dismiss" : undefined}
     >
-      <div style={{ width: 88, height: 88, borderRadius: 14, background: cfg.iconBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {status === "clean"   && <Check size={36} color={cfg.iconColor} />}
-        {status === "damaged" && <Camera size={36} color={cfg.iconColor} />}
-        {(status === "pending" || status === "dismissed") && <Package2 size={36} color={cfg.iconColor} />}
+      <div style={{ width: 88, height: 88, borderRadius: 14, background: cfg.iconBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", color: cfg.iconColor }}>
+        {status === "clean"   && <Check size={36} />}
+        {status === "damaged" && <Camera size={36} />}
+        {(status === "pending" || status === "dismissed") && <Package2 size={36} />}
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 17, fontWeight: 600, color: cfg.titleColor, marginBottom: 6 }}>{cfg.title}</div>
-        {cfg.subtitle && <div style={{ fontSize: 14, color: "rgba(27,32,56,0.58)", marginBottom: status === "pending" ? 16 : 0 }}>{cfg.subtitle}</div>}
+        <div className={`text-lg font-semibold mb-1.5 ${cfg.titleCls}`}>{cfg.title}</div>
+        {cfg.subtitle && <div className="text-sm text-muted-foreground" style={{ marginBottom: status === "pending" ? 16 : 0 }}>{cfg.subtitle}</div>}
         {status === "pending" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12, width: 248 }}>
             <button onClick={onClean} style={{ height: 52, borderRadius: 9999, background: "#16a34a", color: "white", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 15, fontWeight: 600, boxShadow: "0 4px 16px rgba(22,163,74,0.28)" }}>
@@ -623,12 +621,12 @@ function SectionCard({ section, entries, pendingEntry, baseStatus, onBaseClean, 
   const isPendingHere = pendingEntry?.sectionLocation === section;
 
   return (
-    <div style={{ background: "white", borderRadius: 18, border: si.cardBorder, overflow: "hidden", boxShadow: `0 2px 16px ${si.shadowColor}, 0 1px 3px rgba(0,0,0,0.05)`, marginBottom: 16 }}>
+    <div className="rounded-2xl overflow-hidden mb-4" style={{ background: "hsl(var(--card))", border: si.cardBorder, boxShadow: `0 2px 16px ${si.shadowColor}, 0 1px 3px rgba(0,0,0,0.05)` }}>
       {/* Header */}
       <div onClick={() => setExpanded((e) => !e)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: si.headerGradient, cursor: "pointer" }}>
         <div style={{ width: 36, height: 36, borderRadius: 12, background: si.iconBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor }}>{si.icon}</div>
-        <span style={{ fontSize: 18, fontWeight: 600, color: "#1B2038" }}>{section}</span>
-        <span style={{ fontSize: 13, color: "rgba(27,32,56,0.50)" }}>
+        <span className="text-foreground" style={{ fontSize: 18, fontWeight: 600 }}>{section}</span>
+        <span className="text-muted-foreground" style={{ fontSize: 13 }}>
           {entries.length === 0 && !isPendingHere ? "no findings" : `${entries.length + (isPendingHere ? 1 : 0)} finding${entries.length + (isPendingHere ? 1 : 0) !== 1 ? "s" : ""}`}
         </span>
         <div style={{ flex: 1 }} />
@@ -646,7 +644,7 @@ function SectionCard({ section, entries, pendingEntry, baseStatus, onBaseClean, 
             </div>
           )}
 
-          {/* Tabs + contextual button */}
+          {/* Tabs + contextual document button */}
           {tabs.length > 0 && (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -654,7 +652,7 @@ function SectionCard({ section, entries, pendingEntry, baseStatus, onBaseClean, 
                   const isActive = activeTab === tab;
                   const count = tab === "All" ? null : entries.filter((e) => e.subLocation === tab).length;
                   return (
-                    <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding: "6px 14px", borderRadius: 100, fontSize: 13, cursor: "pointer", background: isActive ? si.iconColor : "white", color: isActive ? "white" : "#525252", fontWeight: isActive ? 600 : 500, border: isActive ? "none" : "1px solid rgba(0,0,0,0.10)", boxShadow: isActive ? "0 2px 8px rgba(0,0,0,0.15)" : "none" }}>
+                    <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding: "6px 14px", borderRadius: 100, fontSize: 13, cursor: "pointer", background: isActive ? si.iconColor : "hsl(var(--background))", color: isActive ? "white" : "hsl(var(--muted-foreground))", fontWeight: isActive ? 600 : 500, border: isActive ? "none" : "1px solid hsl(var(--border))", boxShadow: isActive ? "0 2px 8px rgba(0,0,0,0.15)" : "none" }}>
                       {tab}{count != null && <span style={{ marginLeft: 6, opacity: 0.7, fontSize: 12 }}>{count}</span>}
                     </button>
                   );
@@ -671,20 +669,17 @@ function SectionCard({ section, entries, pendingEntry, baseStatus, onBaseClean, 
 
           {/* Entries */}
           {filteredEntries.length === 0 && !isPendingHere ? (
-            <div style={{ padding: "12px 16px", background: "rgba(255,255,255,0.40)", borderRadius: 12, border: "1.5px dashed rgba(0,0,0,0.10)" }}>
-              <span style={{ fontSize: 15, color: "rgba(27,32,56,0.45)" }}>
-                {activeTab !== "All" ? "No findings for this sublocation" : "No findings yet for this section"}
-              </span>
+            <div className="text-muted-foreground rounded-xl" style={{ padding: "12px 16px", background: "rgba(255,255,255,0.10)", border: "1.5px dashed hsl(var(--border))", fontSize: 15 }}>
+              {activeTab !== "All" ? "No findings for this sublocation" : "No findings yet for this section"}
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {filteredEntries.map((e, i) => (
+              {filteredEntries.map((e) => (
                 <DamageCard key={e.id} entry={e} index={entries.indexOf(e)} onChange={(u) => onEntryChange(e.id, u)} onDelete={() => onEntryDelete(e.id)} onLightbox={onLightbox} />
               ))}
             </div>
           )}
 
-          {/* Pending entry */}
           {isPendingHere && (
             <div style={{ marginTop: filteredEntries.length > 0 ? 12 : 0 }}>
               <DamageCard entry={pendingEntry!} index={entries.length} isPending onChange={onPendingChange} onDelete={() => {}} onLightbox={onLightbox} />
@@ -711,7 +706,7 @@ function SectionCard({ section, entries, pendingEntry, baseStatus, onBaseClean, 
 /* ─── Modals ─────────────────────────────────────────────────────────────────── */
 function ModalOverlay({ onClose, children }: { onClose?: () => void; children: React.ReactNode }) {
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.50)" }} onClick={onClose}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.58)" }} onClick={onClose}>
       <div onClick={(e) => e.stopPropagation()}>{children}</div>
     </div>
   );
@@ -720,24 +715,24 @@ function ModalOverlay({ onClose, children }: { onClose?: () => void; children: R
 function LocationSelectorModal({ onSelect, onCancel }: { onSelect: (s: SectionId) => void; onCancel: () => void }) {
   return (
     <ModalOverlay onClose={onCancel}>
-      <div style={{ width: 520, borderRadius: 24, overflow: "hidden", background: "rgba(242,242,247,0.97)", backdropFilter: "blur(40px)", boxShadow: "0 24px 60px rgba(0,0,0,0.30)" }}>
+      <div className="rounded-3xl overflow-hidden" style={{ width: 520, background: "hsl(var(--background))", boxShadow: "0 24px 60px rgba(0,0,0,0.38)" }}>
         <div style={{ padding: "28px 20px 18px", textAlign: "center" }}>
-          <div style={{ fontSize: 24, fontWeight: 700, color: "#1c1c1e", letterSpacing: "-0.5px", marginBottom: 4 }}>Where is the damage?</div>
-          <div style={{ fontSize: 16, color: "#3c3c43" }}>Select the section of the transformer</div>
+          <div className="text-foreground" style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-0.5px", marginBottom: 4 }}>Where is the damage?</div>
+          <div className="text-muted-foreground" style={{ fontSize: 16 }}>Select the section of the transformer</div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, padding: "0 20px 18px" }}>
           {(["Tank", "Cabinet", "Radiator"] as SectionId[]).map((sec) => {
             const si = SECTION_INFO[sec];
             return (
-              <button key={sec} onClick={() => onSelect(sec)} style={{ padding: "28px 16px", borderRadius: 18, background: "white", border: "1.5px solid rgba(0,0,0,0.10)", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, transition: "transform 0.12s" }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.02)"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}>
+              <button key={sec} onClick={() => onSelect(sec)} className="rounded-2xl" style={{ padding: "28px 16px", background: "hsl(var(--card))", border: "1.5px solid hsl(var(--border))", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, transition: "transform 0.12s" }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.02)"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}>
                 <div style={{ width: 84, height: 84, borderRadius: 16, background: si.iconBg, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor }}>{SECTION_ICON_LG[sec]}</div>
-                <span style={{ fontSize: 18, color: "#1c1c1e", fontWeight: 600 }}>{sec}</span>
+                <span className="text-foreground" style={{ fontSize: 18, fontWeight: 600 }}>{sec}</span>
               </button>
             );
           })}
         </div>
         <div style={{ padding: "0 20px 24px" }}>
-          <button onClick={onCancel} style={{ width: "100%", height: 56, borderRadius: 16, background: "rgba(120,120,128,0.12)", border: "none", color: "#3c3c43", fontSize: 17, cursor: "pointer" }}>Cancel</button>
+          <button onClick={onCancel} className="text-muted-foreground" style={{ width: "100%", height: 56, borderRadius: 16, background: "hsl(var(--muted))", border: "none", fontSize: 17, cursor: "pointer" }}>Cancel</button>
         </div>
       </div>
     </ModalOverlay>
@@ -750,26 +745,26 @@ function SublocationSelectorModal({ section, onSelect, onBack, onCancel }: { sec
   const cols = Math.min(subLocs.length, 4);
   return (
     <ModalOverlay onClose={onCancel}>
-      <div style={{ width: 580, borderRadius: 24, overflow: "hidden", background: "rgba(242,242,247,0.97)", backdropFilter: "blur(40px)", boxShadow: "0 24px 60px rgba(0,0,0,0.30)" }}>
+      <div className="rounded-3xl overflow-hidden" style={{ width: 580, background: "hsl(var(--background))", boxShadow: "0 24px 60px rgba(0,0,0,0.38)" }}>
         <div style={{ padding: "28px 20px 18px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
             <div style={{ color: si.iconColor, display: "flex", alignItems: "center" }}>{si.icon}</div>
             <span style={{ fontSize: 14, fontWeight: 600, color: si.iconColor }}>{section}</span>
           </div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: "#1c1c1e", marginBottom: 4 }}>Select Sub-location</div>
-          <div style={{ fontSize: 16, color: "#3c3c43" }}>Where exactly is the damage located?</div>
+          <div className="text-foreground" style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Select Sub-location</div>
+          <div className="text-muted-foreground" style={{ fontSize: 16 }}>Where exactly is the damage located?</div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols},1fr)`, gap: 12, padding: "0 20px 18px" }}>
           {subLocs.map((sub) => (
-            <button key={sub.label} onClick={() => onSelect(sub.label)} style={{ padding: "20px 8px", borderRadius: 16, background: "white", border: "1.5px solid rgba(0,0,0,0.10)", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, transition: "transform 0.12s" }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.02)"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}>
+            <button key={sub.label} onClick={() => onSelect(sub.label)} className="rounded-2xl" style={{ padding: "20px 8px", background: "hsl(var(--card))", border: "1.5px solid hsl(var(--border))", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, transition: "transform 0.12s" }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.02)"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}>
               <div style={{ width: 56, height: 56, borderRadius: 12, background: si.iconBg, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor, transform: sub.flip ? "scaleX(-1)" : undefined }}>{sub.icon}</div>
-              <span style={{ fontSize: 14, color: "#1c1c1e", fontWeight: 600, textAlign: "center", lineHeight: 1.35 }}>{sub.label}</span>
+              <span className="text-foreground" style={{ fontSize: 14, fontWeight: 600, textAlign: "center", lineHeight: 1.35 }}>{sub.label}</span>
             </button>
           ))}
         </div>
         <div style={{ display: "flex", gap: 12, padding: "0 20px 24px" }}>
-          <button onClick={onBack} style={{ flex: 1, height: 56, borderRadius: 16, background: "rgba(120,120,128,0.12)", border: "none", color: "#3c3c43", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><ChevronLeft size={18} /> Back</button>
-          <button onClick={onCancel} style={{ flex: 1, height: 56, borderRadius: 16, background: "rgba(120,120,128,0.08)", border: "none", color: "#3c3c43", fontSize: 16, cursor: "pointer" }}>Cancel</button>
+          <button onClick={onBack} className="text-muted-foreground" style={{ flex: 1, height: 56, borderRadius: 16, background: "hsl(var(--muted))", border: "none", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><ChevronLeft size={18} /> Back</button>
+          <button onClick={onCancel} className="text-muted-foreground" style={{ flex: 1, height: 56, borderRadius: 16, background: "hsl(var(--muted))", border: "none", fontSize: 16, cursor: "pointer" }}>Cancel</button>
         </div>
       </div>
     </ModalOverlay>
@@ -778,11 +773,11 @@ function SublocationSelectorModal({ section, onSelect, onBack, onCancel }: { sec
 
 function PhotoSourceModal({ onTakePhoto, onUpload, onWithoutPhoto, onCancel }: { onTakePhoto: () => void; onUpload: () => void; onWithoutPhoto: () => void; onCancel: () => void }) {
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 10000, display: "flex", alignItems: "flex-end", justifyContent: "center", background: "rgba(0,0,0,0.48)", paddingBottom: 48 }}>
-      <div style={{ width: 420, borderRadius: 20, overflow: "hidden", background: "rgba(242,242,247,0.96)", backdropFilter: "blur(40px)", boxShadow: "0 24px 60px rgba(0,0,0,0.28)" }}>
-        <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid rgba(0,0,0,0.12)", textAlign: "center" }}>
-          <div style={{ fontSize: 17, fontWeight: 600, color: "#1c1c1e", letterSpacing: "-0.43px", marginBottom: 4 }}>Add a Photo</div>
-          <div style={{ fontSize: 13, color: "#6c6c70" }}>How would you like to document this damage?</div>
+    <div style={{ position: "fixed", inset: 0, zIndex: 10000, display: "flex", alignItems: "flex-end", justifyContent: "center", background: "rgba(0,0,0,0.50)", paddingBottom: 48 }}>
+      <div className="rounded-2xl overflow-hidden" style={{ width: 420, background: "hsl(var(--background))", boxShadow: "0 24px 60px rgba(0,0,0,0.32)" }}>
+        <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid hsl(var(--border))", textAlign: "center" }}>
+          <div className="text-foreground" style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.43px", marginBottom: 4 }}>Add a Photo</div>
+          <div className="text-muted-foreground" style={{ fontSize: 13 }}>How would you like to document this damage?</div>
         </div>
         <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
           {[
@@ -790,12 +785,12 @@ function PhotoSourceModal({ onTakePhoto, onUpload, onWithoutPhoto, onCancel }: {
             { label: "Upload Photo", icon: <Upload size={20} color="#0047bb" />, action: onUpload },
             { label: "Enter Without Photo", icon: <EyeOff size={20} color="#0047bb" />, action: onWithoutPhoto },
           ].map(({ label, icon, action }) => (
-            <button key={label} onClick={action} style={{ height: 56, borderRadius: 14, border: "none", background: "white", fontSize: 17, letterSpacing: "-0.43px", fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 14, padding: "0 20px" }}>
+            <button key={label} onClick={action} className="text-foreground" style={{ height: 56, borderRadius: 14, border: "none", background: "hsl(var(--card))", fontSize: 17, letterSpacing: "-0.43px", fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 14, padding: "0 20px" }}>
               {icon} {label}
             </button>
           ))}
-          <div style={{ height: 1, background: "rgba(0,0,0,0.08)", margin: "2px 0" }} />
-          <button onClick={onCancel} style={{ height: 56, borderRadius: 14, border: "none", background: "white", fontSize: 17, letterSpacing: "-0.43px", fontWeight: 500, color: "#3c3c43", cursor: "pointer" }}>Cancel</button>
+          <div style={{ height: 1, background: "hsl(var(--border))", margin: "2px 0" }} />
+          <button onClick={onCancel} className="text-muted-foreground" style={{ height: 56, borderRadius: 14, border: "none", background: "hsl(var(--card))", fontSize: 17, letterSpacing: "-0.43px", fontWeight: 500, cursor: "pointer" }}>Cancel</button>
         </div>
       </div>
     </div>
@@ -804,13 +799,13 @@ function PhotoSourceModal({ onTakePhoto, onUpload, onWithoutPhoto, onCancel }: {
 
 function AIAnalyzingOverlay({ onCancel }: { onCancel: () => void }) {
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 10001, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(27,32,56,0.38)" }}>
-      <div style={{ position: "relative", background: "rgba(255,255,255,0.94)", backdropFilter: "blur(32px)", borderRadius: 28, border: "1px solid rgba(255,255,255,0.90)", boxShadow: "0 24px 80px rgba(0,0,0,0.18), 0 4px 16px rgba(0,71,187,0.12)", padding: "52px 64px 44px", minWidth: 360, display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
-        <button onClick={onCancel} style={{ position: "absolute", top: 14, right: 14, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.65)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} /></button>
+    <div style={{ position: "fixed", inset: 0, zIndex: 10001, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.50)" }}>
+      <div className="rounded-3xl" style={{ position: "relative", background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", boxShadow: "0 24px 80px rgba(0,0,0,0.28)", padding: "52px 64px 44px", minWidth: 360, display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
+        <button onClick={onCancel} style={{ position: "absolute", top: 14, right: 14, width: 36, height: 36, borderRadius: "50%", background: "hsl(var(--muted))", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} className="text-muted-foreground" /></button>
         <Loader2 size={36} color="#0047BB" style={{ animation: "spin 0.8s linear infinite" }} />
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 20, fontWeight: 600, color: "#1B2038", marginBottom: 6 }}>AI is analysing the image.</div>
-          <div style={{ fontSize: 15, color: "rgba(27,32,56,0.56)" }}>Please hold on.</div>
+          <div className="text-foreground" style={{ fontSize: 20, fontWeight: 600, marginBottom: 6 }}>AI is analysing the image.</div>
+          <div className="text-muted-foreground" style={{ fontSize: 15 }}>Please hold on.</div>
         </div>
       </div>
     </div>
@@ -820,19 +815,19 @@ function AIAnalyzingOverlay({ onCancel }: { onCancel: () => void }) {
 function BaseDamageAlert({ onProceed, onGoBack }: { onProceed: () => void; onGoBack: () => void }) {
   return (
     <ModalOverlay>
-      <div style={{ width: 340, borderRadius: 34, overflow: "hidden", background: "rgba(249,249,249,0.92)", backdropFilter: "blur(40px)", boxShadow: "0 8px 40px rgba(0,0,0,0.22)", border: "0.5px solid rgba(255,255,255,0.6)", padding: "32px 28px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
-        <div style={{ width: 52, height: 52, borderRadius: "50%", background: "#fef3c7", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="rounded-3xl" style={{ width: 340, background: "hsl(var(--background))", boxShadow: "0 8px 40px rgba(0,0,0,0.28)", border: "1px solid hsl(var(--border))", padding: "32px 28px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+        <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(251,191,36,0.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Flag size={22} color="#d97706" />
         </div>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 17, fontWeight: 600, color: "#1c1c1e", letterSpacing: "-0.43px", marginBottom: 8 }}>Base Damage Not Documented</div>
-          <div style={{ fontSize: 15, color: "#3c3c43", letterSpacing: "-0.24px" }}>
+          <div className="text-foreground" style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.43px", marginBottom: 8 }}>Base Damage Not Documented</div>
+          <div className="text-muted-foreground" style={{ fontSize: 15, letterSpacing: "-0.24px" }}>
             We noticed this transformer is flagged with Base Damage, and no Tank damage has been documented. Would you still like to proceed?
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
           <button onClick={onProceed} style={{ height: 52, borderRadius: 9999, background: "#d97706", color: "white", border: "none", cursor: "pointer", fontSize: 16, fontWeight: 600 }}>Proceed Anyway</button>
-          <button onClick={onGoBack} style={{ height: 50, borderRadius: 9999, background: "rgba(120,120,128,0.16)", color: "#1c1c1e", border: "none", cursor: "pointer", fontSize: 16 }}>Go Back & Document</button>
+          <button onClick={onGoBack} className="text-foreground" style={{ height: 50, borderRadius: 9999, background: "hsl(var(--muted))", border: "none", cursor: "pointer", fontSize: 16 }}>Go Back &amp; Document</button>
         </div>
       </div>
     </ModalOverlay>
@@ -858,15 +853,11 @@ export default function ConditionPage() {
     hasBaseDamage: true, intakeTags: ["NPX: Rewind"],
   };
 
-  /* State — seeded with demo data for immediate visibility of all card states */
   const [entries, setEntries] = useState<DamageEntry[]>(SEED_ENTRIES);
   const [currentEntry, setCurrentEntry] = useState<DamageEntry | null>(SEED_PENDING);
-  /* Tank already has a seeded finding → start in "damaged" state */
   const [baseStatus, setBaseStatus] = useState<BaseStatus>("damaged");
   const [saveDraftState, setSaveDraftState] = useState<SaveDraftState>("idle");
   const [savedTimestamp, setSavedTimestamp] = useState<number | null>(null);
-
-  /* Modal flow */
   const [modalStep, setModalStep] = useState<ModalStep>(null);
   const [flowSection, setFlowSection] = useState<SectionId | null>(null);
   const [flowSublocation, setFlowSublocation] = useState<string | null>(null);
@@ -874,7 +865,7 @@ export default function ConditionPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  /* ─── Document damage flow ───────────────────────────────────────────────── */
+  /* ─── Document flow ──────────────────────────────────────────────────────── */
   function openDocumentFlow(preSection?: SectionId, preSub?: string) {
     if (preSection && preSub) {
       setFlowSection(preSection); setFlowSublocation(preSub); setModalStep("photoSource");
@@ -885,14 +876,9 @@ export default function ConditionPage() {
     }
   }
 
-  function handleLocationSelect(sec: SectionId) { setFlowSection(sec); setModalStep("sublocation"); }
-  function handleSublocationSelect(sub: string) { setFlowSublocation(sub); setModalStep("photoSource"); }
-
   function commitNewEntry(entry: DamageEntry) {
-    /* Promote existing pending to confirmed first */
     if (currentEntry) setEntries((prev) => [...prev, currentEntry]);
     setCurrentEntry(entry);
-    /* When a Tank entry is committed, advance baseStatus to "damaged" */
     if (entry.sectionLocation === "Tank" && baseStatus === "pending") setBaseStatus("damaged");
   }
 
@@ -900,8 +886,7 @@ export default function ConditionPage() {
     setModalStep("aiAnalyzing");
     setTimeout(() => {
       const sec = flowSection!;
-      const ai = MOCK_AI[sec];
-      commitNewEntry(newEntry(sec, flowSublocation ?? "", "/nameplate.png", true, ai));
+      commitNewEntry(newEntry(sec, flowSublocation ?? "", "/nameplate.png", true, MOCK_AI[sec]));
       setModalStep(null);
     }, 1800);
   }
@@ -916,9 +901,7 @@ export default function ConditionPage() {
       const url = ev.target?.result as string;
       setModalStep("aiAnalyzing");
       setTimeout(() => {
-        const sec = flowSection!;
-        const ai = MOCK_AI[sec];
-        commitNewEntry(newEntry(sec, flowSublocation ?? "", url, true, ai));
+        commitNewEntry(newEntry(flowSection!, flowSublocation ?? "", url, true, MOCK_AI[flowSection!]));
         setModalStep(null);
       }, 1800);
     };
@@ -931,7 +914,6 @@ export default function ConditionPage() {
     setModalStep(null);
   }
 
-  /* ─── Save draft ─────────────────────────────────────────────────────────── */
   function handleSaveDraft() {
     if (saveDraftState === "saving") return;
     setSaveDraftState("saving");
@@ -943,8 +925,9 @@ export default function ConditionPage() {
 
   /* ─── Validation ─────────────────────────────────────────────────────────── */
   const allEntries = [...entries, ...(currentEntry ? [currentEntry] : [])];
+  // Disabled when any entry has blank damageType OR when damageType is set (non-None) but assessment fields missing
   const hasUnconfirmedAssessments = allEntries.some(
-    (e) => e.damageType !== "None" && e.damageType !== "" && (e.assessment === "" || e.damageAssessment === "")
+    (e) => e.damageType === "" || (e.damageType !== "None" && (e.assessment === "" || e.damageAssessment === ""))
   );
   const hasTankFindings = allEntries.some((e) => e.sectionLocation === "Tank");
 
@@ -954,7 +937,6 @@ export default function ConditionPage() {
     setCurrentPage("evaluations-history");
   }
 
-  /* ─── Pill tags ──────────────────────────────────────────────────────────── */
   const TRANSFORMER_TYPE_ABBR: Record<string, string> = {
     "Three-Phase Pad": "3Ø Pad", "Single-Phase Pad": "1Ø Pad", "Pole Mount": "Pole",
   };
@@ -963,23 +945,19 @@ export default function ConditionPage() {
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
-
       <PortalHeader />
-
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-
         <main className="flex-1 overflow-hidden" style={{ background: "linear-gradient(150deg, #e4ecf7 0%, #eef1f8 50%, #f3f5fa 100%)" }}>
-          <div className="h-full flex flex-col overflow-hidden" style={{ padding: "24px 24px 0" }}>
+          <div className="dark" style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", padding: "24px 24px 0" }}>
 
             {/* Page header */}
-            <div className="flex items-start justify-between mb-5 flex-shrink-0">
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20, flexShrink: 0 }}>
               <div>
                 <h1 style={{ fontSize: 32, fontWeight: 700, color: "#1B2038", marginBottom: 4 }}>Condition</h1>
                 <p style={{ fontSize: 16, color: "rgba(27,32,56,0.44)" }}>Document and photograph any physical damage found on this unit</p>
               </div>
-              {/* Header pills */}
-              <div className="flex items-center flex-wrap gap-2 justify-end">
+              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, justifyContent: "flex-end" }}>
                 {[
                   { lbl: "MFR", val: unit.manufacturer },
                   { lbl: "IC", val: unit.icNumber },
@@ -1012,26 +990,25 @@ export default function ConditionPage() {
             </div>
 
             {/* Glass form card */}
-            <div className="flex-1 overflow-hidden flex flex-col" style={{ background: "rgba(255,255,255,0.80)", backdropFilter: "blur(20px)", borderRadius: "20px 20px 0 0", border: "1px solid rgba(255,255,255,0.70)", boxShadow: "0 4px 32px rgba(27,32,56,0.08), 0 1px 0 rgba(255,255,255,0.6) inset" }}>
+            <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", background: "hsl(var(--background)/0.88)", backdropFilter: "blur(20px)", borderRadius: "20px 20px 0 0", border: "1px solid hsl(var(--border))", boxShadow: "0 4px 32px rgba(27,32,56,0.08)" }}>
 
-              {/* Scrollable body */}
-              <div className="flex-1 overflow-y-auto" style={{ padding: "28px 28px 8px" }}>
+              <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px 8px" }}>
 
                 {/* Document Damage CTA */}
                 <div
-                  style={{ display: "flex", alignItems: "center", gap: 24, background: "rgba(255,255,255,0.72)", backdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.85)", borderRadius: 20, boxShadow: "0 8px 32px rgba(0,71,187,0.10), inset 0 1px 0 rgba(255,255,255,0.9)", padding: "20px 24px", cursor: "pointer", marginBottom: 28 }}
+                  style={{ display: "flex", alignItems: "center", gap: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 20, boxShadow: "0 8px 32px rgba(0,71,187,0.08)", padding: "20px 24px", cursor: "pointer", marginBottom: 28 }}
                   onClick={() => openDocumentFlow()}
                 >
-                  <div style={{ width: 80, height: 80, borderRadius: 18, background: "linear-gradient(145deg, rgba(59,130,246,0.18) 0%, rgba(99,160,255,0.10) 100%)", backdropFilter: "blur(12px)", border: "1px solid rgba(147,197,253,0.55)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <div style={{ width: 80, height: 80, borderRadius: 18, background: "rgba(59,130,246,0.12)", border: "1px solid rgba(147,197,253,0.40)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <Camera size={34} color="#2563eb" />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: "#1B2038", marginBottom: 4 }}>Document Damage</div>
-                    <div style={{ fontSize: 15, color: "rgba(27,32,56,0.52)" }}>Take a clear photo of the damage. AI will automatically detect the damage type and severity.</div>
+                    <div className="text-foreground" style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Document Damage</div>
+                    <div className="text-muted-foreground" style={{ fontSize: 15 }}>Take a clear photo of the damage. AI will automatically detect the damage type and severity.</div>
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); openDocumentFlow(); }}
-                    style={{ height: 48, padding: "0 20px", borderRadius: 100, background: "linear-gradient(135deg, #0047bb 0%, #0065ff 100%)", boxShadow: "0 4px 20px rgba(0,71,187,0.38), inset 0 1px 0 rgba(255,255,255,0.22)", border: "1px solid rgba(255,255,255,0.18)", color: "white", fontSize: 15, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap", flexShrink: 0 }}
+                    style={{ height: 48, padding: "0 20px", borderRadius: 100, background: "linear-gradient(135deg, #0047bb 0%, #0065ff 100%)", boxShadow: "0 4px 20px rgba(0,71,187,0.38)", border: "none", color: "white", fontSize: 15, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap", flexShrink: 0 }}
                   >
                     <Camera size={17} /> Document Damage
                   </button>
@@ -1053,7 +1030,6 @@ export default function ConditionPage() {
                     onEntryDelete={(id) => {
                       setEntries((prev) => {
                         const next = prev.filter((e) => e.id !== id);
-                        /* If no more Tank entries, revert base status to pending */
                         if (sec === "Tank" && !next.some((e) => e.sectionLocation === "Tank") && baseStatus === "damaged") setBaseStatus("pending");
                         return next;
                       });
@@ -1062,14 +1038,13 @@ export default function ConditionPage() {
                     onLightbox={setLightboxUrl}
                   />
                 ))}
-
                 <div style={{ height: 20 }} />
               </div>
 
               {/* Bottom action bar */}
-              <div style={{ padding: "16px 28px", borderTop: "1px solid rgba(0,0,0,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+              <div style={{ padding: "16px 28px", borderTop: "1px solid hsl(var(--border))", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <button onClick={() => setCurrentPage("nameplate")} style={{ height: 52, padding: "0 20px", borderRadius: 9999, background: "rgba(27,32,56,0.07)", border: "1px solid rgba(27,32,56,0.09)", color: "#1B2038", fontSize: 16, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  <button onClick={() => setCurrentPage("nameplate")} className="text-foreground" style={{ height: 52, padding: "0 20px", borderRadius: 9999, background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))", fontSize: 16, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                     <ChevronLeft size={18} /> Back
                   </button>
                   <button onClick={handleSaveDraft} disabled={saveDraftState === "saving"} style={{ height: 52, padding: "0 24px", borderRadius: 9999, background: "#1B2038", color: "white", border: "none", fontSize: 16, fontWeight: 600, cursor: saveDraftState === "saving" ? "default" : "pointer", boxShadow: "0 2px 10px rgba(27,32,56,0.22)", display: "flex", alignItems: "center", gap: 8 }}>
@@ -1082,7 +1057,7 @@ export default function ConditionPage() {
                     </div>
                   )}
                   {saveDraftState === "savedAgo" && (
-                    <div style={{ fontSize: 13, color: "rgba(27,32,56,0.44)" }}>
+                    <div className="text-muted-foreground" style={{ fontSize: 13 }}>
                       Last saved {savedTimestamp ? `${Math.round((Date.now() - savedTimestamp) / 1000)}s` : "5s"} ago
                     </div>
                   )}
@@ -1091,7 +1066,7 @@ export default function ConditionPage() {
                   onClick={handleNext}
                   disabled={hasUnconfirmedAssessments}
                   title={hasUnconfirmedAssessments ? "Confirm all assessments before proceeding" : undefined}
-                  style={{ height: 52, padding: "0 28px", borderRadius: 9999, fontSize: 16, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, border: "none", cursor: hasUnconfirmedAssessments ? "not-allowed" : "pointer", background: hasUnconfirmedAssessments ? "#94a3b8" : "#0047bb", boxShadow: hasUnconfirmedAssessments ? "none" : "0 4px 16px rgba(0,71,187,0.28)", color: "white", opacity: hasUnconfirmedAssessments ? 0.65 : 1, transition: "all 0.15s" }}
+                  style={{ height: 52, padding: "0 28px", borderRadius: 9999, fontSize: 16, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, border: "none", cursor: hasUnconfirmedAssessments ? "not-allowed" : "pointer", background: hasUnconfirmedAssessments ? "hsl(var(--muted-foreground)/0.4)" : "#0047bb", boxShadow: hasUnconfirmedAssessments ? "none" : "0 4px 16px rgba(0,71,187,0.28)", color: "white", opacity: hasUnconfirmedAssessments ? 0.65 : 1, transition: "all 0.15s" }}
                 >
                   Next: Electrical <ChevronRight size={18} />
                 </button>
@@ -1101,12 +1076,10 @@ export default function ConditionPage() {
         </main>
       </div>
 
-      {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileSelected} />
 
-      {/* Modals */}
-      {modalStep === "location" && <LocationSelectorModal onSelect={handleLocationSelect} onCancel={() => setModalStep(null)} />}
-      {modalStep === "sublocation" && flowSection && <SublocationSelectorModal section={flowSection} onSelect={handleSublocationSelect} onBack={() => setModalStep("location")} onCancel={() => setModalStep(null)} />}
+      {modalStep === "location" && <LocationSelectorModal onSelect={(sec) => { setFlowSection(sec); setModalStep("sublocation"); }} onCancel={() => setModalStep(null)} />}
+      {modalStep === "sublocation" && flowSection && <SublocationSelectorModal section={flowSection} onSelect={(sub) => { setFlowSublocation(sub); setModalStep("photoSource"); }} onBack={() => setModalStep("location")} onCancel={() => setModalStep(null)} />}
       {modalStep === "photoSource" && <PhotoSourceModal onTakePhoto={simulateTakePhoto} onUpload={handleUploadPhoto} onWithoutPhoto={handleWithoutPhoto} onCancel={() => setModalStep(null)} />}
       {modalStep === "aiAnalyzing" && <AIAnalyzingOverlay onCancel={() => setModalStep(null)} />}
       {modalStep === "baseDamageAlert" && <BaseDamageAlert onProceed={() => { setModalStep(null); setCurrentPage("evaluations-history"); }} onGoBack={() => setModalStep(null)} />}
