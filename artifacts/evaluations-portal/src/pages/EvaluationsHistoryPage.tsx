@@ -601,6 +601,7 @@ export default function EvaluationsHistoryPage() {
   const [colVisibility, setColVisibility]   = useState<ColVisibility>(DEFAULT_COL_VISIBILITY);
   const [showColPicker, setShowColPicker]   = useState(false);
   const [loadSort, setLoadSort]             = useState<"asc" | "desc" | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   const startPopulation = useCallback(() => {
     setVisibleCount(0); setStarted(false);

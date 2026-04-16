@@ -1502,6 +1502,24 @@ export default function NameplatePage() {
             </div>
             </div>{/* end scrollable right */}
           </div>{/* end stepper+content flex */}
+
+          {/* Bottom action bar */}
+          <div style={{ padding: "14px 24px", borderTop: "1px solid hsl(var(--border))", display: "flex", alignItems: "center", justifyContent: "space-between", background: "hsl(var(--background))", flexShrink: 0 }}>
+            <button
+              onClick={() => setCurrentPage("evaluations-history")}
+              style={{ height: 44, padding: "0 18px", borderRadius: 9999, background: "rgba(27,32,56,0.07)", border: "1px solid rgba(27,32,56,0.09)", color: "hsl(var(--foreground))", fontSize: 14, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              Back to Queue
+            </button>
+            <button
+              onClick={() => setCurrentPage("condition")}
+              style={{ height: 44, padding: "0 22px", borderRadius: 9999, background: "#0047bb", border: "none", color: "white", fontSize: 14, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 4px 14px rgba(0,71,187,0.28)" }}
+            >
+              Next: Condition
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
         </main>
       </div>
     </div>

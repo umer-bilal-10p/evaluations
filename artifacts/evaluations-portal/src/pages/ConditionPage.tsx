@@ -5,10 +5,12 @@ import { useDemoContext } from "@/context/DemoContext";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, Sparkle, Flag, Camera, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-  Settings2, Trash2, RotateCcw, MapPin, AlertCircle, Save, Loader2, CheckCircle2, Upload,
-  EyeOff, X, Maximize2, Plus, Package2, Box, Layers, Database, ArrowUp, ArrowDown,
-  ChevronsUp, ChevronsDown, Minus, DoorOpen, HelpCircle } from "lucide-react";
+import {
+  Sparkles, Flag, Camera, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
+  Settings2, Trash2, RotateCcw, MapPin, AlertCircle, Save, Loader2, CheckCircle2,
+  Upload, EyeOff, X, Maximize2, Plus, Package2, Box, Layers, Database, ArrowUp, ArrowDown,
+  ChevronsUp, ChevronsDown, Minus, DoorOpen, HelpCircle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /* ─── Types ─────────────────────────────────────────────────────────────────── */
@@ -16,20 +18,12 @@ type SectionId = "Tank" | "Cabinet" | "Radiator";
 type DamageType = "Rust" | "Dent" | "Leak" | "Arc Damage" | "Holes" | "Tears" | "None" | "";
 type Assessment = "Repairable" | "Non-Repairable" | "";
 type DamageAssessment = "Surface" | "Structural" | "";
-type BaseStatus = "pending" | "clean" | "dismissed";
+// pending = not yet inspected; damaged = entries documented; clean = no damage; dismissed = card hidden
+type BaseStatus = "pending" | "damaged" | "clean" | "dismissed";
 type SaveDraftState = "idle" | "saving" | "saved" | "savedAgo";
 type ModalStep = "location" | "sublocation" | "photoSource" | "aiAnalyzing" | "baseDamageAlert" | "lightbox" | null;
 
 interface AIOriginal {
-  damageType: DamageType;
-  assessment: Assessment;
-  damageAssessment: DamageAssessment;
-  comments: string;
-}
-
-interface AdditionalPhoto {
-  id: string;
-  imageUrl: string;
   damageType: DamageType;
   assessment: Assessment;
   damageAssessment: DamageAssessment;
@@ -49,7 +43,7 @@ interface DamageEntry {
   assessment: Assessment;
   damageAssessment: DamageAssessment;
   comments: string;
-  additionalPhotos: AdditionalPhoto[];
+  additionalPhotos: { id: string; imageUrl: string; damageType: DamageType; assessment: Assessment; damageAssessment: DamageAssessment; comments: string }[];
   aiOriginal?: AIOriginal;
 }
 
@@ -64,60 +58,44 @@ const DAMAGE_TYPE_DESCS: Record<string, string> = {
   Tears: "Rips or cuts in sheet metal or gaskets.",
   None: "No damage found at this location.",
 };
-
 const REPAIRABILITY_DESCS: Record<string, string> = {
   Repairable: "Damage can be fixed to restore the unit to acceptable service condition.",
-  "Non-Repairable": "Damage is too severe; the affected component or unit must be scrapped or replaced.",
+  "Non-Repairable": "Damage is too severe; the component or unit must be scrapped or replaced.",
 };
-
 const DAMAGE_ASSESSMENT_DESCS: Record<string, string> = {
-  Surface: "Damage is cosmetic — affects appearance but not structural integrity or performance.",
-  Structural: "Damage compromises the physical structure, safety, or core function of the unit.",
+  Surface: "Damage is cosmetic — affects appearance but not structural integrity.",
+  Structural: "Damage compromises the physical structure or core function of the unit.",
 };
 
-type SectionInfo = {
-  id: SectionId;
-  icon: React.ReactNode;
-  iconBg: string;
-  iconColor: string;
-  cardBorder: string;
-  headerGradient: string;
-  bodyDivider: string;
-  bodyBg: string;
-  shadowColor: string;
+type SectionTheme = {
+  id: SectionId; icon: React.ReactNode; iconBg: string; iconColor: string;
+  cardBorder: string; headerGradient: string; bodyDivider: string; bodyBg: string; shadowColor: string;
 };
-
-const SECTION_INFO: Record<SectionId, SectionInfo> = {
+const SECTION_INFO: Record<SectionId, SectionTheme> = {
   Tank: {
     id: "Tank", iconBg: "#fef9c3", iconColor: "#b45309",
     cardBorder: "1.5px solid rgba(180,83,9,0.22)",
     headerGradient: "linear-gradient(105deg, rgba(254,249,195,0.85) 0%, rgba(255,255,255,0.70) 100%)",
-    bodyDivider: "1px solid rgba(180,83,9,0.15)", bodyBg: "rgba(254,249,195,0.18)",
-    shadowColor: "rgba(180,83,9,0.08)",
+    bodyDivider: "1px solid rgba(180,83,9,0.15)", bodyBg: "rgba(254,249,195,0.18)", shadowColor: "rgba(180,83,9,0.08)",
     icon: <Package2 size={18} />,
   },
   Cabinet: {
     id: "Cabinet", iconBg: "#f3e8ff", iconColor: "#7c3aed",
     cardBorder: "1.5px solid rgba(124,58,237,0.24)",
     headerGradient: "linear-gradient(105deg, rgba(243,232,255,0.85) 0%, rgba(255,255,255,0.70) 100%)",
-    bodyDivider: "1px solid rgba(124,58,237,0.15)", bodyBg: "rgba(243,232,255,0.18)",
-    shadowColor: "rgba(124,58,237,0.08)",
+    bodyDivider: "1px solid rgba(124,58,237,0.15)", bodyBg: "rgba(243,232,255,0.18)", shadowColor: "rgba(124,58,237,0.08)",
     icon: <Box size={18} />,
   },
   Radiator: {
     id: "Radiator", iconBg: "#dbeafe", iconColor: "#1d4ed8",
     cardBorder: "1.5px solid rgba(59,130,246,0.24)",
     headerGradient: "linear-gradient(105deg, rgba(219,234,254,0.85) 0%, rgba(255,255,255,0.70) 100%)",
-    bodyDivider: "1px solid rgba(59,130,246,0.15)", bodyBg: "rgba(219,234,254,0.18)",
-    shadowColor: "rgba(59,130,246,0.08)",
+    bodyDivider: "1px solid rgba(59,130,246,0.15)", bodyBg: "rgba(219,234,254,0.18)", shadowColor: "rgba(59,130,246,0.08)",
     icon: <Layers size={18} />,
   },
 };
-
-const SECTION_ICON_LARGE: Record<SectionId, React.ReactNode> = {
-  Tank: <Package2 size={38} />,
-  Cabinet: <Box size={38} />,
-  Radiator: <Layers size={38} />,
+const SECTION_ICON_LG: Record<SectionId, React.ReactNode> = {
+  Tank: <Package2 size={38} />, Cabinet: <Box size={38} />, Radiator: <Layers size={38} />,
 };
 
 type SubLocDef = { label: string; icon: React.ReactNode; flip?: boolean };
@@ -147,24 +125,53 @@ const SUB_LOCATIONS: Record<SectionId, SubLocDef[]> = {
   ],
 };
 
+/* AI mock response per section */
 const MOCK_AI: Record<SectionId, { damageType: DamageType; assessment: Assessment; damageAssessment: DamageAssessment; confidence: number; comments: string }> = {
-  Tank: { damageType: "Dent", assessment: "Repairable", damageAssessment: "Surface", confidence: 87, comments: "Minor deformation detected on panel surface. Appears to be from impact during transport." },
-  Cabinet: { damageType: "Rust", assessment: "Repairable", damageAssessment: "Surface", confidence: 74, comments: "Surface corrosion visible on door frame. Does not appear to affect structural integrity." },
-  Radiator: { damageType: "Dent", assessment: "Non-Repairable", damageAssessment: "Structural", confidence: 62, comments: "Significant deformation across fin array. May compromise thermal performance." },
+  Tank:    { damageType: "Dent",  assessment: "Repairable",     damageAssessment: "Surface",    confidence: 87, comments: "Minor deformation detected on panel surface. Appears to be from impact during transport." },
+  Cabinet: { damageType: "Rust",  assessment: "Repairable",     damageAssessment: "Surface",    confidence: 74, comments: "Surface corrosion visible on door frame. Does not appear to affect structural integrity." },
+  Radiator:{ damageType: "Dent",  assessment: "Non-Repairable", damageAssessment: "Structural", confidence: 62, comments: "Significant deformation across fin array. May compromise thermal performance." },
 };
 
-function deriveLocation(section: string, sub: string): string {
+/* ─── Seed data — pre-populates demo state ─────────────────────────────────── */
+function makeSeedEntry(
+  id: string, sec: SectionId, sub: string, imageUrl: string, aiDetected: boolean,
+  damageType: DamageType, assessment: Assessment, damageAssessment: DamageAssessment,
+  confidence: number | undefined, comments: string,
+  aiOriginal?: AIOriginal,
+): DamageEntry {
+  return {
+    id, imageUrl, name: aiDetected ? "Damage Photo" : "Manual Entry", aiDetected, confidence,
+    damageType, sectionLocation: sec, subLocation: sub,
+    location: sub ? `${sec} — ${sub}` : sec,
+    assessment, damageAssessment, comments, additionalPhotos: [], aiOriginal,
+  };
+}
+
+const AI_ORIG_TANK: AIOriginal   = { damageType: "Dent",  assessment: "Repairable",     damageAssessment: "Surface",    comments: "Minor deformation detected on panel surface. Appears to be from impact during transport." };
+const AI_ORIG_CAB: AIOriginal    = { damageType: "Rust",  assessment: "Repairable",     damageAssessment: "Surface",    comments: "Surface corrosion visible on door frame. Does not appear to affect structural integrity." };
+
+const SEED_ENTRIES: DamageEntry[] = [
+  makeSeedEntry("dmg-seed-1", "Tank",    "Base",      "/nameplate.png", true,  "Dent", "Repairable",  "Surface",    87, "Minor deformation detected on panel surface. Appears to be from impact during transport.", AI_ORIG_TANK),
+  makeSeedEntry("dmg-seed-2", "Cabinet", "Left Door", "",               false, "Rust", "Repairable",  "Surface",    undefined, "Visible surface rust on left door hinge. Manually documented — no photo available.", undefined),
+];
+
+// Pending entry for Radiator Left Side — assessment fields blank (triggers "Next" disabled state)
+const SEED_PENDING: DamageEntry = makeSeedEntry(
+  "dmg-seed-3", "Radiator", "Left Side", "", true, "Dent", "", "", 62,
+  "Significant deformation across fin array. May compromise thermal performance.",
+  { damageType: "Dent", assessment: "Non-Repairable", damageAssessment: "Structural", comments: "Significant deformation across fin array. May compromise thermal performance." },
+);
+
+function deriveLocation(section: string, sub: string) {
   return sub ? `${section} — ${sub}` : section;
 }
 
 function newEntry(section: SectionId, sub: string, imageUrl: string, aiDetected: boolean, ai?: typeof MOCK_AI[SectionId]): DamageEntry {
-  const id = `dmg-${Date.now()}`;
   return {
-    id, imageUrl, name: imageUrl ? "Damage Photo" : "Manual Entry",
+    id: `dmg-${Date.now()}`, imageUrl, name: imageUrl ? "Damage Photo" : "Manual Entry",
     aiDetected, confidence: ai?.confidence,
     damageType: aiDetected && ai ? ai.damageType : "",
-    sectionLocation: section, subLocation: sub,
-    location: deriveLocation(section, sub),
+    sectionLocation: section, subLocation: sub, location: deriveLocation(section, sub),
     assessment: aiDetected && ai ? ai.assessment : "",
     damageAssessment: aiDetected && ai ? ai.damageAssessment : "",
     comments: aiDetected && ai ? ai.comments : "",
@@ -174,15 +181,16 @@ function newEntry(section: SectionId, sub: string, imageUrl: string, aiDetected:
 }
 
 /* ─── SegmentControl ─────────────────────────────────────────────────────────── */
+// T is inferred from options — do NOT pass T explicitly to avoid empty-string key issues
 function SegmentControl<T extends string>({
   options, value, onChange, disabled, activeColors, aiOriginal, size = "sm",
 }: {
-  options: T[];
-  value: T | "";
+  options: readonly T[];
+  value: string;
   onChange: (v: T) => void;
   disabled?: boolean;
-  activeColors: Record<T, string>;
-  aiOriginal?: T | "";
+  activeColors: Partial<Record<string, string>>;
+  aiOriginal?: string;
   size?: "sm" | "md";
 }) {
   const h = size === "md" ? 48 : 44;
@@ -200,7 +208,7 @@ function SegmentControl<T extends string>({
               style={{
                 flex: 1, borderRadius: 100, fontSize: fs, cursor: "pointer", border: "none",
                 transition: "all 0.15s",
-                background: isSelected ? activeColors[opt] : "transparent",
+                background: isSelected ? (activeColors[opt] ?? "#0047bb") : "transparent",
                 color: isSelected ? "white" : "rgba(0,0,0,0.50)",
                 fontWeight: isSelected ? 600 : 500,
                 boxShadow: isSelected ? "0 1px 4px rgba(0,0,0,0.18)" : "none",
@@ -230,21 +238,13 @@ function FieldTooltip({ label, items }: { label: string; items: Record<string, s
   const [open, setOpen] = useState(false);
   return (
     <div style={{ position: "relative", display: "inline-flex" }}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        style={{ width: 20, height: 20, borderRadius: "50%", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
-      >
+      <button onClick={() => setOpen((v) => !v)} style={{ width: 20, height: 20, borderRadius: "50%", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
         <HelpCircle size={14} color="rgba(27,32,56,0.30)" />
       </button>
       {open && (
         <>
           <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={() => setOpen(false)} />
-          <div style={{
-            position: "absolute", left: 24, top: 0, zIndex: 9999, width: 340,
-            background: "rgba(255,255,255,0.98)", backdropFilter: "blur(20px)",
-            borderRadius: 14, border: "1px solid rgba(0,0,0,0.08)",
-            boxShadow: "0 8px 40px rgba(0,0,0,0.14)", padding: "16px 18px",
-          }}>
+          <div style={{ position: "absolute", left: 24, top: 0, zIndex: 9999, width: 340, background: "rgba(255,255,255,0.98)", backdropFilter: "blur(20px)", borderRadius: 14, border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 8px 40px rgba(0,0,0,0.14)", padding: "16px 18px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, paddingBottom: 8, borderBottom: "1px solid rgba(0,0,0,0.06)", marginBottom: 10 }}>
               <HelpCircle size={13} color="#0047BB" />
               <span style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.6px", color: "#0047BB" }}>{label}</span>
@@ -264,46 +264,23 @@ function FieldTooltip({ label, items }: { label: string; items: Record<string, s
   );
 }
 
-/* ─── AI Restore Chip ────────────────────────────────────────────────────────── */
-function AiRestoreChip({ aiValue, onRestore }: { aiValue: string; onRestore: () => void }) {
-  return (
-    <button
-      onClick={onRestore}
-      style={{
-        display: "inline-flex", alignItems: "center", gap: 4, height: 22,
-        padding: "0 10px", borderRadius: 9999, background: "rgba(124,58,237,0.08)",
-        border: "1px solid rgba(124,58,237,0.22)", cursor: "pointer",
-      }}
-    >
-      <Sparkles size={10} color="#7c3aed" />
-      <span style={{ fontSize: 12, color: "#7c3aed", fontWeight: 600 }}>AI: {aiValue}</span>
-    </button>
-  );
-}
-
 /* ─── Confidence Badge ───────────────────────────────────────────────────────── */
 function ConfBadge({ score }: { score: number }) {
   return (
-    <div style={{
-      display: "inline-flex", alignItems: "center", gap: 5, height: 30, padding: "0 14px",
-      borderRadius: 9999, background: "rgba(107,33,168,0.07)", border: "1px solid rgba(139,92,246,0.30)",
-    }}>
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 30, padding: "0 14px", borderRadius: 9999, background: "rgba(107,33,168,0.07)", border: "1px solid rgba(139,92,246,0.30)" }}>
       <Sparkles size={14} color="#6b21a8" />
       <span style={{ fontSize: 14, color: "#6b21a8", fontWeight: 600 }}>{score}% Confidence</span>
     </div>
   );
 }
 
-/* ─── Manual Entry Badge ─────────────────────────────────────────────────────── */
-function ManualBadge() {
+/* ─── AI Restore Chip ────────────────────────────────────────────────────────── */
+function AiRestoreChip({ aiValue, onRestore }: { aiValue: string; onRestore: () => void }) {
   return (
-    <div style={{
-      display: "inline-flex", alignItems: "center", height: 26, padding: "0 10px",
-      borderRadius: 9999, background: "#f5f5f5", border: "1px solid #e5e5e5",
-      fontSize: 12, color: "#737373", fontWeight: 500,
-    }}>
-      Manual Entry
-    </div>
+    <button onClick={onRestore} style={{ display: "inline-flex", alignItems: "center", gap: 4, height: 22, padding: "0 10px", borderRadius: 9999, background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.22)", cursor: "pointer" }}>
+      <Sparkles size={10} color="#7c3aed" />
+      <span style={{ fontSize: 12, color: "#7c3aed", fontWeight: 600 }}>AI: {aiValue}</span>
+    </button>
   );
 }
 
@@ -314,11 +291,10 @@ interface DamageCardProps {
   isPending?: boolean;
   onChange: (updated: DamageEntry) => void;
   onDelete: () => void;
-  onAddPhoto?: () => void;
   onLightbox: (url: string) => void;
 }
 
-function DamageCard({ entry, index, isPending, onChange, onDelete, onAddPhoto, onLightbox }: DamageCardProps) {
+function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }: DamageCardProps) {
   const [collapsed, setCollapsed] = useState(!isPending);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
@@ -347,95 +323,53 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onAddPhoto, o
   }
 
   return (
-    <div style={{
-      borderRadius: 14, overflow: "hidden",
-      border: isPending ? "1.5px solid #86efac" : "1px solid rgba(0,0,0,0.08)",
-      background: "white",
-    }}>
-      {/* AI Detection Banner */}
+    <div style={{ borderRadius: 14, overflow: "hidden", border: isPending ? "1.5px solid #86efac" : "1px solid rgba(0,0,0,0.08)", background: "white" }}>
+      {/* AI Detection Banner (pending only) */}
       {isPending && (
-        <div style={{
-          height: 44, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px",
-          background: entry.aiDetected ? "#dcfce7" : "#f0f9ff",
-          borderBottom: entry.aiDetected ? "1px solid #86efac" : "1px solid #7dd3fc",
-        }}>
+        <div style={{ height: 44, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", background: entry.aiDetected ? "#dcfce7" : "#f0f9ff", borderBottom: entry.aiDetected ? "1px solid #86efac" : "1px solid #7dd3fc" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {entry.aiDetected ? <Check size={16} color="#16a34a" /> : <Camera size={16} color="#0369a1" />}
             <span style={{ fontSize: 13, color: entry.aiDetected ? "#14532d" : "#0c4a6e", fontWeight: 500 }}>
               {entry.aiDetected
-                ? `AI detected ${entry.damageType} damage — review details below.`
+                ? `AI detected ${entry.damageType || "potential"} damage — review details below.`
                 : "Photo captured — AI could not detect damage type. Fill in details manually."}
             </span>
           </div>
-          {entry.aiDetected && entry.confidence != null && (
-            <ConfBadge score={entry.confidence} />
-          )}
+          {entry.aiDetected && entry.confidence != null && <ConfBadge score={entry.confidence} />}
         </div>
       )}
 
-      {/* Header */}
-      <div
-        style={{
-          display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
-          padding: collapsed ? "10px 12px 10px 12px" : "16px 20px",
-          borderBottom: collapsed ? "none" : "1px solid rgba(0,0,0,0.06)",
-        }}
-      >
-        {/* Collapsed thumbnail */}
+      {/* Card header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: collapsed ? "10px 12px" : "16px 20px", borderBottom: collapsed ? "none" : "1px solid rgba(0,0,0,0.06)" }}>
         {collapsed && entry.imageUrl && (
-          <img
-            src={entry.imageUrl} alt="damage"
-            style={{ width: 72, height: 72, borderRadius: 10, objectFit: "cover", border: "1px solid rgba(0,0,0,0.08)", flexShrink: 0 }}
-          />
+          <img src={entry.imageUrl} alt="" style={{ width: 72, height: 72, borderRadius: 10, objectFit: "cover", border: "1px solid rgba(0,0,0,0.08)", flexShrink: 0 }} />
         )}
-
-        {/* Title */}
-        <span
-          style={{ fontSize: 16, fontWeight: 600, color: "#1B2038", flex: 1 }}
-          onClick={() => setCollapsed((c) => !c)}
-        >
+        <span style={{ fontSize: 16, fontWeight: 600, color: "#1B2038", flex: 1 }} onClick={() => setCollapsed((c) => !c)}>
           {smartTitle}
         </span>
-
-        {/* Right side */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           {!isPending && entry.aiDetected && entry.confidence != null && !collapsed && <ConfBadge score={entry.confidence} />}
-          {!isPending && !entry.aiDetected && !collapsed && <ManualBadge />}
-
+          {!isPending && !entry.aiDetected && !collapsed && (
+            <div style={{ display: "inline-flex", alignItems: "center", height: 26, padding: "0 10px", borderRadius: 9999, background: "#f5f5f5", border: "1px solid #e5e5e5", fontSize: 12, color: "#737373", fontWeight: 500 }}>Manual Entry</div>
+          )}
           {isPending && (
-            <button
-              onClick={() => onAddPhoto?.()}
-              style={{
-                display: "flex", alignItems: "center", gap: 5, height: 34, padding: "0 12px",
-                borderRadius: 8, border: "1px solid rgba(0,0,0,0.12)", background: "white",
-                cursor: "pointer", fontSize: 13, color: "#525252", fontWeight: 500,
-              }}
-            >
+            <button onClick={() => {}} style={{ display: "flex", alignItems: "center", gap: 5, height: 34, padding: "0 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.12)", background: "white", cursor: "pointer", fontSize: 13, color: "#525252", fontWeight: 500 }}>
               {entry.imageUrl ? <RotateCcw size={13} /> : <Camera size={13} />}
               {entry.imageUrl ? "Retake" : "Add Photo"}
             </button>
           )}
-
           {!isPending && (
             <div style={{ position: "relative" }}>
               <button
                 onClick={() => setShowActionsMenu((v) => !v)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 5, height: 34, padding: "0 12px",
-                  borderRadius: 8, border: "1px solid rgba(0,0,0,0.12)", background: "white",
-                  cursor: "pointer", fontSize: 13, color: "#525252", fontWeight: 500,
-                }}
+                style={{ display: "flex", alignItems: "center", gap: 5, height: 34, padding: "0 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.12)", background: "white", cursor: "pointer", fontSize: 13, color: "#525252", fontWeight: 500 }}
               >
                 <Settings2 size={13} /> Actions <ChevronDown size={13} />
               </button>
               {showActionsMenu && (
                 <>
                   <div style={{ position: "fixed", inset: 0, zIndex: 49 }} onClick={() => setShowActionsMenu(false)} />
-                  <div style={{
-                    position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 50,
-                    background: "white", border: "1px solid rgba(0,0,0,0.10)", borderRadius: 10,
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)", minWidth: 176, overflow: "hidden",
-                  }}>
+                  <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 50, background: "white", border: "1px solid rgba(0,0,0,0.10)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", minWidth: 176, overflow: "hidden" }}>
                     <button
                       onClick={() => { setShowLocationPicker(true); setShowActionsMenu(false); if (collapsed) setCollapsed(false); }}
                       style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 16px", border: "none", background: "white", cursor: "pointer", fontSize: 14, color: "#171717" }}
@@ -456,11 +390,7 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onAddPhoto, o
               )}
             </div>
           )}
-
-          <button
-            onClick={() => setCollapsed((c) => !c)}
-            style={{ width: 34, height: 34, borderRadius: 8, border: "1px solid rgba(0,0,0,0.10)", background: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#737373" }}
-          >
+          <button onClick={() => setCollapsed((c) => !c)} style={{ width: 34, height: 34, borderRadius: 8, border: "1px solid rgba(0,0,0,0.10)", background: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#737373" }}>
             {collapsed ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
           </button>
         </div>
@@ -488,31 +418,24 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onAddPhoto, o
       {/* Expanded body */}
       {!collapsed && (
         <>
-          {/* Location picker row */}
+          {/* Inline location picker */}
           {showLocationPicker && (
             <div style={{ padding: "16px 20px", background: "rgba(248,250,252,0.80)", borderBottom: "1px solid rgba(0,0,0,0.07)", display: "flex", alignItems: "flex-end", gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <label style={{ display: "block", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Location *</label>
                 <Select value={lpSection} onValueChange={(v) => { setLpSection(v as SectionId); setLpSub(""); }}>
                   <SelectTrigger className="h-9 bg-background text-sm shadow-none"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {(["Tank", "Cabinet", "Radiator"] as SectionId[]).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
+                  <SelectContent>{(["Tank", "Cabinet", "Radiator"] as SectionId[]).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div style={{ flex: 1 }}>
                 <label style={{ display: "block", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Sublocation *</label>
                 <Select value={lpSub} onValueChange={setLpSub}>
                   <SelectTrigger className="h-9 bg-background text-sm shadow-none"><SelectValue placeholder={lpSection ? "Select sublocation" : "Select a location first"} /></SelectTrigger>
-                  <SelectContent>
-                    {(SUB_LOCATIONS[lpSection] || []).map((s) => <SelectItem key={s.label} value={s.label}>{s.label}</SelectItem>)}
-                  </SelectContent>
+                  <SelectContent>{(SUB_LOCATIONS[lpSection] || []).map((s) => <SelectItem key={s.label} value={s.label}>{s.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <button
-                onClick={confirmLocationPicker}
-                style={{ width: 38, height: 42, borderRadius: 8, border: "1px solid rgba(0,0,0,0.10)", background: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-              >
+              <button onClick={confirmLocationPicker} style={{ width: 38, height: 42, borderRadius: 8, border: "1px solid rgba(0,0,0,0.10)", background: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Check size={16} color="#16a34a" />
               </button>
             </div>
@@ -530,9 +453,7 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onAddPhoto, o
                 <SelectTrigger style={{ height: 52, borderRadius: 10, background: "#f8fafc", border: "1px solid #e5e5e5", fontSize: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
-                <SelectContent>
-                  {DAMAGE_TYPES.map((dt) => <SelectItem key={dt} value={dt}>{dt}</SelectItem>)}
-                </SelectContent>
+                <SelectContent>{DAMAGE_TYPES.map((dt) => <SelectItem key={dt} value={dt}>{dt}</SelectItem>)}</SelectContent>
               </Select>
               {entry.damageType && entry.aiOriginal?.damageType && entry.damageType !== entry.aiOriginal.damageType && (
                 <div className="mt-1"><AiRestoreChip aiValue={entry.aiOriginal.damageType} onRestore={() => update({ damageType: entry.aiOriginal!.damageType })} /></div>
@@ -542,13 +463,15 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onAddPhoto, o
             {/* Repairability */}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94a3b8" }}>Repairability {entry.damageType !== "None" ? "*" : ""}</label>
+                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94a3b8" }}>
+                  Repairability{entry.damageType !== "None" ? " *" : ""}
+                </label>
                 <FieldTooltip label="Repairability" items={REPAIRABILITY_DESCS} />
               </div>
-              <SegmentControl<Assessment>
-                options={["Repairable", "Non-Repairable"]}
+              <SegmentControl
+                options={["Repairable", "Non-Repairable"] as const}
                 value={entry.assessment}
-                onChange={(v) => update({ assessment: v })}
+                onChange={(v) => update({ assessment: v as Assessment })}
                 disabled={entry.damageType === "None"}
                 activeColors={{ "Repairable": "#16a34a", "Non-Repairable": "#dc2626" }}
                 aiOriginal={entry.aiOriginal?.assessment}
@@ -558,13 +481,15 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onAddPhoto, o
             {/* Damage Assessment */}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94a3b8" }}>Damage Assessment {entry.damageType !== "None" ? "*" : ""}</label>
+                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94a3b8" }}>
+                  Damage Assessment{entry.damageType !== "None" ? " *" : ""}
+                </label>
                 <FieldTooltip label="Damage Assessment" items={DAMAGE_ASSESSMENT_DESCS} />
               </div>
-              <SegmentControl<DamageAssessment>
-                options={["Surface", "Structural"]}
+              <SegmentControl
+                options={["Surface", "Structural"] as const}
                 value={entry.damageAssessment}
-                onChange={(v) => update({ damageAssessment: v })}
+                onChange={(v) => update({ damageAssessment: v as DamageAssessment })}
                 disabled={entry.damageType === "None"}
                 activeColors={{ "Surface": "#0047bb", "Structural": "#b45309" }}
                 aiOriginal={entry.aiOriginal?.damageAssessment}
@@ -574,14 +499,10 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onAddPhoto, o
 
           {/* Row B: photo + comments */}
           <div style={{ display: "flex", alignItems: "flex-start", gap: 20, padding: 20 }}>
-            {/* Photo slot */}
             <div style={{ width: 176, flexShrink: 0 }}>
               <label style={{ display: "block", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94a3b8", marginBottom: 6 }}>Photo</label>
               {entry.imageUrl ? (
-                <div
-                  style={{ width: 176, height: 132, borderRadius: 12, border: "1px solid #bfdbfe", cursor: "zoom-in", position: "relative", overflow: "hidden" }}
-                  onClick={() => onLightbox(entry.imageUrl)}
-                >
+                <div style={{ width: 176, height: 132, borderRadius: 12, border: "1px solid #bfdbfe", cursor: "zoom-in", position: "relative", overflow: "hidden" }} onClick={() => onLightbox(entry.imageUrl)}>
                   <img src={entry.imageUrl} alt="damage" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   <div style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 6, background: "rgba(0,0,0,0.42)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Maximize2 size={13} color="white" />
@@ -594,8 +515,6 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onAddPhoto, o
                 </div>
               )}
             </div>
-
-            {/* Comments */}
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
                 <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#94a3b8" }}>Comments</label>
@@ -615,7 +534,7 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onAddPhoto, o
             </div>
           </div>
 
-          {/* Photo quality advisory (when photo present) */}
+          {/* Photo quality advisory */}
           {entry.imageUrl && (
             <div style={{ margin: "0 20px 12px", padding: "8px 12px", borderRadius: 8, background: "rgba(254,243,199,0.65)", border: "1px solid rgba(251,191,36,0.25)", display: "flex", alignItems: "center", gap: 8 }}>
               <AlertCircle size={14} color="#b45309" />
@@ -639,40 +558,33 @@ function BaseInspectionCard({ status, onClean, onDocumentDamage, onDismiss }: {
   onDocumentDamage: () => void;
   onDismiss: () => void;
 }) {
-  const borderColor = status === "pending" ? "#fde047" : status === "clean" ? "#16a34a" : "#3b82f6";
-  const iconBg = status === "pending" ? "#fefce8" : status === "clean" ? "rgba(22,163,74,0.08)" : "rgba(59,130,246,0.08)";
-  const iconColor = status === "pending" ? "#ca8a04" : status === "clean" ? "#16a34a" : "#3b82f6";
-  const title = status === "pending" ? "Tank Inspection (Required)" : status === "clean" ? "Tank Inspection — No Damage" : "Tank Inspection — Damage Documented";
-  const titleColor = status === "pending" ? "#171717" : status === "clean" ? "#15803d" : "#1d4ed8";
-  const subtitle = status === "pending"
-    ? "If you have access to the tank during transportation, take a photo, or upload a photo taken during available access."
-    : status === "clean"
-    ? "Tank confirmed clean. No corrosion or damage found."
-    : "Tank damage has been documented below.";
+  const cfg = {
+    pending:  { border: "#fde047", iconBg: "#fefce8", iconColor: "#ca8a04", title: "Tank Inspection (Required)", titleColor: "#171717", subtitle: "If you have access to the tank during transportation, take a photo, or upload a photo taken during available access." },
+    damaged:  { border: "#3b82f6", iconBg: "rgba(59,130,246,0.08)", iconColor: "#3b82f6", title: "Tank Inspection — Damage Documented", titleColor: "#1d4ed8", subtitle: "Tank damage has been documented below." },
+    clean:    { border: "#16a34a", iconBg: "rgba(22,163,74,0.08)", iconColor: "#16a34a", title: "Tank Inspection — No Damage", titleColor: "#15803d", subtitle: "Tank confirmed clean. No corrosion or damage found." },
+    dismissed:{ border: "#e5e7eb", iconBg: "#f9fafb", iconColor: "#9ca3af", title: "Tank Inspection — Dismissed", titleColor: "#6b7280", subtitle: "" },
+  }[status];
 
   return (
     <div
-      style={{ display: "flex", gap: 24, padding: 24, borderRadius: 14, background: "white", boxShadow: "0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)", border: `2.5px solid ${borderColor}`, cursor: status === "damaged" ? "pointer" : "default" }}
+      style={{ display: "flex", gap: 24, padding: 24, borderRadius: 14, background: "white", boxShadow: "0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)", border: `2.5px solid ${cfg.border}`, cursor: status === "damaged" ? "pointer" : "default" }}
       onClick={status === "damaged" ? onDismiss : undefined}
+      title={status === "damaged" ? "Tap to dismiss" : undefined}
     >
-      <div style={{ width: 88, height: 88, borderRadius: 14, background: iconBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {status === "clean" ? <Check size={36} color={iconColor} /> : status === "damaged" ? <Camera size={36} color={iconColor} /> : <Package2 size={36} color={iconColor} />}
+      <div style={{ width: 88, height: 88, borderRadius: 14, background: cfg.iconBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {status === "clean"   && <Check size={36} color={cfg.iconColor} />}
+        {status === "damaged" && <Camera size={36} color={cfg.iconColor} />}
+        {(status === "pending" || status === "dismissed") && <Package2 size={36} color={cfg.iconColor} />}
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 17, fontWeight: 600, color: titleColor, marginBottom: 6 }}>{title}</div>
-        <div style={{ fontSize: 14, color: "rgba(27,32,56,0.58)", marginBottom: 16 }}>{subtitle}</div>
+        <div style={{ fontSize: 17, fontWeight: 600, color: cfg.titleColor, marginBottom: 6 }}>{cfg.title}</div>
+        {cfg.subtitle && <div style={{ fontSize: 14, color: "rgba(27,32,56,0.58)", marginBottom: status === "pending" ? 16 : 0 }}>{cfg.subtitle}</div>}
         {status === "pending" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12, width: 248 }}>
-            <button
-              onClick={onClean}
-              style={{ height: 52, borderRadius: 9999, background: "#16a34a", color: "white", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 15, fontWeight: 600, boxShadow: "0 4px 16px rgba(22,163,74,0.28)" }}
-            >
+            <button onClick={onClean} style={{ height: 52, borderRadius: 9999, background: "#16a34a", color: "white", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 15, fontWeight: 600, boxShadow: "0 4px 16px rgba(22,163,74,0.28)" }}>
               <Check size={18} /> No Damage Found
             </button>
-            <button
-              onClick={onDocumentDamage}
-              style={{ height: 52, borderRadius: 9999, background: "#0047bb", color: "white", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 15, fontWeight: 600, boxShadow: "0 4px 16px rgba(0,71,187,0.28)" }}
-            >
+            <button onClick={onDocumentDamage} style={{ height: 52, borderRadius: 9999, background: "#0047bb", color: "white", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 15, fontWeight: 600, boxShadow: "0 4px 16px rgba(0,71,187,0.28)" }}>
               <Camera size={18} /> Document Tank Damage
             </button>
           </div>
@@ -707,19 +619,17 @@ function SectionCard({ section, entries, pendingEntry, baseStatus, onBaseClean, 
   const tabs = sublocsWithFindings.length > 0 ? ["All", ...sublocsWithFindings] : [];
   const filteredEntries = activeTab === "All" ? entries : entries.filter((e) => e.subLocation === activeTab);
 
+  const showBaseCard = section === "Tank" && baseStatus && baseStatus !== "dismissed";
+  const isPendingHere = pendingEntry?.sectionLocation === section;
+
   return (
     <div style={{ background: "white", borderRadius: 18, border: si.cardBorder, overflow: "hidden", boxShadow: `0 2px 16px ${si.shadowColor}, 0 1px 3px rgba(0,0,0,0.05)`, marginBottom: 16 }}>
       {/* Header */}
-      <div
-        onClick={() => setExpanded((e) => !e)}
-        style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: si.headerGradient, cursor: "pointer" }}
-      >
-        <div style={{ width: 36, height: 36, borderRadius: 12, background: si.iconBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor }}>
-          {si.icon}
-        </div>
+      <div onClick={() => setExpanded((e) => !e)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: si.headerGradient, cursor: "pointer" }}>
+        <div style={{ width: 36, height: 36, borderRadius: 12, background: si.iconBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor }}>{si.icon}</div>
         <span style={{ fontSize: 18, fontWeight: 600, color: "#1B2038" }}>{section}</span>
         <span style={{ fontSize: 13, color: "rgba(27,32,56,0.50)" }}>
-          {entries.length === 0 ? "no findings" : `${entries.length} finding${entries.length !== 1 ? "s" : ""}`}
+          {entries.length === 0 && !isPendingHere ? "no findings" : `${entries.length + (isPendingHere ? 1 : 0)} finding${entries.length + (isPendingHere ? 1 : 0) !== 1 ? "s" : ""}`}
         </span>
         <div style={{ flex: 1 }} />
         <div style={{ width: 28, height: 28, borderRadius: 8, border: `1.5px solid ${si.iconColor}`, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor }}>
@@ -730,38 +640,21 @@ function SectionCard({ section, entries, pendingEntry, baseStatus, onBaseClean, 
       {/* Body */}
       {expanded && (
         <div style={{ borderTop: si.bodyDivider, padding: "14px 14px 16px", background: si.bodyBg }}>
-          {/* Base inspection card (Tank only) */}
-          {section === "Tank" && baseStatus && baseStatus !== "dismissed" && (
+          {showBaseCard && (
             <div style={{ marginBottom: 16 }}>
-              <BaseInspectionCard
-                status={baseStatus}
-                onClean={onBaseClean!}
-                onDocumentDamage={onBaseDocument!}
-                onDismiss={onBaseDismiss!}
-              />
+              <BaseInspectionCard status={baseStatus!} onClean={onBaseClean!} onDocumentDamage={onBaseDocument!} onDismiss={onBaseDismiss!} />
             </div>
           )}
 
-          {/* Tabs + contextual button row */}
+          {/* Tabs + contextual button */}
           {tabs.length > 0 && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {tabs.map((tab) => {
                   const isActive = activeTab === tab;
                   const count = tab === "All" ? null : entries.filter((e) => e.subLocation === tab).length;
                   return (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      style={{
-                        padding: "6px 14px", borderRadius: 100, fontSize: 13, cursor: "pointer",
-                        background: isActive ? si.iconColor : "white",
-                        color: isActive ? "white" : "#525252",
-                        fontWeight: isActive ? 600 : 500,
-                        border: isActive ? "none" : "1px solid rgba(0,0,0,0.10)",
-                        boxShadow: isActive ? "0 2px 8px rgba(0,0,0,0.15)" : "none",
-                      }}
-                    >
+                    <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding: "6px 14px", borderRadius: 100, fontSize: 13, cursor: "pointer", background: isActive ? si.iconColor : "white", color: isActive ? "white" : "#525252", fontWeight: isActive ? 600 : 500, border: isActive ? "none" : "1px solid rgba(0,0,0,0.10)", boxShadow: isActive ? "0 2px 8px rgba(0,0,0,0.15)" : "none" }}>
                       {tab}{count != null && <span style={{ marginLeft: 6, opacity: 0.7, fontSize: 12 }}>{count}</span>}
                     </button>
                   );
@@ -771,13 +664,13 @@ function SectionCard({ section, entries, pendingEntry, baseStatus, onBaseClean, 
                 onClick={() => onDocumentContextual(section, activeTab !== "All" ? activeTab : undefined)}
                 style={{ display: "flex", alignItems: "center", gap: 6, height: 44, padding: "0 16px", borderRadius: 100, background: "transparent", border: `1.5px solid ${si.iconColor}`, color: si.iconColor, fontSize: 15, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
               >
-                <Camera size={16} /> Document {activeTab !== "All" ? `${section} ${activeTab}` : `${section}`} Damage
+                <Camera size={16} /> Document {activeTab !== "All" ? `${section} ${activeTab}` : section} Damage
               </button>
             </div>
           )}
 
           {/* Entries */}
-          {filteredEntries.length === 0 && !pendingEntry ? (
+          {filteredEntries.length === 0 && !isPendingHere ? (
             <div style={{ padding: "12px 16px", background: "rgba(255,255,255,0.40)", borderRadius: 12, border: "1.5px dashed rgba(0,0,0,0.10)" }}>
               <span style={{ fontSize: 15, color: "rgba(27,32,56,0.45)" }}>
                 {activeTab !== "All" ? "No findings for this sublocation" : "No findings yet for this section"}
@@ -786,35 +679,21 @@ function SectionCard({ section, entries, pendingEntry, baseStatus, onBaseClean, 
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {filteredEntries.map((e, i) => (
-                <DamageCard
-                  key={e.id}
-                  entry={e}
-                  index={entries.indexOf(e)}
-                  onChange={(updated) => onEntryChange(e.id, updated)}
-                  onDelete={() => onEntryDelete(e.id)}
-                  onLightbox={onLightbox}
-                />
+                <DamageCard key={e.id} entry={e} index={entries.indexOf(e)} onChange={(u) => onEntryChange(e.id, u)} onDelete={() => onEntryDelete(e.id)} onLightbox={onLightbox} />
               ))}
             </div>
           )}
 
-          {/* Pending entry in this section */}
-          {pendingEntry && pendingEntry.sectionLocation === section && (
-            <div style={{ marginTop: 16 }}>
-              <DamageCard
-                entry={pendingEntry}
-                index={entries.length}
-                isPending
-                onChange={onPendingChange}
-                onDelete={() => {}}
-                onLightbox={onLightbox}
-              />
+          {/* Pending entry */}
+          {isPendingHere && (
+            <div style={{ marginTop: filteredEntries.length > 0 ? 12 : 0 }}>
+              <DamageCard entry={pendingEntry!} index={entries.length} isPending onChange={onPendingChange} onDelete={() => {}} onLightbox={onLightbox} />
             </div>
           )}
 
           {/* Contextual button when no tabs */}
           {tabs.length === 0 && (
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: filteredEntries.length > 0 || (pendingEntry?.sectionLocation === section) ? 12 : 0 }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: (filteredEntries.length > 0 || isPendingHere) ? 12 : 0 }}>
               <button
                 onClick={() => onDocumentContextual(section)}
                 style={{ display: "flex", alignItems: "center", gap: 6, height: 44, padding: "0 16px", borderRadius: 100, background: "transparent", border: `1.5px solid ${si.iconColor}`, color: si.iconColor, fontSize: 15, fontWeight: 600, cursor: "pointer" }}
@@ -829,21 +708,15 @@ function SectionCard({ section, entries, pendingEntry, baseStatus, onBaseClean, 
   );
 }
 
-/* ─── Modal Overlay ──────────────────────────────────────────────────────────── */
-function ModalOverlay({ onClose, children, style }: { onClose?: () => void; children: React.ReactNode; style?: React.CSSProperties }) {
+/* ─── Modals ─────────────────────────────────────────────────────────────────── */
+function ModalOverlay({ onClose, children }: { onClose?: () => void; children: React.ReactNode }) {
   return (
-    <div
-      style={{ position: "fixed", inset: 0, zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.50)", ...style }}
-      onClick={onClose}
-    >
-      <div onClick={(e) => e.stopPropagation()}>
-        {children}
-      </div>
+    <div style={{ position: "fixed", inset: 0, zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.50)" }} onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()}>{children}</div>
     </div>
   );
 }
 
-/* ─── Location Selector Modal ────────────────────────────────────────────────── */
 function LocationSelectorModal({ onSelect, onCancel }: { onSelect: (s: SectionId) => void; onCancel: () => void }) {
   return (
     <ModalOverlay onClose={onCancel}>
@@ -856,44 +729,25 @@ function LocationSelectorModal({ onSelect, onCancel }: { onSelect: (s: SectionId
           {(["Tank", "Cabinet", "Radiator"] as SectionId[]).map((sec) => {
             const si = SECTION_INFO[sec];
             return (
-              <button
-                key={sec}
-                onClick={() => onSelect(sec)}
-                style={{
-                  padding: "28px 16px", borderRadius: 18, background: "white", border: "1.5px solid rgba(0,0,0,0.10)",
-                  boxShadow: "0 2px 12px rgba(0,0,0,0.08)", cursor: "pointer",
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 14, transition: "transform 0.12s",
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.02)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}
-              >
-                <div style={{ width: 84, height: 84, borderRadius: 16, background: si.iconBg, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor }}>
-                  {SECTION_ICON_LARGE[sec]}
-                </div>
+              <button key={sec} onClick={() => onSelect(sec)} style={{ padding: "28px 16px", borderRadius: 18, background: "white", border: "1.5px solid rgba(0,0,0,0.10)", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, transition: "transform 0.12s" }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.02)"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}>
+                <div style={{ width: 84, height: 84, borderRadius: 16, background: si.iconBg, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor }}>{SECTION_ICON_LG[sec]}</div>
                 <span style={{ fontSize: 18, color: "#1c1c1e", fontWeight: 600 }}>{sec}</span>
               </button>
             );
           })}
         </div>
         <div style={{ padding: "0 20px 24px" }}>
-          <button
-            onClick={onCancel}
-            style={{ width: "100%", height: 56, borderRadius: 16, background: "rgba(120,120,128,0.12)", border: "none", color: "#3c3c43", fontSize: 17, cursor: "pointer" }}
-          >
-            Cancel
-          </button>
+          <button onClick={onCancel} style={{ width: "100%", height: 56, borderRadius: 16, background: "rgba(120,120,128,0.12)", border: "none", color: "#3c3c43", fontSize: 17, cursor: "pointer" }}>Cancel</button>
         </div>
       </div>
     </ModalOverlay>
   );
 }
 
-/* ─── Sublocation Selector Modal ─────────────────────────────────────────────── */
 function SublocationSelectorModal({ section, onSelect, onBack, onCancel }: { section: SectionId; onSelect: (sub: string) => void; onBack: () => void; onCancel: () => void }) {
   const si = SECTION_INFO[section];
   const subLocs = SUB_LOCATIONS[section];
   const cols = Math.min(subLocs.length, 4);
-
   return (
     <ModalOverlay onClose={onCancel}>
       <div style={{ width: 580, borderRadius: 24, overflow: "hidden", background: "rgba(242,242,247,0.97)", backdropFilter: "blur(40px)", boxShadow: "0 24px 60px rgba(0,0,0,0.30)" }}>
@@ -907,46 +761,22 @@ function SublocationSelectorModal({ section, onSelect, onBack, onCancel }: { sec
         </div>
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols},1fr)`, gap: 12, padding: "0 20px 18px" }}>
           {subLocs.map((sub) => (
-            <button
-              key={sub.label}
-              onClick={() => onSelect(sub.label)}
-              style={{
-                padding: "20px 8px", borderRadius: 16, background: "white", border: "1.5px solid rgba(0,0,0,0.10)",
-                boxShadow: "0 2px 12px rgba(0,0,0,0.08)", cursor: "pointer",
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 10, transition: "transform 0.12s",
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.02)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}
-            >
-              <div
-                style={{ width: 56, height: 56, borderRadius: 12, background: si.iconBg, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor, transform: sub.flip ? "scaleX(-1)" : undefined }}
-              >
-                {sub.icon}
-              </div>
+            <button key={sub.label} onClick={() => onSelect(sub.label)} style={{ padding: "20px 8px", borderRadius: 16, background: "white", border: "1.5px solid rgba(0,0,0,0.10)", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, transition: "transform 0.12s" }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.02)"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}>
+              <div style={{ width: 56, height: 56, borderRadius: 12, background: si.iconBg, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor, transform: sub.flip ? "scaleX(-1)" : undefined }}>{sub.icon}</div>
               <span style={{ fontSize: 14, color: "#1c1c1e", fontWeight: 600, textAlign: "center", lineHeight: 1.35 }}>{sub.label}</span>
             </button>
           ))}
         </div>
         <div style={{ display: "flex", gap: 12, padding: "0 20px 24px" }}>
-          <button onClick={onBack} style={{ flex: 1, height: 56, borderRadius: 16, background: "rgba(120,120,128,0.12)", border: "none", color: "#3c3c43", fontSize: 16, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-            <ChevronLeft size={18} /> Back
-          </button>
-          <button onClick={onCancel} style={{ flex: 1, height: 56, borderRadius: 16, background: "rgba(120,120,128,0.08)", border: "none", color: "#3c3c43", fontSize: 16, cursor: "pointer" }}>
-            Cancel
-          </button>
+          <button onClick={onBack} style={{ flex: 1, height: 56, borderRadius: 16, background: "rgba(120,120,128,0.12)", border: "none", color: "#3c3c43", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><ChevronLeft size={18} /> Back</button>
+          <button onClick={onCancel} style={{ flex: 1, height: 56, borderRadius: 16, background: "rgba(120,120,128,0.08)", border: "none", color: "#3c3c43", fontSize: 16, cursor: "pointer" }}>Cancel</button>
         </div>
       </div>
     </ModalOverlay>
   );
 }
 
-/* ─── Photo Source Modal ─────────────────────────────────────────────────────── */
-function PhotoSourceModal({ onTakePhoto, onUpload, onWithoutPhoto, onCancel }: {
-  onTakePhoto: () => void;
-  onUpload: () => void;
-  onWithoutPhoto: () => void;
-  onCancel: () => void;
-}) {
+function PhotoSourceModal({ onTakePhoto, onUpload, onWithoutPhoto, onCancel }: { onTakePhoto: () => void; onUpload: () => void; onWithoutPhoto: () => void; onCancel: () => void }) {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 10000, display: "flex", alignItems: "flex-end", justifyContent: "center", background: "rgba(0,0,0,0.48)", paddingBottom: 48 }}>
       <div style={{ width: 420, borderRadius: 20, overflow: "hidden", background: "rgba(242,242,247,0.96)", backdropFilter: "blur(40px)", boxShadow: "0 24px 60px rgba(0,0,0,0.28)" }}>
@@ -960,38 +790,23 @@ function PhotoSourceModal({ onTakePhoto, onUpload, onWithoutPhoto, onCancel }: {
             { label: "Upload Photo", icon: <Upload size={20} color="#0047bb" />, action: onUpload },
             { label: "Enter Without Photo", icon: <EyeOff size={20} color="#0047bb" />, action: onWithoutPhoto },
           ].map(({ label, icon, action }) => (
-            <button
-              key={label}
-              onClick={action}
-              style={{ height: 56, borderRadius: 14, border: "none", background: "white", fontSize: 17, letterSpacing: "-0.43px", fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 14, padding: "0 20px" }}
-            >
+            <button key={label} onClick={action} style={{ height: 56, borderRadius: 14, border: "none", background: "white", fontSize: 17, letterSpacing: "-0.43px", fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 14, padding: "0 20px" }}>
               {icon} {label}
             </button>
           ))}
           <div style={{ height: 1, background: "rgba(0,0,0,0.08)", margin: "2px 0" }} />
-          <button
-            onClick={onCancel}
-            style={{ height: 56, borderRadius: 14, border: "none", background: "white", fontSize: 17, letterSpacing: "-0.43px", fontWeight: 500, color: "#3c3c43", cursor: "pointer" }}
-          >
-            Cancel
-          </button>
+          <button onClick={onCancel} style={{ height: 56, borderRadius: 14, border: "none", background: "white", fontSize: 17, letterSpacing: "-0.43px", fontWeight: 500, color: "#3c3c43", cursor: "pointer" }}>Cancel</button>
         </div>
       </div>
     </div>
   );
 }
 
-/* ─── AI Analyzing Overlay ───────────────────────────────────────────────────── */
 function AIAnalyzingOverlay({ onCancel }: { onCancel: () => void }) {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 10001, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(27,32,56,0.38)" }}>
       <div style={{ position: "relative", background: "rgba(255,255,255,0.94)", backdropFilter: "blur(32px)", borderRadius: 28, border: "1px solid rgba(255,255,255,0.90)", boxShadow: "0 24px 80px rgba(0,0,0,0.18), 0 4px 16px rgba(0,71,187,0.12)", padding: "52px 64px 44px", minWidth: 360, display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
-        <button
-          onClick={onCancel}
-          style={{ position: "absolute", top: 14, right: 14, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.65)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-        >
-          <X size={16} />
-        </button>
+        <button onClick={onCancel} style={{ position: "absolute", top: 14, right: 14, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.65)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} /></button>
         <Loader2 size={36} color="#0047BB" style={{ animation: "spin 0.8s linear infinite" }} />
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 20, fontWeight: 600, color: "#1B2038", marginBottom: 6 }}>AI is analysing the image.</div>
@@ -1002,7 +817,6 @@ function AIAnalyzingOverlay({ onCancel }: { onCancel: () => void }) {
   );
 }
 
-/* ─── Base Damage Alert ──────────────────────────────────────────────────────── */
 function BaseDamageAlert({ onProceed, onGoBack }: { onProceed: () => void; onGoBack: () => void }) {
   return (
     <ModalOverlay>
@@ -1025,23 +839,11 @@ function BaseDamageAlert({ onProceed, onGoBack }: { onProceed: () => void; onGoB
   );
 }
 
-/* ─── Image Lightbox ─────────────────────────────────────────────────────────── */
 function ImageLightbox({ url, onClose }: { url: string; onClose: () => void }) {
   return (
-    <div
-      style={{ position: "fixed", inset: 0, zIndex: 10002, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.82)", backdropFilter: "blur(10px)", cursor: "zoom-out" }}
-      onClick={onClose}
-    >
-      <button
-        onClick={onClose}
-        style={{ position: "absolute", top: 48, right: 48, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.18)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 18 }}
-      >
-        ✕
-      </button>
-      <img
-        src={url} alt="damage" onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: 1100, maxHeight: 820, objectFit: "contain", borderRadius: 16, boxShadow: "0 24px 80px rgba(0,0,0,0.50)", cursor: "default" }}
-      />
+    <div style={{ position: "fixed", inset: 0, zIndex: 10002, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.82)", backdropFilter: "blur(10px)", cursor: "zoom-out" }} onClick={onClose}>
+      <button onClick={onClose} style={{ position: "absolute", top: 48, right: 48, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.18)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 18 }}>✕</button>
+      <img src={url} alt="damage" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 1100, maxHeight: 820, objectFit: "contain", borderRadius: 16, boxShadow: "0 24px 80px rgba(0,0,0,0.50)", cursor: "default" }} />
     </div>
   );
 }
@@ -1056,10 +858,11 @@ export default function ConditionPage() {
     hasBaseDamage: true, intakeTags: ["NPX: Rewind"],
   };
 
-  /* ─── State ─────────────────────────────────────────────────────────────────── */
-  const [entries, setEntries] = useState<DamageEntry[]>([]);
-  const [currentEntry, setCurrentEntry] = useState<DamageEntry | null>(null);
-  const [baseStatus, setBaseStatus] = useState<BaseStatus>("pending");
+  /* State — seeded with demo data for immediate visibility of all card states */
+  const [entries, setEntries] = useState<DamageEntry[]>(SEED_ENTRIES);
+  const [currentEntry, setCurrentEntry] = useState<DamageEntry | null>(SEED_PENDING);
+  /* Tank already has a seeded finding → start in "damaged" state */
+  const [baseStatus, setBaseStatus] = useState<BaseStatus>("damaged");
   const [saveDraftState, setSaveDraftState] = useState<SaveDraftState>("idle");
   const [savedTimestamp, setSavedTimestamp] = useState<number | null>(null);
 
@@ -1071,49 +874,39 @@ export default function ConditionPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  /* ─── Document damage flow helpers ─────────────────────────────────────────── */
+  /* ─── Document damage flow ───────────────────────────────────────────────── */
   function openDocumentFlow(preSection?: SectionId, preSub?: string) {
     if (preSection && preSub) {
-      setFlowSection(preSection);
-      setFlowSublocation(preSub);
-      setModalStep("photoSource");
+      setFlowSection(preSection); setFlowSublocation(preSub); setModalStep("photoSource");
     } else if (preSection) {
-      setFlowSection(preSection);
-      setFlowSublocation(null);
-      setModalStep("sublocation");
+      setFlowSection(preSection); setFlowSublocation(null); setModalStep("sublocation");
     } else {
-      setFlowSection(null);
-      setFlowSublocation(null);
-      setModalStep("location");
+      setFlowSection(null); setFlowSublocation(null); setModalStep("location");
     }
   }
 
-  function handleLocationSelect(sec: SectionId) {
-    setFlowSection(sec);
-    setModalStep("sublocation");
-  }
+  function handleLocationSelect(sec: SectionId) { setFlowSection(sec); setModalStep("sublocation"); }
+  function handleSublocationSelect(sub: string) { setFlowSublocation(sub); setModalStep("photoSource"); }
 
-  function handleSublocationSelect(sub: string) {
-    setFlowSublocation(sub);
-    setModalStep("photoSource");
+  function commitNewEntry(entry: DamageEntry) {
+    /* Promote existing pending to confirmed first */
+    if (currentEntry) setEntries((prev) => [...prev, currentEntry]);
+    setCurrentEntry(entry);
+    /* When a Tank entry is committed, advance baseStatus to "damaged" */
+    if (entry.sectionLocation === "Tank" && baseStatus === "pending") setBaseStatus("damaged");
   }
 
   function simulateTakePhoto() {
     setModalStep("aiAnalyzing");
     setTimeout(() => {
       const sec = flowSection!;
-      const sub = flowSublocation ?? "";
       const ai = MOCK_AI[sec];
-      const entry = newEntry(sec, sub, "/nameplate.png", true, ai);
-      commitPending(entry);
+      commitNewEntry(newEntry(sec, flowSublocation ?? "", "/nameplate.png", true, ai));
       setModalStep(null);
     }, 1800);
   }
 
-  function handleUploadPhoto() {
-    setModalStep(null);
-    setTimeout(() => fileInputRef.current?.click(), 50);
-  }
+  function handleUploadPhoto() { setModalStep(null); setTimeout(() => fileInputRef.current?.click(), 50); }
 
   function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -1124,10 +917,8 @@ export default function ConditionPage() {
       setModalStep("aiAnalyzing");
       setTimeout(() => {
         const sec = flowSection!;
-        const sub = flowSublocation ?? "";
         const ai = MOCK_AI[sec];
-        const entry = newEntry(sec, sub, url, true, ai);
-        commitPending(entry);
+        commitNewEntry(newEntry(sec, flowSublocation ?? "", url, true, ai));
         setModalStep(null);
       }, 1800);
     };
@@ -1136,48 +927,34 @@ export default function ConditionPage() {
   }
 
   function handleWithoutPhoto() {
-    const sec = flowSection!;
-    const sub = flowSublocation ?? "";
-    const entry = newEntry(sec, sub, "", false);
-    commitPending(entry);
+    commitNewEntry(newEntry(flowSection!, flowSublocation ?? "", "", false));
     setModalStep(null);
   }
 
-  function commitPending(entry: DamageEntry) {
-    if (currentEntry) {
-      setEntries((prev) => [...prev, currentEntry]);
-    }
-    setCurrentEntry(entry);
-  }
-
-  /* ─── Save draft ─────────────────────────────────────────────────────────────── */
+  /* ─── Save draft ─────────────────────────────────────────────────────────── */
   function handleSaveDraft() {
     if (saveDraftState === "saving") return;
     setSaveDraftState("saving");
     setTimeout(() => {
-      setSaveDraftState("saved");
-      setSavedTimestamp(Date.now());
+      setSaveDraftState("saved"); setSavedTimestamp(Date.now());
       setTimeout(() => setSaveDraftState("savedAgo"), 2500);
     }, 1500);
   }
 
-  /* ─── Next button ────────────────────────────────────────────────────────────── */
+  /* ─── Validation ─────────────────────────────────────────────────────────── */
   const allEntries = [...entries, ...(currentEntry ? [currentEntry] : [])];
   const hasUnconfirmedAssessments = allEntries.some(
-    (e) => e.damageType !== "None" && (e.assessment === "" || e.damageAssessment === "")
+    (e) => e.damageType !== "None" && e.damageType !== "" && (e.assessment === "" || e.damageAssessment === "")
   );
   const hasTankFindings = allEntries.some((e) => e.sectionLocation === "Tank");
 
   function handleNext() {
     if (hasUnconfirmedAssessments) return;
-    if (unit.hasBaseDamage && !hasTankFindings) {
-      setModalStep("baseDamageAlert");
-      return;
-    }
+    if (unit.hasBaseDamage && !hasTankFindings) { setModalStep("baseDamageAlert"); return; }
     setCurrentPage("evaluations-history");
   }
 
-  /* ─── Pill tags (same logic as NameplatePage) ────────────────────────────────── */
+  /* ─── Pill tags ──────────────────────────────────────────────────────────── */
   const TRANSFORMER_TYPE_ABBR: Record<string, string> = {
     "Three-Phase Pad": "3Ø Pad", "Single-Phase Pad": "1Ø Pad", "Pole Mount": "Pole",
   };
@@ -1192,7 +969,6 @@ export default function ConditionPage() {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
 
-        {/* Main area */}
         <main className="flex-1 overflow-hidden" style={{ background: "linear-gradient(150deg, #e4ecf7 0%, #eef1f8 50%, #f3f5fa 100%)" }}>
           <div className="h-full flex flex-col overflow-hidden" style={{ padding: "24px 24px 0" }}>
 
@@ -1202,7 +978,6 @@ export default function ConditionPage() {
                 <h1 style={{ fontSize: 32, fontWeight: 700, color: "#1B2038", marginBottom: 4 }}>Condition</h1>
                 <p style={{ fontSize: 16, color: "rgba(27,32,56,0.44)" }}>Document and photograph any physical damage found on this unit</p>
               </div>
-
               {/* Header pills */}
               <div className="flex items-center flex-wrap gap-2 justify-end">
                 {[
@@ -1275,7 +1050,14 @@ export default function ConditionPage() {
                     onBaseDismiss={() => setBaseStatus("dismissed")}
                     onDocumentContextual={(s, sub) => openDocumentFlow(s, sub)}
                     onEntryChange={(id, updated) => setEntries((prev) => prev.map((e) => e.id === id ? updated : e))}
-                    onEntryDelete={(id) => setEntries((prev) => prev.filter((e) => e.id !== id))}
+                    onEntryDelete={(id) => {
+                      setEntries((prev) => {
+                        const next = prev.filter((e) => e.id !== id);
+                        /* If no more Tank entries, revert base status to pending */
+                        if (sec === "Tank" && !next.some((e) => e.sectionLocation === "Tank") && baseStatus === "damaged") setBaseStatus("pending");
+                        return next;
+                      });
+                    }}
                     onPendingChange={setCurrentEntry}
                     onLightbox={setLightboxUrl}
                   />
@@ -1287,22 +1069,13 @@ export default function ConditionPage() {
               {/* Bottom action bar */}
               <div style={{ padding: "16px 28px", borderTop: "1px solid rgba(0,0,0,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <button
-                    onClick={() => setCurrentPage("nameplate")}
-                    style={{ height: 52, padding: "0 20px", borderRadius: 9999, background: "rgba(27,32,56,0.07)", border: "1px solid rgba(27,32,56,0.09)", color: "#1B2038", fontSize: 16, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
-                  >
+                  <button onClick={() => setCurrentPage("nameplate")} style={{ height: 52, padding: "0 20px", borderRadius: 9999, background: "rgba(27,32,56,0.07)", border: "1px solid rgba(27,32,56,0.09)", color: "#1B2038", fontSize: 16, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                     <ChevronLeft size={18} /> Back
                   </button>
-
-                  <button
-                    onClick={handleSaveDraft}
-                    disabled={saveDraftState === "saving"}
-                    style={{ height: 52, padding: "0 24px", borderRadius: 9999, background: "#1B2038", color: "white", border: "none", fontSize: 16, fontWeight: 600, cursor: saveDraftState === "saving" ? "default" : "pointer", boxShadow: "0 2px 10px rgba(27,32,56,0.22)", display: "flex", alignItems: "center", gap: 8 }}
-                  >
+                  <button onClick={handleSaveDraft} disabled={saveDraftState === "saving"} style={{ height: 52, padding: "0 24px", borderRadius: 9999, background: "#1B2038", color: "white", border: "none", fontSize: 16, fontWeight: 600, cursor: saveDraftState === "saving" ? "default" : "pointer", boxShadow: "0 2px 10px rgba(27,32,56,0.22)", display: "flex", alignItems: "center", gap: 8 }}>
                     {saveDraftState === "saving" ? <Loader2 size={17} style={{ animation: "spin 0.8s linear infinite" }} /> : <Save size={17} />}
                     {saveDraftState === "saving" ? "Saving…" : "Save Draft"}
                   </button>
-
                   {saveDraftState === "saved" && (
                     <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: "#16a34a" }}>
                       <CheckCircle2 size={16} /> Draft saved
@@ -1314,19 +1087,11 @@ export default function ConditionPage() {
                     </div>
                   )}
                 </div>
-
                 <button
                   onClick={handleNext}
                   disabled={hasUnconfirmedAssessments}
                   title={hasUnconfirmedAssessments ? "Confirm all assessments before proceeding" : undefined}
-                  style={{
-                    height: 52, padding: "0 28px", borderRadius: 9999, fontSize: 16, fontWeight: 600,
-                    display: "flex", alignItems: "center", gap: 6, border: "none", cursor: hasUnconfirmedAssessments ? "not-allowed" : "pointer",
-                    background: hasUnconfirmedAssessments ? "#94a3b8" : "#0047bb",
-                    boxShadow: hasUnconfirmedAssessments ? "none" : "0 4px 16px rgba(0,71,187,0.28)",
-                    color: "white", opacity: hasUnconfirmedAssessments ? 0.65 : 1,
-                    transition: "all 0.15s",
-                  }}
+                  style={{ height: 52, padding: "0 28px", borderRadius: 9999, fontSize: 16, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, border: "none", cursor: hasUnconfirmedAssessments ? "not-allowed" : "pointer", background: hasUnconfirmedAssessments ? "#94a3b8" : "#0047bb", boxShadow: hasUnconfirmedAssessments ? "none" : "0 4px 16px rgba(0,71,187,0.28)", color: "white", opacity: hasUnconfirmedAssessments ? 0.65 : 1, transition: "all 0.15s" }}
                 >
                   Next: Electrical <ChevronRight size={18} />
                 </button>
@@ -1336,41 +1101,16 @@ export default function ConditionPage() {
         </main>
       </div>
 
-      {/* Hidden file input for upload */}
+      {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileSelected} />
 
       {/* Modals */}
-      {modalStep === "location" && (
-        <LocationSelectorModal onSelect={handleLocationSelect} onCancel={() => setModalStep(null)} />
-      )}
-      {modalStep === "sublocation" && flowSection && (
-        <SublocationSelectorModal
-          section={flowSection}
-          onSelect={handleSublocationSelect}
-          onBack={() => setModalStep("location")}
-          onCancel={() => setModalStep(null)}
-        />
-      )}
-      {modalStep === "photoSource" && (
-        <PhotoSourceModal
-          onTakePhoto={simulateTakePhoto}
-          onUpload={handleUploadPhoto}
-          onWithoutPhoto={handleWithoutPhoto}
-          onCancel={() => setModalStep(null)}
-        />
-      )}
-      {modalStep === "aiAnalyzing" && (
-        <AIAnalyzingOverlay onCancel={() => setModalStep(null)} />
-      )}
-      {modalStep === "baseDamageAlert" && (
-        <BaseDamageAlert
-          onProceed={() => { setModalStep(null); setCurrentPage("evaluations-history"); }}
-          onGoBack={() => setModalStep(null)}
-        />
-      )}
-      {lightboxUrl && (
-        <ImageLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />
-      )}
+      {modalStep === "location" && <LocationSelectorModal onSelect={handleLocationSelect} onCancel={() => setModalStep(null)} />}
+      {modalStep === "sublocation" && flowSection && <SublocationSelectorModal section={flowSection} onSelect={handleSublocationSelect} onBack={() => setModalStep("location")} onCancel={() => setModalStep(null)} />}
+      {modalStep === "photoSource" && <PhotoSourceModal onTakePhoto={simulateTakePhoto} onUpload={handleUploadPhoto} onWithoutPhoto={handleWithoutPhoto} onCancel={() => setModalStep(null)} />}
+      {modalStep === "aiAnalyzing" && <AIAnalyzingOverlay onCancel={() => setModalStep(null)} />}
+      {modalStep === "baseDamageAlert" && <BaseDamageAlert onProceed={() => { setModalStep(null); setCurrentPage("evaluations-history"); }} onGoBack={() => setModalStep(null)} />}
+      {lightboxUrl && <ImageLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
     </div>
   );
 }
