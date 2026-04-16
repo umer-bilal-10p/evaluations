@@ -948,45 +948,57 @@ export default function ConditionPage() {
       <PortalHeader />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-hidden" style={{ background: "linear-gradient(150deg, #e4ecf7 0%, #eef1f8 50%, #f3f5fa 100%)" }}>
-          <div className="dark" style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", padding: "24px 24px 0" }}>
+        <main className="flex-1 flex flex-col overflow-hidden">
 
-            {/* Page header */}
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20, flexShrink: 0 }}>
-              <div>
-                <h1 style={{ fontSize: 32, fontWeight: 700, color: "#1B2038", marginBottom: 4 }}>Condition</h1>
-                <p style={{ fontSize: 16, color: "rgba(27,32,56,0.44)" }}>Document and photograph any physical damage found on this unit</p>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, justifyContent: "flex-end" }}>
-                {[
-                  { lbl: "MFR", val: unit.manufacturer },
-                  { lbl: "IC", val: unit.icNumber },
-                  { lbl: "S#", val: unit.mfgSerial },
-                  { lbl: "KVA", val: unit.kva.toLocaleString() },
-                  { lbl: "TYPE", val: TRANSFORMER_TYPE_ABBR[unit.transformerType] ?? unit.transformerType },
-                ].map(({ lbl, val }) => (
-                  <Badge key={lbl} className="gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", color: "rgba(27,32,56,0.85)" }}>
-                    <span style={{ color: "rgba(27,32,56,0.50)" }}>{lbl}</span>
-                    <span style={{ color: "rgba(27,32,56,0.20)" }}>|</span>
-                    <span>{val}</span>
+          {/* ── Dark sub-header (matches Nameplate pattern) ── */}
+          <div className="flex items-center gap-3 px-6 flex-shrink-0 flex-wrap min-h-12"
+            style={{ background: "#0d1629", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+            {/* Back arrow */}
+            <button
+              onClick={() => setCurrentPage("nameplate")}
+              className="flex items-center gap-1.5 text-white/80 hover:text-white border border-white/22 rounded-md px-3 py-1 text-sm font-medium flex-shrink-0"
+              style={{ background: "rgba(255,255,255,0.07)", cursor: "pointer" }}
+            >
+              <ChevronLeft size={13} /> Back to Nameplate
+            </button>
+            <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
+            {/* Transformer metadata pills */}
+            <div className="flex items-center gap-1.5 flex-wrap flex-1">
+              <Badge variant="outline" className="text-xs font-medium text-white/80 bg-white/7 border-white/12 rounded-md px-2.5 py-0.5 gap-1.5">
+                {TRANSFORMER_TYPE_ABBR[unit.transformerType] ?? unit.transformerType}
+                <span className="text-white/30">|</span>
+                {unit.manufacturer}
+              </Badge>
+              {([["IC", unit.icNumber], ["S#", unit.mfgSerial], ["kVA", unit.kva.toLocaleString()]] as [string, string][]).map(([lbl, val]) => (
+                <Badge key={lbl} variant="outline" className="text-xs font-medium text-white/80 bg-white/7 border-white/12 rounded-md px-2.5 py-0.5 gap-1.5">
+                  {lbl}<span className="text-white/30">|</span>{val}
+                </Badge>
+              ))}
+              {npxTags.map((tag) => {
+                const sep = tag.indexOf(": ");
+                const lbl = sep !== -1 ? tag.slice(0, sep) : null;
+                const val = sep !== -1 ? tag.slice(sep + 2) : tag;
+                return (
+                  <Badge key={tag} variant="outline" className="text-xs font-medium text-white/80 bg-white/7 border-white/12 rounded-md px-2.5 py-0.5 gap-1.5">
+                    {lbl}{lbl && <span className="text-white/30">|</span>}{val}
                   </Badge>
-                ))}
-                {npxTags.map((tag) => {
-                  const [lbl, val] = tag.split(": ");
-                  return (
-                    <Badge key={tag} className="gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "rgba(13,22,41,0.75)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.15)" }}>
-                      {lbl && <span style={{ color: "rgba(255,255,255,0.80)" }}>{lbl}</span>}
-                      {lbl && val && <span style={{ color: "rgba(255,255,255,0.30)" }}>|</span>}
-                      {val && <span style={{ color: "rgba(255,255,255,0.80)" }}>{val}</span>}
-                    </Badge>
-                  );
-                })}
-                {unit.hasBaseDamage && (
-                  <Badge className="gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "rgba(217,119,6,0.15)", border: "1px solid rgba(217,119,6,0.35)", color: "#d97706" }}>
-                    <Flag size={11} /> Flagged
-                  </Badge>
-                )}
-              </div>
+                );
+              })}
+              {unit.hasBaseDamage && (
+                <Badge className="text-xs font-semibold gap-1.5 rounded-md px-2.5 py-0.5 border-[rgba(234,88,12,0.45)] bg-[rgba(234,88,12,0.25)] text-[#FEF3C7]">
+                  <Flag size={11} strokeWidth={2} /> Base Damage
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* ── Gradient content area ── */}
+          <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", padding: "24px 24px 0", background: "linear-gradient(150deg, #e4ecf7 0%, #eef1f8 50%, #f3f5fa 100%)" }}>
+
+            {/* Page heading */}
+            <div style={{ marginBottom: 20, flexShrink: 0 }}>
+              <h1 style={{ fontSize: 32, fontWeight: 700, color: "#1B2038", marginBottom: 4 }}>Condition</h1>
+              <p style={{ fontSize: 16, color: "rgba(27,32,56,0.44)" }}>Document and photograph any physical damage found on this unit</p>
             </div>
 
             {/* Glass form card */}
