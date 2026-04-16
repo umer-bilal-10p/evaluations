@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
-export type DemoPage = "login" | "home" | "evaluations-history" | "nameplate";
+export type DemoPage = "login" | "home" | "evaluations-history" | "nameplate" | "condition";
 
 export interface DemoPageDef {
   id: DemoPage;
@@ -12,6 +12,7 @@ export const DEMO_PAGES: DemoPageDef[] = [
   { id: "home", label: "Home" },
   { id: "evaluations-history", label: "Evaluations History" },
   { id: "nameplate", label: "Nameplate" },
+  { id: "condition", label: "Condition" },
 ];
 
 export interface SelectedUnitInfo {
