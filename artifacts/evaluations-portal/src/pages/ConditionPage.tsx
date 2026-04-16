@@ -3,13 +3,22 @@ import { PortalHeader } from "@/components/PortalHeader";
 import { Sidebar } from "@/components/Sidebar";
 import { useDemoContext } from "@/context/DemoContext";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 import {
   Sparkles, Flag, Camera, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
   Settings2, Trash2, RotateCcw, MapPin, AlertCircle, Save, Loader2, CheckCircle2,
   Upload, EyeOff, X, Maximize2, Plus, Package2, Box, Layers, Database, ArrowUp, ArrowDown,
-  ChevronsUp, ChevronsDown, Minus, DoorOpen, HelpCircle,
+  ChevronsUp, ChevronsDown, Minus, DoorOpen, HelpCircle, Pencil,
 } from "lucide-react";
 
 /* ─── Types ─────────────────────────────────────────────────────────────────── */
@@ -18,7 +27,7 @@ type DamageType = "Rust" | "Dent" | "Leak" | "Arc Damage" | "Holes" | "Tears" | 
 type Assessment = "Repairable" | "Non-Repairable" | "";
 type DamageAssessment = "Surface" | "Structural" | "";
 type BaseStatus = "pending" | "damaged" | "clean" | "dismissed";
-type SaveDraftState = "idle" | "saving" | "saved" | "savedAgo";
+type SaveState = "idle" | "saving" | "saved" | "savedAgo";
 type ModalStep = "location" | "sublocation" | "photoSource" | "aiAnalyzing" | "baseDamageAlert" | null;
 
 interface AIOriginal {
@@ -43,6 +52,12 @@ interface DamageEntry {
   comments: string;
   additionalPhotos: { id: string; imageUrl: string; damageType: DamageType; assessment: Assessment; damageAssessment: DamageAssessment; comments: string }[];
   aiOriginal?: AIOriginal;
+}
+
+interface Snapshot {
+  entries: DamageEntry[];
+  baseStatus: BaseStatus;
+  currentEntry: DamageEntry | null;
 }
 
 /* ─── Constants ──────────────────────────────────────────────────────────────── */
@@ -129,6 +144,140 @@ const MOCK_AI: Record<SectionId, { damageType: DamageType; assessment: Assessmen
   Radiator:{ damageType: "Dent",  assessment: "Non-Repairable", damageAssessment: "Structural", confidence: 62, comments: "Significant deformation across fin array. May compromise thermal performance." },
 };
 
+const TRANSFORMER_TYPE_ABBR: Record<string, string> = {
+  "Three-Phase Pad": "3Ø Pad", "Single-Phase Pad": "1Ø Pad", "Pole Mount": "Pole",
+};
+
+/* ─── Evaluation stepper (identical to NameplatePage) ───────────────────────── */
+const EVAL_STEPS = [
+  {
+    id: "nameplate", label: "Nameplate",
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+        <line x1="7" y1="7" x2="7.01" y2="7"/>
+      </svg>
+    ),
+  },
+  {
+    id: "electrical", label: "Electrical",
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+      </svg>
+    ),
+  },
+  {
+    id: "condition", label: "Condition",
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    ),
+  },
+  {
+    id: "dimensions", label: "Dimensions",
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="1" y="7" width="22" height="10" rx="2"/>
+        <line x1="7" y1="7" x2="7" y2="17"/>
+        <line x1="11" y1="7" x2="11" y2="12"/>
+        <line x1="15" y1="7" x2="15" y2="17"/>
+        <line x1="19" y1="7" x2="19" y2="12"/>
+      </svg>
+    ),
+  },
+  {
+    id: "configuration", label: "Configuration",
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
+        <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
+        <line x1="1" y1="14" x2="7" y2="14"/>
+        <line x1="9" y1="8" x2="15" y2="8"/>
+        <line x1="17" y1="16" x2="23" y2="16"/>
+      </svg>
+    ),
+  },
+  {
+    id: "accessories", label: "Accessories",
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+        <line x1="12" y1="22.08" x2="12" y2="12"/>
+      </svg>
+    ),
+  },
+  {
+    id: "photos", label: "Photos",
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    ),
+  },
+  {
+    id: "final-report", label: "Final Report",
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+      </svg>
+    ),
+  },
+];
+
+function EvalStepper({
+  activeStep, completedSteps, onStepClick, onToggleComplete,
+}: {
+  activeStep: number; completedSteps: Set<number>;
+  onStepClick: (i: number) => void; onToggleComplete: (i: number) => void;
+}) {
+  return (
+    <div className="flex flex-col">
+      <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)", marginBottom: 20 }}>
+        Evaluation Steps
+      </p>
+      {EVAL_STEPS.map((step, i) => {
+        const done = completedSteps.has(i);
+        const active = activeStep === i;
+        return (
+          <div key={step.id}>
+            {i > 0 && (
+              <div style={{ display: "flex", paddingLeft: 11 }}>
+                <div style={{ width: 2, height: 18, background: completedSteps.has(i - 1) ? "#0047BB" : "rgba(255,255,255,0.12)", transition: "background 0.3s" }} />
+              </div>
+            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <button
+                onClick={() => onToggleComplete(i)}
+                title={done ? "Mark incomplete" : "Mark complete"}
+                style={{ width: 24, height: 24, borderRadius: "50%", flexShrink: 0, border: done ? "none" : active ? "2px solid #5b9cf6" : "2px solid rgba(255,255,255,0.18)", background: done ? "#0047BB" : active ? "rgba(91,156,246,0.15)" : "transparent", color: done ? "#fff" : active ? "#5b9cf6" : "rgba(255,255,255,0.5)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.2s" }}
+              >{step.icon}</button>
+              <button onClick={() => onStepClick(i)} style={{ flex: 1, textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                <span style={{ fontSize: 12, fontWeight: active ? 600 : 400, color: active ? "#5b9cf6" : "rgba(255,255,255,0.85)", transition: "color 0.15s" }}>{step.label}</span>
+              </button>
+              {done ? (
+                <div style={{ width: 16, height: 16, borderRadius: "50%", flexShrink: 0, background: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                </div>
+              ) : active ? (
+                <div style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: "#5b9cf6", boxShadow: "0 0 0 3px rgba(91,156,246,0.25)" }} />
+              ) : null}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ─── Seed data ──────────────────────────────────────────────────────────────── */
 function makeSeedEntry(
   id: string, sec: SectionId, sub: string, imageUrl: string, aiDetected: boolean,
@@ -146,13 +295,10 @@ function makeSeedEntry(
 const AI_ORIG_TANK: AIOriginal = { damageType: "Rust", assessment: "Repairable", damageAssessment: "Surface", comments: "Surface corrosion detected near base weld line. Appears containable — recommend grinding and repainting." };
 
 const SEED_ENTRIES: DamageEntry[] = [
-  // Tank / Base — AI detected Rust, Repairable, Surface @ 87% (confirmed)
   makeSeedEntry("dmg-seed-1", "Tank", "Base", "/nameplate.png", true, "Rust", "Repairable", "Surface", 87, "Surface corrosion detected near base weld line. Appears containable — recommend grinding and repainting.", AI_ORIG_TANK),
-  // Cabinet / Left Door — manual Dent, Non-Repairable, Structural (no photo, no AI)
   makeSeedEntry("dmg-seed-2", "Cabinet", "Left Door", "", false, "Dent", "Non-Repairable", "Structural", undefined, "Large dent on left door panel — hinge is misaligned and door no longer closes flush. Structural concern.", undefined),
 ];
 
-// Radiator / Left Side — fully blank (triggers Next: disabled)
 const SEED_PENDING: DamageEntry = makeSeedEntry("dmg-seed-3", "Radiator", "Left Side", "", false, "", "", "", undefined, "", undefined);
 
 function deriveLocation(section: string, sub: string) {
@@ -171,6 +317,15 @@ function newEntry(section: SectionId, sub: string, imageUrl: string, aiDetected:
     additionalPhotos: [],
     aiOriginal: ai && aiDetected ? { damageType: ai.damageType, assessment: ai.assessment, damageAssessment: ai.damageAssessment, comments: ai.comments } : undefined,
   };
+}
+
+/* ─── Field label helper (matches Nameplate pattern) ────────────────────────── */
+function FieldLabel({ label, required }: { label: string; required?: boolean }) {
+  return (
+    <Label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+      {label}{required && <span className="text-destructive ml-0.5">*</span>}
+    </Label>
+  );
 }
 
 /* ─── SegmentControl ─────────────────────────────────────────────────────────── */
@@ -197,16 +352,7 @@ function SegmentControl<T extends string>({
             <button
               key={opt}
               onClick={() => onChange(opt)}
-              style={{
-                flex: 1, borderRadius: 100, fontSize: fs, cursor: "pointer", border: "none",
-                transition: "all 0.15s",
-                background: isSelected ? (activeColors[opt] ?? "#0047bb") : "transparent",
-                color: isSelected ? "white" : "hsl(var(--muted-foreground))",
-                fontWeight: isSelected ? 600 : 500,
-                boxShadow: isSelected ? "0 1px 4px rgba(0,0,0,0.18)" : "none",
-                outline: isAiSuggested ? "1px solid rgba(124,58,237,0.35)" : "none",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
-              }}
+              style={{ flex: 1, borderRadius: 100, fontSize: fs, cursor: "pointer", border: "none", transition: "all 0.15s", background: isSelected ? (activeColors[opt] ?? "#0047bb") : "transparent", color: isSelected ? "white" : "hsl(var(--muted-foreground))", fontWeight: isSelected ? 600 : 500, boxShadow: isSelected ? "0 1px 4px rgba(0,0,0,0.18)" : "none", outline: isAiSuggested ? "1px solid rgba(124,58,237,0.35)" : "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
             >
               {isSelected && <Check size={12} strokeWidth={2.5} />}
               {isAiSuggested && !isSelected && <Sparkles size={12} color="#7c3aed" />}
@@ -256,13 +402,19 @@ function FieldTooltip({ label, items }: { label: string; items: Record<string, s
   );
 }
 
-/* ─── Confidence Badge ───────────────────────────────────────────────────────── */
-function ConfBadge({ score }: { score: number }) {
+/* ─── Confidence Badge (matches Nameplate's ConfidenceBadge style) ─────────── */
+function ConfidenceBadge({ pct }: { pct: number }) {
+  const isHigh = pct >= 60;
   return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 30, padding: "0 14px", borderRadius: 9999, background: "rgba(107,33,168,0.07)", border: "1px solid rgba(139,92,246,0.30)" }}>
-      <Sparkles size={14} color="#6b21a8" />
-      <span style={{ fontSize: 14, color: "#6b21a8", fontWeight: 600 }}>{score}% Confidence</span>
-    </div>
+    <Badge className={cn(
+      "gap-1 rounded-full font-semibold text-xs px-2 py-0.5",
+      isHigh
+        ? "border-[rgba(124,58,237,0.28)] bg-[rgba(124,58,237,0.10)] text-[#7C3AED]"
+        : "border-[#FCD34D] bg-[#FEF3C7] text-[#92400E]",
+    )}>
+      <Sparkles size={10} strokeWidth={1.75} />
+      {pct}%
+    </Badge>
   );
 }
 
@@ -276,14 +428,10 @@ function AiRestoreChip({ aiValue, onRestore }: { aiValue: string; onRestore: () 
   );
 }
 
-/* ─── DamageCard ─────────────────────────────────────────────────────────────── */
+/* ─── DamageCard (edit mode) ─────────────────────────────────────────────────── */
 interface DamageCardProps {
-  entry: DamageEntry;
-  index: number;
-  isPending?: boolean;
-  onChange: (updated: DamageEntry) => void;
-  onDelete: () => void;
-  onLightbox: (url: string) => void;
+  entry: DamageEntry; index: number; isPending?: boolean;
+  onChange: (updated: DamageEntry) => void; onDelete: () => void; onLightbox: (url: string) => void;
 }
 
 function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }: DamageCardProps) {
@@ -294,7 +442,6 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }:
   const [lpSub, setLpSub] = useState(entry.subLocation);
 
   const isMissingMandatory = !entry.damageType || (entry.damageType !== "None" && (!entry.assessment || !entry.damageAssessment));
-
   const update = useCallback((patch: Partial<DamageEntry>) => onChange({ ...entry, ...patch }), [entry, onChange]);
 
   const smartTitle = entry.damageType
@@ -302,11 +449,8 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }:
     : (entry.location ? `${entry.location} #${index + 1}` : `Finding #${index + 1}`);
 
   function handleDamageTypeChange(dt: DamageType) {
-    if (dt === "None") {
-      update({ damageType: dt, assessment: "", damageAssessment: "" });
-    } else {
-      update({ damageType: dt });
-    }
+    if (dt === "None") update({ damageType: dt, assessment: "", damageAssessment: "" });
+    else update({ damageType: dt });
   }
 
   function confirmLocationPicker() {
@@ -316,138 +460,109 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }:
 
   return (
     <div className="rounded-2xl overflow-hidden border" style={{ borderColor: isPending ? "#86efac" : "hsl(var(--border))", borderWidth: isPending ? 1.5 : 1, background: "hsl(var(--card))" }}>
-      {/* AI Detection Banner */}
       {isPending && (
         <div style={{ height: 44, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", background: entry.aiDetected ? "#dcfce7" : "#f0f9ff", borderBottom: entry.aiDetected ? "1px solid #86efac" : "1px solid #7dd3fc" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {entry.aiDetected ? <Check size={16} color="#16a34a" /> : <Camera size={16} color="#0369a1" />}
             <span style={{ fontSize: 13, color: entry.aiDetected ? "#14532d" : "#0c4a6e", fontWeight: 500 }}>
-              {entry.aiDetected
-                ? `AI detected ${entry.damageType || "potential"} damage — review details below.`
-                : "Photo captured — AI could not detect damage type. Fill in details manually."}
+              {entry.aiDetected ? `AI detected ${entry.damageType || "potential"} damage — review details below.` : "Photo captured — AI could not detect damage type. Fill in details manually."}
             </span>
           </div>
-          {entry.aiDetected && entry.confidence != null && <ConfBadge score={entry.confidence} />}
+          {entry.aiDetected && entry.confidence != null && <ConfidenceBadge pct={entry.confidence} />}
         </div>
       )}
 
-      {/* Card header */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: collapsed ? "10px 12px" : "16px 20px", borderBottom: collapsed ? "none" : "1px solid hsl(var(--border))" }}>
         {collapsed && entry.imageUrl && (
           <img src={entry.imageUrl} alt="" style={{ width: 72, height: 72, borderRadius: 10, objectFit: "cover", border: "1px solid hsl(var(--border))", flexShrink: 0 }} />
         )}
-        <span className="text-foreground" style={{ fontSize: 16, fontWeight: 600, flex: 1 }} onClick={() => setCollapsed((c) => !c)}>
-          {smartTitle}
-        </span>
+        <span className="text-foreground" style={{ fontSize: 16, fontWeight: 600, flex: 1 }} onClick={() => setCollapsed((c) => !c)}>{smartTitle}</span>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          {!isPending && entry.aiDetected && entry.confidence != null && !collapsed && <ConfBadge score={entry.confidence} />}
+          {!isPending && entry.aiDetected && entry.confidence != null && !collapsed && <ConfidenceBadge pct={entry.confidence} />}
           {!isPending && !entry.aiDetected && !collapsed && (
-            <div className="text-muted-foreground" style={{ display: "inline-flex", alignItems: "center", height: 26, padding: "0 10px", borderRadius: 9999, background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))", fontSize: 12, fontWeight: 500 }}>Manual Entry</div>
+            <Badge variant="outline" className="text-xs font-medium text-muted-foreground">Manual Entry</Badge>
           )}
           {isPending && (
-            <button className="text-muted-foreground" onClick={() => {}} style={{ display: "flex", alignItems: "center", gap: 5, height: 34, padding: "0 12px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))", cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
+            <Button variant="outline" size="sm" className="gap-1.5 h-8" onClick={() => {}}>
               {entry.imageUrl ? <RotateCcw size={13} /> : <Camera size={13} />}
               {entry.imageUrl ? "Retake" : "Add Photo"}
-            </button>
+            </Button>
           )}
           {!isPending && (
             <div style={{ position: "relative" }}>
-              <button
-                className="text-muted-foreground"
-                onClick={() => setShowActionsMenu((v) => !v)}
-                style={{ display: "flex", alignItems: "center", gap: 5, height: 34, padding: "0 12px", borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))", cursor: "pointer", fontSize: 13, fontWeight: 500 }}
-              >
+              <Button variant="outline" size="sm" className="gap-1.5 h-8" onClick={() => setShowActionsMenu((v) => !v)}>
                 <Settings2 size={13} /> Actions <ChevronDown size={13} />
-              </button>
+              </Button>
               {showActionsMenu && (
                 <>
                   <div style={{ position: "fixed", inset: 0, zIndex: 49 }} onClick={() => setShowActionsMenu(false)} />
                   <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 50, background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.18)", minWidth: 176, overflow: "hidden" }}>
-                    <button
-                      onClick={() => { setShowLocationPicker(true); setShowActionsMenu(false); if (collapsed) setCollapsed(false); }}
-                      className="text-foreground hover:bg-accent w-full flex items-center gap-2 h-11 px-4 text-sm border-none cursor-pointer bg-transparent"
-                    >
+                    <button onClick={() => { setShowLocationPicker(true); setShowActionsMenu(false); if (collapsed) setCollapsed(false); }} className="text-foreground hover:bg-accent w-full flex items-center gap-2 h-11 px-4 text-sm border-none cursor-pointer bg-transparent">
                       <MapPin size={14} /> Change Location
                     </button>
                     <div style={{ height: 1, background: "hsl(var(--border))" }} />
-                    <button
-                      onClick={() => { onDelete(); setShowActionsMenu(false); }}
-                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 16px", border: "none", background: "transparent", cursor: "pointer", fontSize: 14, color: "#ef4444" }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(239,68,68,0.08)"; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
-                    >
-                      <Trash2 size={14} /> Delete
+                    <button onClick={() => { onDelete(); setShowActionsMenu(false); }} className="w-full flex items-center gap-2 h-11 px-4 text-sm border-none cursor-pointer bg-transparent text-destructive hover:bg-destructive/10">
+                      <Trash2 size={14} /> Delete Finding
                     </button>
                   </div>
                 </>
               )}
             </div>
           )}
-          <button
-            className="text-muted-foreground"
-            onClick={() => setCollapsed((c) => !c)}
-            style={{ width: 34, height: 34, borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-          >
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCollapsed((c) => !c)}>
             {collapsed ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* Collapsed summary chips */}
       {collapsed && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", padding: "10px 20px 14px" }}>
           {[entry.damageType, entry.location, entry.assessment, entry.damageAssessment].filter(Boolean).map((chip, i) => (
-            <span key={i} className="text-muted-foreground" style={{ fontSize: 13, height: 26, padding: "0 12px", borderRadius: 9999, background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))", display: "inline-flex", alignItems: "center" }}>{chip}</span>
+            <Badge key={i} variant="outline" className="text-muted-foreground text-xs">{chip}</Badge>
           ))}
           {entry.additionalPhotos.length > 0 && (
-            <span className="text-muted-foreground" style={{ fontSize: 13, height: 26, padding: "0 12px", borderRadius: 9999, background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))", display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <Plus size={11} /> +{entry.additionalPhotos.length} more photo(s)
-            </span>
+            <Badge variant="outline" className="text-muted-foreground text-xs gap-1"><Plus size={11} /> +{entry.additionalPhotos.length} more</Badge>
           )}
           {isMissingMandatory && (
-            <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, color: "#ef4444", flexShrink: 0 }}>
+            <span className="ml-auto flex items-center gap-1 text-xs text-destructive flex-shrink-0">
               <AlertCircle size={11} /> Details pending
             </span>
           )}
         </div>
       )}
 
-      {/* Expanded body */}
       {!collapsed && (
         <>
-          {/* Inline location picker */}
           {showLocationPicker && (
             <div style={{ padding: "16px 20px", background: "hsl(var(--muted))", borderBottom: "1px solid hsl(var(--border))", display: "flex", alignItems: "flex-end", gap: 12 }}>
               <div style={{ flex: 1 }}>
-                <label className="text-muted-foreground" style={{ display: "block", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Location *</label>
+                <FieldLabel label="Location" required />
                 <Select value={lpSection} onValueChange={(v) => { setLpSection(v as SectionId); setLpSub(""); }}>
                   <SelectTrigger className="h-9 bg-background text-sm shadow-none"><SelectValue /></SelectTrigger>
                   <SelectContent>{(["Tank", "Cabinet", "Radiator"] as SectionId[]).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div style={{ flex: 1 }}>
-                <label className="text-muted-foreground" style={{ display: "block", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Sublocation *</label>
+                <FieldLabel label="Sublocation" required />
                 <Select value={lpSub} onValueChange={setLpSub}>
                   <SelectTrigger className="h-9 bg-background text-sm shadow-none"><SelectValue placeholder={lpSection ? "Select sublocation" : "Select a location first"} /></SelectTrigger>
                   <SelectContent>{(SUB_LOCATIONS[lpSection] || []).map((s) => <SelectItem key={s.label} value={s.label}>{s.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <button onClick={confirmLocationPicker} style={{ width: 38, height: 42, borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Check size={16} color="#16a34a" />
-              </button>
+              <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0" onClick={confirmLocationPicker}>
+                <Check size={16} className="text-green-600" />
+              </Button>
             </div>
           )}
 
-          {/* Three-column fields */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, padding: "20px 20px 0" }}>
-            {/* Damage Type */}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
-                <label className="text-muted-foreground" style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Damage Type *</label>
+                <FieldLabel label="Damage Type" required />
                 <FieldTooltip label="Damage Types" items={DAMAGE_TYPE_DESCS} />
               </div>
               <Select value={entry.damageType || ""} onValueChange={(v) => handleDamageTypeChange(v as DamageType)}>
-                <SelectTrigger className="h-[52px] rounded-xl bg-muted text-foreground text-base shadow-none border-border">
+                <SelectTrigger className="h-[44px] rounded-xl bg-muted text-foreground text-sm shadow-none border-border">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>{DAMAGE_TYPES.map((dt) => <SelectItem key={dt} value={dt}>{dt}</SelectItem>)}</SelectContent>
@@ -456,13 +571,9 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }:
                 <div className="mt-1"><AiRestoreChip aiValue={entry.aiOriginal.damageType} onRestore={() => update({ damageType: entry.aiOriginal!.damageType })} /></div>
               )}
             </div>
-
-            {/* Repairability */}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
-                <label className="text-muted-foreground" style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>
-                  Repairability{entry.damageType !== "None" ? " *" : ""}
-                </label>
+                <FieldLabel label={`Repairability${entry.damageType !== "None" ? "" : ""}`} required={entry.damageType !== "None"} />
                 <FieldTooltip label="Repairability" items={REPAIRABILITY_DESCS} />
               </div>
               <SegmentControl
@@ -474,13 +585,9 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }:
                 aiOriginal={entry.aiOriginal?.assessment}
               />
             </div>
-
-            {/* Damage Assessment */}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
-                <label className="text-muted-foreground" style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>
-                  Damage Assessment{entry.damageType !== "None" ? " *" : ""}
-                </label>
+                <FieldLabel label="Damage Assessment" required={entry.damageType !== "None"} />
                 <FieldTooltip label="Damage Assessment" items={DAMAGE_ASSESSMENT_DESCS} />
               </div>
               <SegmentControl
@@ -494,27 +601,26 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }:
             </div>
           </div>
 
-          {/* Photo + Comments */}
           <div style={{ display: "flex", alignItems: "flex-start", gap: 20, padding: 20 }}>
-            <div style={{ width: 176, flexShrink: 0 }}>
-              <label className="text-muted-foreground" style={{ display: "block", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Photo</label>
+            <div style={{ width: 160, flexShrink: 0 }}>
+              <FieldLabel label="Photo" />
               {entry.imageUrl ? (
-                <div style={{ width: 176, height: 132, borderRadius: 12, border: "1px solid hsl(var(--border))", cursor: "zoom-in", position: "relative", overflow: "hidden" }} onClick={() => onLightbox(entry.imageUrl)}>
+                <div style={{ width: 160, height: 120, borderRadius: 12, border: "1px solid hsl(var(--border))", cursor: "zoom-in", position: "relative", overflow: "hidden" }} onClick={() => onLightbox(entry.imageUrl)}>
                   <img src={entry.imageUrl} alt="damage" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   <div style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 6, background: "rgba(0,0,0,0.42)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Maximize2 size={13} color="white" />
                   </div>
                 </div>
               ) : (
-                <div style={{ width: 176, height: 132, borderRadius: 12, border: "1.5px dashed hsl(var(--border))", background: "hsl(var(--muted)/0.4)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                <div style={{ width: 160, height: 120, borderRadius: 12, border: "1.5px dashed hsl(var(--border))", background: "hsl(var(--muted)/0.4)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
                   <Camera size={24} className="text-muted-foreground/40" />
-                  <span className="text-muted-foreground/50" style={{ fontSize: 12 }}>No Photo</span>
+                  <span className="text-muted-foreground/50 text-xs">No Photo</span>
                 </div>
               )}
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
-                <label className="text-muted-foreground" style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Comments</label>
+                <FieldLabel label="Comments" />
                 {entry.aiOriginal?.comments && <Sparkles size={12} color="#7c3aed" />}
               </div>
               <Textarea
@@ -522,69 +628,49 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }:
                 onChange={(e) => update({ comments: e.target.value })}
                 placeholder="Add observation notes…"
                 rows={4}
-                className="rounded-xl shadow-none bg-muted text-foreground border-border resize-none"
-                style={{ fontSize: 15, minHeight: 132, padding: "12px 16px" }}
+                className="rounded-xl shadow-none bg-muted text-foreground border-border resize-none text-sm"
+                style={{ minHeight: 120 }}
               />
               {entry.comments !== entry.aiOriginal?.comments && entry.aiOriginal?.comments && (
                 <div className="mt-1"><AiRestoreChip aiValue="original comment" onRestore={() => update({ comments: entry.aiOriginal!.comments })} /></div>
               )}
             </div>
           </div>
-
-          {/* Photo quality advisory */}
-          {entry.imageUrl && (
-            <div style={{ margin: "0 20px 12px", padding: "8px 12px", borderRadius: 8, background: "rgba(254,243,199,0.65)", border: "1px solid rgba(251,191,36,0.25)", display: "flex", alignItems: "center", gap: 8 }}>
-              <AlertCircle size={14} color="#b45309" />
-              <span style={{ fontSize: 13, color: "#92400e", fontWeight: 500 }}>Image issues detected:</span>
-              {["Blurry", "Low light", "Off-angle"].map((issue) => (
-                <span key={issue} style={{ height: 18, padding: "0 8px", borderRadius: 9999, background: "rgba(180,83,9,0.10)", color: "#92400e", border: "1px solid rgba(180,83,9,0.18)", fontSize: 11, display: "inline-flex", alignItems: "center" }}>{issue}</span>
-              ))}
-              <span style={{ fontSize: 13, color: "#92400e" }}>— may reduce AI accuracy</span>
-            </div>
-          )}
         </>
       )}
     </div>
   );
 }
 
-/* ─── BaseInspectionCard ─────────────────────────────────────────────────────── */
+/* ─── BaseInspectionCard (edit mode) ─────────────────────────────────────────── */
 function BaseInspectionCard({ status, onClean, onDocumentDamage, onDismiss }: {
-  status: BaseStatus;
-  onClean: () => void;
-  onDocumentDamage: () => void;
-  onDismiss: () => void;
+  status: BaseStatus; onClean: () => void; onDocumentDamage: () => void; onDismiss: () => void;
 }) {
   const cfg = {
     pending:  { border: "#fde047", iconBg: "rgba(254,249,195,0.70)", iconColor: "#ca8a04", title: "Tank Inspection (Required)", titleCls: "text-foreground", subtitle: "If you have access to the tank during transportation, take a photo, or upload a photo taken during available access." },
-    damaged:  { border: "#3b82f6", iconBg: "rgba(59,130,246,0.12)", iconColor: "#3b82f6", title: "Tank Inspection — Damage Documented", titleCls: "text-blue-600 dark:text-blue-400", subtitle: "Tank damage has been documented below." },
-    clean:    { border: "#16a34a", iconBg: "rgba(22,163,74,0.12)", iconColor: "#16a34a", title: "Tank Inspection — No Damage", titleCls: "text-green-700 dark:text-green-400", subtitle: "Tank confirmed clean. No corrosion or damage found." },
+    damaged:  { border: "#3b82f6", iconBg: "rgba(59,130,246,0.12)", iconColor: "#3b82f6", title: "Tank Inspection — Damage Documented", titleCls: "text-blue-600", subtitle: "Tank damage has been documented below." },
+    clean:    { border: "#16a34a", iconBg: "rgba(22,163,74,0.12)", iconColor: "#16a34a", title: "Tank Inspection — No Damage", titleCls: "text-green-700", subtitle: "Tank confirmed clean. No corrosion or damage found." },
     dismissed:{ border: "hsl(var(--border))", iconBg: "hsl(var(--muted))", iconColor: "hsl(var(--muted-foreground))", title: "Tank Inspection — Dismissed", titleCls: "text-muted-foreground", subtitle: "" },
   }[status];
 
   return (
-    <div
-      className="rounded-2xl"
-      style={{ display: "flex", gap: 24, padding: 24, background: "hsl(var(--card))", boxShadow: "0 1px 3px rgba(0,0,0,0.08)", border: `2.5px solid ${cfg.border}`, cursor: status === "damaged" ? "pointer" : "default" }}
-      onClick={status === "damaged" ? onDismiss : undefined}
-      title={status === "damaged" ? "Tap to dismiss" : undefined}
-    >
-      <div style={{ width: 88, height: 88, borderRadius: 14, background: cfg.iconBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", color: cfg.iconColor }}>
-        {status === "clean"   && <Check size={36} />}
-        {status === "damaged" && <Camera size={36} />}
-        {(status === "pending" || status === "dismissed") && <Package2 size={36} />}
+    <div className="rounded-2xl" style={{ display: "flex", gap: 24, padding: 24, background: "hsl(var(--card))", boxShadow: "0 1px 3px rgba(0,0,0,0.08)", border: `2.5px solid ${cfg.border}`, cursor: status === "damaged" ? "pointer" : "default" }} onClick={status === "damaged" ? onDismiss : undefined} title={status === "damaged" ? "Tap to dismiss" : undefined}>
+      <div style={{ width: 80, height: 80, borderRadius: 14, background: cfg.iconBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", color: cfg.iconColor }}>
+        {status === "clean" && <Check size={32} />}
+        {status === "damaged" && <Camera size={32} />}
+        {(status === "pending" || status === "dismissed") && <Package2 size={32} />}
       </div>
       <div style={{ flex: 1 }}>
-        <div className={`text-lg font-semibold mb-1.5 ${cfg.titleCls}`}>{cfg.title}</div>
-        {cfg.subtitle && <div className="text-sm text-muted-foreground" style={{ marginBottom: status === "pending" ? 16 : 0 }}>{cfg.subtitle}</div>}
+        <div className={`text-base font-semibold mb-1.5 ${cfg.titleCls}`}>{cfg.title}</div>
+        {cfg.subtitle && <p className="text-sm text-muted-foreground" style={{ marginBottom: status === "pending" ? 16 : 0 }}>{cfg.subtitle}</p>}
         {status === "pending" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, width: 248 }}>
-            <button onClick={onClean} style={{ height: 52, borderRadius: 9999, background: "#16a34a", color: "white", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 15, fontWeight: 600, boxShadow: "0 4px 16px rgba(22,163,74,0.28)" }}>
-              <Check size={18} /> No Damage Found
-            </button>
-            <button onClick={onDocumentDamage} style={{ height: 52, borderRadius: 9999, background: "#0047bb", color: "white", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 15, fontWeight: 600, boxShadow: "0 4px 16px rgba(0,71,187,0.28)" }}>
-              <Camera size={18} /> Document Tank Damage
-            </button>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, width: 232 }}>
+            <Button className="gap-2 rounded-full h-11 bg-green-600 hover:bg-green-700 text-white font-semibold" onClick={onClean}>
+              <Check size={16} /> No Damage Found
+            </Button>
+            <Button className="gap-2 rounded-full h-11 bg-[#0047bb] hover:bg-[#0040aa] text-white font-semibold" onClick={onDocumentDamage}>
+              <Camera size={16} /> Document Tank Damage
+            </Button>
           </div>
         )}
       </div>
@@ -592,15 +678,11 @@ function BaseInspectionCard({ status, onClean, onDocumentDamage, onDismiss }: {
   );
 }
 
-/* ─── SectionCard ────────────────────────────────────────────────────────────── */
+/* ─── SectionCard (edit mode) ────────────────────────────────────────────────── */
 interface SectionCardProps {
-  section: SectionId;
-  entries: DamageEntry[];
-  pendingEntry: DamageEntry | null;
+  section: SectionId; entries: DamageEntry[]; pendingEntry: DamageEntry | null;
   baseStatus?: BaseStatus;
-  onBaseClean?: () => void;
-  onBaseDocument?: () => void;
-  onBaseDismiss?: () => void;
+  onBaseClean?: () => void; onBaseDocument?: () => void; onBaseDismiss?: () => void;
   onDocumentContextual: (section: SectionId, sub?: string) => void;
   onEntryChange: (id: string, updated: DamageEntry) => void;
   onEntryDelete: (id: string) => void;
@@ -616,90 +698,214 @@ function SectionCard({ section, entries, pendingEntry, baseStatus, onBaseClean, 
   const sublocsWithFindings = [...new Set(entries.map((e) => e.subLocation).filter(Boolean))];
   const tabs = sublocsWithFindings.length > 0 ? ["All", ...sublocsWithFindings] : [];
   const filteredEntries = activeTab === "All" ? entries : entries.filter((e) => e.subLocation === activeTab);
-
   const showBaseCard = section === "Tank" && baseStatus && baseStatus !== "dismissed";
   const isPendingHere = pendingEntry?.sectionLocation === section;
 
   return (
-    <div className="rounded-2xl overflow-hidden mb-4" style={{ background: "hsl(var(--card))", border: si.cardBorder, boxShadow: `0 2px 16px ${si.shadowColor}, 0 1px 3px rgba(0,0,0,0.05)` }}>
-      {/* Header */}
+    <Card className="mb-4 shadow-none rounded-xl overflow-hidden" style={{ border: si.cardBorder }}>
       <div onClick={() => setExpanded((e) => !e)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: si.headerGradient, cursor: "pointer" }}>
         <div style={{ width: 36, height: 36, borderRadius: 12, background: si.iconBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor }}>{si.icon}</div>
-        <span className="text-foreground" style={{ fontSize: 18, fontWeight: 600 }}>{section}</span>
-        <span className="text-muted-foreground" style={{ fontSize: 13 }}>
+        <span className="text-foreground text-base font-semibold">{section}</span>
+        <span className="text-muted-foreground text-sm">
           {entries.length === 0 && !isPendingHere ? "no findings" : `${entries.length + (isPendingHere ? 1 : 0)} finding${entries.length + (isPendingHere ? 1 : 0) !== 1 ? "s" : ""}`}
         </span>
-        <div style={{ flex: 1 }} />
+        <div className="flex-1" />
         <div style={{ width: 28, height: 28, borderRadius: 8, border: `1.5px solid ${si.iconColor}`, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor }}>
           {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </div>
       </div>
 
-      {/* Body */}
       {expanded && (
-        <div style={{ borderTop: si.bodyDivider, padding: "14px 14px 16px", background: si.bodyBg }}>
-          {showBaseCard && (
-            <div style={{ marginBottom: 16 }}>
-              <BaseInspectionCard status={baseStatus!} onClean={onBaseClean!} onDocumentDamage={onBaseDocument!} onDismiss={onBaseDismiss!} />
-            </div>
-          )}
+        <CardContent className="p-0">
+          <div style={{ borderTop: si.bodyDivider, padding: "14px 14px 16px", background: si.bodyBg }}>
+            {showBaseCard && (
+              <div className="mb-4">
+                <BaseInspectionCard status={baseStatus!} onClean={onBaseClean!} onDocumentDamage={onBaseDocument!} onDismiss={onBaseDismiss!} />
+              </div>
+            )}
+            {tabs.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {tabs.map((tab) => {
+                    const isActive = activeTab === tab;
+                    const count = tab === "All" ? null : entries.filter((e) => e.subLocation === tab).length;
+                    return (
+                      <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding: "6px 14px", borderRadius: 100, fontSize: 13, cursor: "pointer", background: isActive ? si.iconColor : "hsl(var(--background))", color: isActive ? "white" : "hsl(var(--muted-foreground))", fontWeight: isActive ? 600 : 500, border: isActive ? "none" : "1px solid hsl(var(--border))", boxShadow: isActive ? "0 2px 8px rgba(0,0,0,0.15)" : "none" }}>
+                        {tab}{count != null && <span style={{ marginLeft: 6, opacity: 0.7, fontSize: 12 }}>{count}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+                <Button variant="outline" size="sm" className="gap-2 rounded-full h-9" style={{ borderColor: si.iconColor, color: si.iconColor }} onClick={() => onDocumentContextual(section, activeTab !== "All" ? activeTab : undefined)}>
+                  <Camera size={14} /> Document {activeTab !== "All" ? `${section} ${activeTab}` : section} Damage
+                </Button>
+              </div>
+            )}
+            {filteredEntries.length === 0 && !isPendingHere ? (
+              <div className="text-muted-foreground rounded-xl text-sm border border-dashed border-border p-3 text-center" style={{ background: "rgba(255,255,255,0.10)" }}>
+                {activeTab !== "All" ? "No findings for this sublocation" : "No findings yet for this section"}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {filteredEntries.map((e) => (
+                  <DamageCard key={e.id} entry={e} index={entries.indexOf(e)} onChange={(u) => onEntryChange(e.id, u)} onDelete={() => onEntryDelete(e.id)} onLightbox={onLightbox} />
+                ))}
+              </div>
+            )}
+            {isPendingHere && (
+              <div style={{ marginTop: filteredEntries.length > 0 ? 12 : 0 }}>
+                <DamageCard entry={pendingEntry!} index={entries.length} isPending onChange={onPendingChange} onDelete={() => {}} onLightbox={onLightbox} />
+              </div>
+            )}
+            {tabs.length === 0 && (
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: (filteredEntries.length > 0 || isPendingHere) ? 12 : 0 }}>
+                <Button variant="outline" size="sm" className="gap-2 rounded-full h-9" style={{ borderColor: si.iconColor, color: si.iconColor }} onClick={() => onDocumentContextual(section)}>
+                  <Camera size={14} /> Document {section} Damage
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
 
-          {/* Tabs + contextual document button */}
-          {tabs.length > 0 && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {tabs.map((tab) => {
-                  const isActive = activeTab === tab;
-                  const count = tab === "All" ? null : entries.filter((e) => e.subLocation === tab).length;
+/* ─── ReadOnlySectionCard (view mode) ────────────────────────────────────────── */
+const DAMAGE_TYPE_BADGE: Record<string, string> = {
+  Rust: "border-amber-300 bg-amber-100 text-amber-800",
+  Dent: "border-blue-300 bg-blue-100 text-blue-800",
+  Leak: "border-cyan-300 bg-cyan-100 text-cyan-800",
+  "Arc Damage": "border-red-300 bg-red-100 text-red-800",
+  Holes: "border-orange-300 bg-orange-100 text-orange-800",
+  Tears: "border-rose-300 bg-rose-100 text-rose-800",
+  None: "border-border bg-muted text-muted-foreground",
+};
+
+function ReadOnlySectionCard({
+  section, entries, pendingEntry, baseStatus, onLightbox,
+}: {
+  section: SectionId; entries: DamageEntry[]; pendingEntry: DamageEntry | null;
+  baseStatus?: BaseStatus; onLightbox: (url: string) => void;
+}) {
+  const si = SECTION_INFO[section];
+  const allRows = [...entries, ...(pendingEntry?.sectionLocation === section ? [pendingEntry] : [])];
+  const findingCount = entries.length + (pendingEntry?.sectionLocation === section ? 1 : 0);
+
+  const baseStatusBadge = {
+    pending:  { label: "Pending Review", cls: "border-amber-300 bg-amber-100 text-amber-800" },
+    damaged:  { label: "Damage Documented", cls: "border-blue-300 bg-blue-100 text-blue-800" },
+    clean:    { label: "No Damage", cls: "border-green-300 bg-green-100 text-green-800" },
+    dismissed:{ label: "Dismissed", cls: "border-border bg-muted text-muted-foreground" },
+  };
+
+  return (
+    <Card className="mb-4 shadow-none rounded-xl overflow-hidden" style={{ border: si.cardBorder }}>
+      {/* Colored section header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", background: si.headerGradient, borderBottom: si.bodyDivider }}>
+        <div style={{ width: 36, height: 36, borderRadius: 12, background: si.iconBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor }}>{si.icon}</div>
+        <span className="text-foreground text-base font-semibold">{section}</span>
+        <Badge className={cn("text-xs font-semibold rounded-full px-2 py-0.5", findingCount > 0 ? "border-border bg-muted text-foreground" : "border-border bg-background text-muted-foreground")}>
+          {findingCount} finding{findingCount !== 1 ? "s" : ""}
+        </Badge>
+      </div>
+
+      <CardContent className="p-0">
+        {/* Tank base inspection status row */}
+        {section === "Tank" && baseStatus && baseStatus !== "dismissed" && (
+          <div className="flex items-center gap-3 px-5 py-3 border-b border-border" style={{ background: "hsl(var(--muted)/0.3)" }}>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Base Inspection</span>
+            <Badge className={cn("text-xs font-semibold rounded-full px-2.5 py-0.5", baseStatusBadge[baseStatus].cls)}>
+              {baseStatusBadge[baseStatus].label}
+            </Badge>
+          </div>
+        )}
+
+        {/* Findings */}
+        {allRows.length === 0 ? (
+          <div className="p-6 text-center border border-dashed border-border rounded-lg m-4">
+            <p className="text-sm text-muted-foreground">No damage findings documented</p>
+          </div>
+        ) : (
+          <div className="rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  <TableHead className="h-9 w-10 text-[10px] font-bold uppercase tracking-wider">#</TableHead>
+                  <TableHead className="h-9 w-14 text-[10px] font-bold uppercase tracking-wider">Photo</TableHead>
+                  <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Location</TableHead>
+                  <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Type</TableHead>
+                  <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Repairability</TableHead>
+                  <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Assessment</TableHead>
+                  <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">AI</TableHead>
+                  <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Notes</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {allRows.map((entry, idx) => {
+                  const isIncomplete = !entry.damageType || (entry.damageType !== "None" && (!entry.assessment || !entry.damageAssessment));
                   return (
-                    <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding: "6px 14px", borderRadius: 100, fontSize: 13, cursor: "pointer", background: isActive ? si.iconColor : "hsl(var(--background))", color: isActive ? "white" : "hsl(var(--muted-foreground))", fontWeight: isActive ? 600 : 500, border: isActive ? "none" : "1px solid hsl(var(--border))", boxShadow: isActive ? "0 2px 8px rgba(0,0,0,0.15)" : "none" }}>
-                      {tab}{count != null && <span style={{ marginLeft: 6, opacity: 0.7, fontSize: 12 }}>{count}</span>}
-                    </button>
+                    <TableRow key={entry.id} className="hover:bg-muted/20">
+                      <TableCell className="text-sm font-medium py-3">
+                        <div className="flex items-center gap-1.5">
+                          {idx + 1}
+                          {isIncomplete && (
+                            <Badge className="text-[10px] px-1 py-0 gap-0.5 border-amber-300 bg-amber-100 text-amber-800 font-semibold">
+                              <AlertCircle size={9} /> Incomplete
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        {entry.imageUrl ? (
+                          <img
+                            src={entry.imageUrl} alt="damage"
+                            onClick={() => onLightbox(entry.imageUrl)}
+                            className="w-10 h-10 rounded-lg object-cover cursor-zoom-in border border-border"
+                          />
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] text-muted-foreground font-medium px-1.5 py-0.5">No Photo</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm py-3 font-medium">{entry.subLocation || entry.sectionLocation}</TableCell>
+                      <TableCell className="py-3">
+                        {entry.damageType ? (
+                          <Badge className={cn("text-xs font-semibold rounded-full px-2 py-0.5", DAMAGE_TYPE_BADGE[entry.damageType] ?? "border-border bg-muted text-muted-foreground")}>
+                            {entry.damageType}
+                          </Badge>
+                        ) : <span className="text-sm text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="py-3">
+                        {entry.assessment === "Repairable" && <Badge className="text-xs font-semibold rounded-full px-2 py-0.5 border-green-300 bg-green-100 text-green-800">Repairable</Badge>}
+                        {entry.assessment === "Non-Repairable" && <Badge className="text-xs font-semibold rounded-full px-2 py-0.5 border-red-300 bg-red-100 text-red-800">Non-Repairable</Badge>}
+                        {!entry.assessment && <span className="text-sm text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="py-3">
+                        {entry.damageAssessment === "Surface" && <Badge className="text-xs font-semibold rounded-full px-2 py-0.5 border-blue-300 bg-blue-100 text-blue-800">Surface</Badge>}
+                        {entry.damageAssessment === "Structural" && <Badge className="text-xs font-semibold rounded-full px-2 py-0.5 border-amber-300 bg-amber-100 text-amber-800">Structural</Badge>}
+                        {!entry.damageAssessment && <span className="text-sm text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="py-3">
+                        {entry.aiDetected && entry.confidence != null ? (
+                          <ConfidenceBadge pct={entry.confidence} />
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-muted-foreground font-medium">Manual</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-3 max-w-[200px]">
+                        <span className="text-sm text-muted-foreground block truncate" title={entry.comments}>
+                          {entry.comments ? (entry.comments.length > 55 ? entry.comments.slice(0, 55) + "…" : entry.comments) : "—"}
+                        </span>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </div>
-              <button
-                onClick={() => onDocumentContextual(section, activeTab !== "All" ? activeTab : undefined)}
-                style={{ display: "flex", alignItems: "center", gap: 6, height: 44, padding: "0 16px", borderRadius: 100, background: "transparent", border: `1.5px solid ${si.iconColor}`, color: si.iconColor, fontSize: 15, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
-              >
-                <Camera size={16} /> Document {activeTab !== "All" ? `${section} ${activeTab}` : section} Damage
-              </button>
-            </div>
-          )}
-
-          {/* Entries */}
-          {filteredEntries.length === 0 && !isPendingHere ? (
-            <div className="text-muted-foreground rounded-xl" style={{ padding: "12px 16px", background: "rgba(255,255,255,0.10)", border: "1.5px dashed hsl(var(--border))", fontSize: 15 }}>
-              {activeTab !== "All" ? "No findings for this sublocation" : "No findings yet for this section"}
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {filteredEntries.map((e) => (
-                <DamageCard key={e.id} entry={e} index={entries.indexOf(e)} onChange={(u) => onEntryChange(e.id, u)} onDelete={() => onEntryDelete(e.id)} onLightbox={onLightbox} />
-              ))}
-            </div>
-          )}
-
-          {isPendingHere && (
-            <div style={{ marginTop: filteredEntries.length > 0 ? 12 : 0 }}>
-              <DamageCard entry={pendingEntry!} index={entries.length} isPending onChange={onPendingChange} onDelete={() => {}} onLightbox={onLightbox} />
-            </div>
-          )}
-
-          {/* Contextual button when no tabs */}
-          {tabs.length === 0 && (
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: (filteredEntries.length > 0 || isPendingHere) ? 12 : 0 }}>
-              <button
-                onClick={() => onDocumentContextual(section)}
-                style={{ display: "flex", alignItems: "center", gap: 6, height: 44, padding: "0 16px", borderRadius: 100, background: "transparent", border: `1.5px solid ${si.iconColor}`, color: si.iconColor, fontSize: 15, fontWeight: 600, cursor: "pointer" }}
-              >
-                <Camera size={16} /> Document {section} Damage
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -717,8 +923,8 @@ function LocationSelectorModal({ onSelect, onCancel }: { onSelect: (s: SectionId
     <ModalOverlay onClose={onCancel}>
       <div className="rounded-3xl overflow-hidden" style={{ width: 520, background: "hsl(var(--background))", boxShadow: "0 24px 60px rgba(0,0,0,0.38)" }}>
         <div style={{ padding: "28px 20px 18px", textAlign: "center" }}>
-          <div className="text-foreground" style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-0.5px", marginBottom: 4 }}>Where is the damage?</div>
-          <div className="text-muted-foreground" style={{ fontSize: 16 }}>Select the section of the transformer</div>
+          <div className="text-foreground text-2xl font-bold mb-1">Where is the damage?</div>
+          <div className="text-muted-foreground text-base">Select the section of the transformer</div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, padding: "0 20px 18px" }}>
           {(["Tank", "Cabinet", "Radiator"] as SectionId[]).map((sec) => {
@@ -726,13 +932,13 @@ function LocationSelectorModal({ onSelect, onCancel }: { onSelect: (s: SectionId
             return (
               <button key={sec} onClick={() => onSelect(sec)} className="rounded-2xl" style={{ padding: "28px 16px", background: "hsl(var(--card))", border: "1.5px solid hsl(var(--border))", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, transition: "transform 0.12s" }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.02)"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}>
                 <div style={{ width: 84, height: 84, borderRadius: 16, background: si.iconBg, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor }}>{SECTION_ICON_LG[sec]}</div>
-                <span className="text-foreground" style={{ fontSize: 18, fontWeight: 600 }}>{sec}</span>
+                <span className="text-foreground text-base font-semibold">{sec}</span>
               </button>
             );
           })}
         </div>
         <div style={{ padding: "0 20px 24px" }}>
-          <button onClick={onCancel} className="text-muted-foreground" style={{ width: "100%", height: 56, borderRadius: 16, background: "hsl(var(--muted))", border: "none", fontSize: 17, cursor: "pointer" }}>Cancel</button>
+          <Button variant="secondary" className="w-full h-12 text-base rounded-2xl" onClick={onCancel}>Cancel</Button>
         </div>
       </div>
     </ModalOverlay>
@@ -751,20 +957,20 @@ function SublocationSelectorModal({ section, onSelect, onBack, onCancel }: { sec
             <div style={{ color: si.iconColor, display: "flex", alignItems: "center" }}>{si.icon}</div>
             <span style={{ fontSize: 14, fontWeight: 600, color: si.iconColor }}>{section}</span>
           </div>
-          <div className="text-foreground" style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Select Sub-location</div>
-          <div className="text-muted-foreground" style={{ fontSize: 16 }}>Where exactly is the damage located?</div>
+          <div className="text-foreground text-2xl font-bold mb-1">Select Sub-location</div>
+          <div className="text-muted-foreground text-base">Where exactly is the damage located?</div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols},1fr)`, gap: 12, padding: "0 20px 18px" }}>
           {subLocs.map((sub) => (
             <button key={sub.label} onClick={() => onSelect(sub.label)} className="rounded-2xl" style={{ padding: "20px 8px", background: "hsl(var(--card))", border: "1.5px solid hsl(var(--border))", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, transition: "transform 0.12s" }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.02)"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}>
               <div style={{ width: 56, height: 56, borderRadius: 12, background: si.iconBg, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor, transform: sub.flip ? "scaleX(-1)" : undefined }}>{sub.icon}</div>
-              <span className="text-foreground" style={{ fontSize: 14, fontWeight: 600, textAlign: "center", lineHeight: 1.35 }}>{sub.label}</span>
+              <span className="text-foreground text-sm font-semibold text-center leading-tight">{sub.label}</span>
             </button>
           ))}
         </div>
         <div style={{ display: "flex", gap: 12, padding: "0 20px 24px" }}>
-          <button onClick={onBack} className="text-muted-foreground" style={{ flex: 1, height: 56, borderRadius: 16, background: "hsl(var(--muted))", border: "none", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><ChevronLeft size={18} /> Back</button>
-          <button onClick={onCancel} className="text-muted-foreground" style={{ flex: 1, height: 56, borderRadius: 16, background: "hsl(var(--muted))", border: "none", fontSize: 16, cursor: "pointer" }}>Cancel</button>
+          <Button variant="secondary" className="flex-1 h-12 text-base rounded-2xl gap-2" onClick={onBack}><ChevronLeft size={16} /> Back</Button>
+          <Button variant="secondary" className="flex-1 h-12 text-base rounded-2xl" onClick={onCancel}>Cancel</Button>
         </div>
       </div>
     </ModalOverlay>
@@ -776,8 +982,8 @@ function PhotoSourceModal({ onTakePhoto, onUpload, onWithoutPhoto, onCancel }: {
     <div style={{ position: "fixed", inset: 0, zIndex: 10000, display: "flex", alignItems: "flex-end", justifyContent: "center", background: "rgba(0,0,0,0.50)", paddingBottom: 48 }}>
       <div className="rounded-2xl overflow-hidden" style={{ width: 420, background: "hsl(var(--background))", boxShadow: "0 24px 60px rgba(0,0,0,0.32)" }}>
         <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid hsl(var(--border))", textAlign: "center" }}>
-          <div className="text-foreground" style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.43px", marginBottom: 4 }}>Add a Photo</div>
-          <div className="text-muted-foreground" style={{ fontSize: 13 }}>How would you like to document this damage?</div>
+          <div className="text-foreground text-lg font-semibold mb-1">Add a Photo</div>
+          <div className="text-muted-foreground text-sm">How would you like to document this damage?</div>
         </div>
         <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
           {[
@@ -785,12 +991,12 @@ function PhotoSourceModal({ onTakePhoto, onUpload, onWithoutPhoto, onCancel }: {
             { label: "Upload Photo", icon: <Upload size={20} color="#0047bb" />, action: onUpload },
             { label: "Enter Without Photo", icon: <EyeOff size={20} color="#0047bb" />, action: onWithoutPhoto },
           ].map(({ label, icon, action }) => (
-            <button key={label} onClick={action} className="text-foreground" style={{ height: 56, borderRadius: 14, border: "none", background: "hsl(var(--card))", fontSize: 17, letterSpacing: "-0.43px", fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 14, padding: "0 20px" }}>
+            <button key={label} onClick={action} className="text-foreground" style={{ height: 56, borderRadius: 14, border: "none", background: "hsl(var(--card))", fontSize: 16, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 14, padding: "0 20px" }}>
               {icon} {label}
             </button>
           ))}
           <div style={{ height: 1, background: "hsl(var(--border))", margin: "2px 0" }} />
-          <button onClick={onCancel} className="text-muted-foreground" style={{ height: 56, borderRadius: 14, border: "none", background: "hsl(var(--card))", fontSize: 17, letterSpacing: "-0.43px", fontWeight: 500, cursor: "pointer" }}>Cancel</button>
+          <button onClick={onCancel} className="text-muted-foreground" style={{ height: 56, borderRadius: 14, border: "none", background: "hsl(var(--card))", fontSize: 16, fontWeight: 500, cursor: "pointer" }}>Cancel</button>
         </div>
       </div>
     </div>
@@ -800,12 +1006,15 @@ function PhotoSourceModal({ onTakePhoto, onUpload, onWithoutPhoto, onCancel }: {
 function AIAnalyzingOverlay({ onCancel }: { onCancel: () => void }) {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 10001, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.50)" }}>
+      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       <div className="rounded-3xl" style={{ position: "relative", background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", boxShadow: "0 24px 80px rgba(0,0,0,0.28)", padding: "52px 64px 44px", minWidth: 360, display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
-        <button onClick={onCancel} style={{ position: "absolute", top: 14, right: 14, width: 36, height: 36, borderRadius: "50%", background: "hsl(var(--muted))", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} className="text-muted-foreground" /></button>
+        <Button variant="ghost" size="icon" onClick={onCancel} className="absolute top-3 right-3 h-8 w-8 text-muted-foreground">
+          <X size={16} />
+        </Button>
         <Loader2 size={36} color="#0047BB" style={{ animation: "spin 0.8s linear infinite" }} />
-        <div style={{ textAlign: "center" }}>
-          <div className="text-foreground" style={{ fontSize: 20, fontWeight: 600, marginBottom: 6 }}>AI is analysing the image.</div>
-          <div className="text-muted-foreground" style={{ fontSize: 15 }}>Please hold on.</div>
+        <div className="text-center">
+          <div className="text-foreground text-xl font-semibold mb-1">AI is analysing the image.</div>
+          <div className="text-muted-foreground text-sm">Please hold on.</div>
         </div>
       </div>
     </div>
@@ -819,15 +1028,15 @@ function BaseDamageAlert({ onProceed, onGoBack }: { onProceed: () => void; onGoB
         <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(251,191,36,0.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Flag size={22} color="#d97706" />
         </div>
-        <div style={{ textAlign: "center" }}>
-          <div className="text-foreground" style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.43px", marginBottom: 8 }}>Base Damage Not Documented</div>
-          <div className="text-muted-foreground" style={{ fontSize: 15, letterSpacing: "-0.24px" }}>
+        <div className="text-center">
+          <div className="text-foreground text-lg font-semibold mb-2">Base Damage Not Documented</div>
+          <div className="text-muted-foreground text-sm leading-relaxed">
             We noticed this transformer is flagged with Base Damage, and no Tank damage has been documented. Would you still like to proceed?
           </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
-          <button onClick={onProceed} style={{ height: 52, borderRadius: 9999, background: "#d97706", color: "white", border: "none", cursor: "pointer", fontSize: 16, fontWeight: 600 }}>Proceed Anyway</button>
-          <button onClick={onGoBack} className="text-foreground" style={{ height: 50, borderRadius: 9999, background: "hsl(var(--muted))", border: "none", cursor: "pointer", fontSize: 16 }}>Go Back &amp; Document</button>
+        <div className="flex flex-col gap-2 w-full">
+          <Button className="h-12 rounded-full text-base font-semibold gap-2 bg-amber-500 hover:bg-amber-600 text-white border-none" onClick={onProceed}>Proceed Anyway</Button>
+          <Button variant="outline" className="h-12 rounded-full text-base font-semibold" onClick={onGoBack}>Go Back &amp; Document</Button>
         </div>
       </div>
     </ModalOverlay>
@@ -837,13 +1046,21 @@ function BaseDamageAlert({ onProceed, onGoBack }: { onProceed: () => void; onGoB
 function ImageLightbox({ url, onClose }: { url: string; onClose: () => void }) {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 10002, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.82)", backdropFilter: "blur(10px)", cursor: "zoom-out" }} onClick={onClose}>
-      <button onClick={onClose} style={{ position: "absolute", top: 48, right: 48, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.18)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 18 }}>✕</button>
+      <Button variant="ghost" size="icon" onClick={onClose} className="absolute top-12 right-12 h-9 w-9 rounded-full text-white bg-white/18 hover:bg-white/25">
+        <X size={16} />
+      </Button>
       <img src={url} alt="damage" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 1100, maxHeight: 820, objectFit: "contain", borderRadius: 16, boxShadow: "0 24px 80px rgba(0,0,0,0.50)", cursor: "default" }} />
     </div>
   );
 }
 
-/* ─── ConditionPage ──────────────────────────────────────────────────────────── */
+/* ─── Seed comments ──────────────────────────────────────────────────────────── */
+const SEED_COMMENTS = [
+  { initials: "ML", color: "#7c3aed", name: "Maria Lopez", role: "Field Evaluator", time: "3 hours ago", text: "Cabinet left door is completely non-functional — the hinge has failed and the panel is deformed. Unit will likely need a full cabinet replacement rather than a panel repair." },
+  { initials: "JW", color: "#047857", name: "James Wright", role: "QA Supervisor", time: "1 hour ago", text: "Tank base rust confirmed as surface-level only. Recommend prep and re-coat before redeployment. Cleared for Repair category." },
+];
+
+/* ─── Main ConditionPage ─────────────────────────────────────────────────────── */
 export default function ConditionPage() {
   const { selectedUnit, setCurrentPage } = useDemoContext();
 
@@ -853,27 +1070,44 @@ export default function ConditionPage() {
     hasBaseDamage: true, intakeTags: ["NPX: Rewind"],
   };
 
-  const [entries, setEntries] = useState<DamageEntry[]>(SEED_ENTRIES);
+  /* ── Damage state ── */
+  const [entries, setEntries]           = useState<DamageEntry[]>(SEED_ENTRIES);
   const [currentEntry, setCurrentEntry] = useState<DamageEntry | null>(SEED_PENDING);
-  const [baseStatus, setBaseStatus] = useState<BaseStatus>("damaged");
-  const [saveDraftState, setSaveDraftState] = useState<SaveDraftState>("idle");
-  const [savedTimestamp, setSavedTimestamp] = useState<number | null>(null);
-  const [modalStep, setModalStep] = useState<ModalStep>(null);
-  const [flowSection, setFlowSection] = useState<SectionId | null>(null);
-  const [flowSublocation, setFlowSublocation] = useState<string | null>(null);
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [baseStatus, setBaseStatus]     = useState<BaseStatus>("damaged");
 
+  /* ── Edit / save state ── */
+  const [editMode, setEditMode]         = useState(false);
+  const [saveState, setSaveState]       = useState<SaveState>("idle");
+  const [savedTimestamp, setSavedTimestamp] = useState<number | null>(null);
+  const [snapshot, setSnapshot]         = useState<Snapshot>({ entries: SEED_ENTRIES, baseStatus: "damaged", currentEntry: SEED_PENDING });
+
+  /* ── Modal ── */
+  const [modalStep, setModalStep]       = useState<ModalStep>(null);
+  const [flowSection, setFlowSection]   = useState<SectionId | null>(null);
+  const [flowSublocation, setFlowSublocation] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl]   = useState<string | null>(null);
+
+  /* ── Stepper ── */
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set([0]));
+  const STEP_PAGES: Record<number, "nameplate" | "condition" | "electrical"> = { 0: "nameplate", 2: "condition" };
+  const handleStepClick = (i: number) => { const p = STEP_PAGES[i]; if (p) setCurrentPage(p); };
+  const toggleComplete = (i: number) => setCompletedSteps((prev) => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; });
+
+  /* ── Comments ── */
+  const [comments, setComments]         = useState(SEED_COMMENTS);
+  const [commentDraft, setCommentDraft] = useState("");
+  const [postingComment, setPostingComment] = useState(false);
+  const [editingCommentIdx, setEditingCommentIdx] = useState<number | null>(null);
+  const [editDraft, setEditDraft]       = useState("");
+
+  /* ── File input ── */
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  /* ─── Document flow ──────────────────────────────────────────────────────── */
+  /* ── Document damage flow ── */
   function openDocumentFlow(preSection?: SectionId, preSub?: string) {
-    if (preSection && preSub) {
-      setFlowSection(preSection); setFlowSublocation(preSub); setModalStep("photoSource");
-    } else if (preSection) {
-      setFlowSection(preSection); setFlowSublocation(null); setModalStep("sublocation");
-    } else {
-      setFlowSection(null); setFlowSublocation(null); setModalStep("location");
-    }
+    if (preSection && preSub) { setFlowSection(preSection); setFlowSublocation(preSub); setModalStep("photoSource"); }
+    else if (preSection)      { setFlowSection(preSection); setFlowSublocation(null);   setModalStep("sublocation"); }
+    else                      { setFlowSection(null);       setFlowSublocation(null);   setModalStep("location"); }
   }
 
   function commitNewEntry(entry: DamageEntry) {
@@ -914,54 +1148,73 @@ export default function ConditionPage() {
     setModalStep(null);
   }
 
-  function handleSaveDraft() {
-    if (saveDraftState === "saving") return;
-    setSaveDraftState("saving");
+  /* ── Edit mode save/discard ── */
+  function handleSave() {
+    if (saveState === "saving") return;
+    setSaveState("saving");
     setTimeout(() => {
-      setSaveDraftState("saved"); setSavedTimestamp(Date.now());
-      setTimeout(() => setSaveDraftState("savedAgo"), 2500);
-    }, 1500);
+      setSnapshot({ entries, baseStatus, currentEntry });
+      setSaveState("saved");
+      setSavedTimestamp(Date.now());
+      setEditMode(false);
+      setTimeout(() => setSaveState("savedAgo"), 2500);
+    }, 700);
   }
 
-  /* ─── Validation ─────────────────────────────────────────────────────────── */
+  function handleDiscard() {
+    setEntries(snapshot.entries);
+    setBaseStatus(snapshot.baseStatus);
+    setCurrentEntry(snapshot.currentEntry);
+    setEditMode(false);
+  }
+
+  /* ── Validation (applies in edit mode only for Next button) ── */
   const allEntries = [...entries, ...(currentEntry ? [currentEntry] : [])];
-  // Disabled when any entry has blank damageType OR when damageType is set (non-None) but assessment fields missing
   const hasUnconfirmedAssessments = allEntries.some(
     (e) => e.damageType === "" || (e.damageType !== "None" && (e.assessment === "" || e.damageAssessment === ""))
   );
   const hasTankFindings = allEntries.some((e) => e.sectionLocation === "Tank");
 
   function handleNext() {
-    if (hasUnconfirmedAssessments) return;
+    if (editMode && hasUnconfirmedAssessments) return;
     if (unit.hasBaseDamage && !hasTankFindings) { setModalStep("baseDamageAlert"); return; }
-    setCurrentPage("evaluations-history");
+    setCurrentPage("electrical");
   }
 
-  const TRANSFORMER_TYPE_ABBR: Record<string, string> = {
-    "Three-Phase Pad": "3Ø Pad", "Single-Phase Pad": "1Ø Pad", "Pole Mount": "Pole",
-  };
-  const npxTags = unit.intakeTags.filter((t) => t.startsWith("NPX: "));
+  const nextDisabled = editMode && hasUnconfirmedAssessments;
+
+  const npxTags = unit.intakeTags.filter((t: string) => t.startsWith("NPX: "));
+
+  /* ── Stats for view mode ── */
+  const totalFindings = entries.length + (currentEntry ? 1 : 0);
+  const sectionsWithDamage = (["Tank", "Cabinet", "Radiator"] as SectionId[]).filter((s) => allEntries.some((e) => e.sectionLocation === s)).length;
+  const aiDetectedCount = entries.filter((e) => e.aiDetected).length;
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background">
-      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+    <div className="h-screen flex flex-col overflow-hidden" style={{ background: "hsl(var(--background))", color: "hsl(var(--foreground))" }}>
       <PortalHeader />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
+
         <main className="flex-1 flex flex-col overflow-hidden">
 
-          {/* ── Dark sub-header (matches Nameplate pattern) ── */}
+          {/* ── Dark sub-header (identical pattern to NameplatePage) ── */}
           <div className="flex items-center gap-3 px-6 flex-shrink-0 flex-wrap min-h-12"
             style={{ background: "#0d1629", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-            {/* Back arrow */}
-            <button
+
+            <Button
+              variant="outline" size="sm"
               onClick={() => setCurrentPage("nameplate")}
-              className="flex items-center gap-1.5 text-white/80 hover:text-white border border-white/22 rounded-md px-3 py-1 text-sm font-medium flex-shrink-0"
-              style={{ background: "rgba(255,255,255,0.07)", cursor: "pointer" }}
+              className="gap-1.5 border-white/22 bg-white/8 text-white/85 hover:bg-white/15 hover:text-white flex-shrink-0"
             >
-              <ChevronLeft size={13} /> Back to Nameplate
-            </button>
-            <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5M12 5l-7 7 7 7"/>
+              </svg>
+              Back to Nameplate
+            </Button>
+
+            <Separator orientation="vertical" className="h-4 bg-white/15 flex-shrink-0" />
+
             {/* Transformer metadata pills */}
             <div className="flex items-center gap-1.5 flex-wrap flex-1">
               <Badge variant="outline" className="text-xs font-medium text-white/80 bg-white/7 border-white/12 rounded-md px-2.5 py-0.5 gap-1.5">
@@ -974,7 +1227,7 @@ export default function ConditionPage() {
                   {lbl}<span className="text-white/30">|</span>{val}
                 </Badge>
               ))}
-              {npxTags.map((tag) => {
+              {npxTags.map((tag: string) => {
                 const sep = tag.indexOf(": ");
                 const lbl = sep !== -1 ? tag.slice(0, sep) : null;
                 const val = sep !== -1 ? tag.slice(sep + 2) : tag;
@@ -990,111 +1243,286 @@ export default function ConditionPage() {
                 </Badge>
               )}
             </div>
+
+            {/* Right: Edit / Save / Discard */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {saveState === "saved" && !editMode && (
+                <div className="flex items-center gap-1.5 text-green-400 text-xs font-medium mr-1">
+                  <CheckCircle2 size={14} /> Saved
+                </div>
+              )}
+              {saveState === "savedAgo" && !editMode && savedTimestamp && (
+                <span className="text-white/40 text-xs mr-1">
+                  Saved {Math.round((Date.now() - savedTimestamp) / 1000)}s ago
+                </span>
+              )}
+              {editMode ? (
+                <>
+                  <Button
+                    variant="ghost" size="sm"
+                    onClick={handleDiscard}
+                    className="gap-1.5 border border-white/22 text-white/75 hover:bg-white/8 hover:text-white"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                    Discard Changes
+                  </Button>
+                  <Button
+                    size="sm"
+                    disabled={saveState === "saving"}
+                    onClick={handleSave}
+                    className="gap-1.5 bg-[#0047BB] border-[#0047BB] text-white hover:bg-[#0040AA]"
+                  >
+                    {saveState === "saving" ? <Loader2 size={12} className="animate-spin" /> : (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    )}
+                    {saveState === "saving" ? "Saving…" : "Save"}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={() => setEditMode(true)}
+                  className="flex-shrink-0 gap-1.5 bg-[#0047BB] border-[#0047BB] text-white hover:bg-[#0040AA]"
+                >
+                  <Pencil size={12} />
+                  Edit
+                </Button>
+              )}
+            </div>
           </div>
 
-          {/* ── Gradient content area ── */}
-          <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", padding: "24px 24px 0", background: "linear-gradient(150deg, #e4ecf7 0%, #eef1f8 50%, #f3f5fa 100%)" }}>
+          {/* ── Content: stepper panel + scrollable right ── */}
+          <div className="flex-1 overflow-hidden flex">
 
-            {/* Page heading */}
-            <div style={{ marginBottom: 20, flexShrink: 0 }}>
-              <h1 style={{ fontSize: 32, fontWeight: 700, color: "#1B2038", marginBottom: 4 }}>Condition</h1>
-              <p style={{ fontSize: 16, color: "rgba(27,32,56,0.44)" }}>Document and photograph any physical damage found on this unit</p>
+            {/* Left: dark stepper panel */}
+            <div className="w-[230px] flex-shrink-0 overflow-auto py-6 px-4"
+              style={{ background: "#0d1629", borderRight: "1px solid rgba(255,255,255,0.08)" }}>
+              <EvalStepper
+                activeStep={2}
+                completedSteps={completedSteps}
+                onStepClick={handleStepClick}
+                onToggleComplete={toggleComplete}
+              />
             </div>
 
-            {/* Glass form card */}
-            <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", background: "hsl(var(--background)/0.88)", backdropFilter: "blur(20px)", borderRadius: "20px 20px 0 0", border: "1px solid hsl(var(--border))", boxShadow: "0 4px 32px rgba(27,32,56,0.08)" }}>
+            {/* Right: scrollable content */}
+            <div className="flex-1 overflow-auto px-8 py-6">
+              <div className="max-w-[900px] mx-auto">
 
-              <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px 8px" }}>
-
-                {/* Document Damage CTA */}
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 20, boxShadow: "0 8px 32px rgba(0,71,187,0.08)", padding: "20px 24px", cursor: "pointer", marginBottom: 28 }}
-                  onClick={() => openDocumentFlow()}
-                >
-                  <div style={{ width: 80, height: 80, borderRadius: 18, background: "rgba(59,130,246,0.12)", border: "1px solid rgba(147,197,253,0.40)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Camera size={34} color="#2563eb" />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div className="text-foreground" style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Document Damage</div>
-                    <div className="text-muted-foreground" style={{ fontSize: 15 }}>Take a clear photo of the damage. AI will automatically detect the damage type and severity.</div>
-                  </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); openDocumentFlow(); }}
-                    style={{ height: 48, padding: "0 20px", borderRadius: 100, background: "linear-gradient(135deg, #0047bb 0%, #0065ff 100%)", boxShadow: "0 4px 20px rgba(0,71,187,0.38)", border: "none", color: "white", fontSize: 15, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap", flexShrink: 0 }}
-                  >
-                    <Camera size={17} /> Document Damage
-                  </button>
+                {/* Page heading */}
+                <div className="mb-4">
+                  <h1 className="text-3xl font-bold text-foreground mb-1">Condition Assessment</h1>
+                  <p className="text-sm text-muted-foreground">Review physical damage findings for this transformer unit</p>
                 </div>
 
-                {/* Section cards */}
-                {(["Tank", "Cabinet", "Radiator"] as SectionId[]).map((sec) => (
-                  <SectionCard
-                    key={sec}
-                    section={sec}
-                    entries={entries.filter((e) => e.sectionLocation === sec)}
-                    pendingEntry={currentEntry?.sectionLocation === sec ? currentEntry : null}
-                    baseStatus={sec === "Tank" ? baseStatus : undefined}
-                    onBaseClean={() => setBaseStatus("clean")}
-                    onBaseDocument={() => openDocumentFlow("Tank")}
-                    onBaseDismiss={() => setBaseStatus("dismissed")}
-                    onDocumentContextual={(s, sub) => openDocumentFlow(s, sub)}
-                    onEntryChange={(id, updated) => setEntries((prev) => prev.map((e) => e.id === id ? updated : e))}
-                    onEntryDelete={(id) => {
-                      setEntries((prev) => {
-                        const next = prev.filter((e) => e.id !== id);
-                        if (sec === "Tank" && !next.some((e) => e.sectionLocation === "Tank") && baseStatus === "damaged") setBaseStatus("pending");
-                        return next;
-                      });
-                    }}
-                    onPendingChange={setCurrentEntry}
-                    onLightbox={setLightboxUrl}
-                  />
-                ))}
-                <div style={{ height: 20 }} />
-              </div>
-
-              {/* Bottom action bar */}
-              <div style={{ padding: "16px 28px", borderTop: "1px solid hsl(var(--border))", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <button onClick={() => setCurrentPage("nameplate")} className="text-foreground" style={{ height: 52, padding: "0 20px", borderRadius: 9999, background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))", fontSize: 16, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                    <ChevronLeft size={18} /> Back
-                  </button>
-                  <button onClick={handleSaveDraft} disabled={saveDraftState === "saving"} style={{ height: 52, padding: "0 24px", borderRadius: 9999, background: "#1B2038", color: "white", border: "none", fontSize: 16, fontWeight: 600, cursor: saveDraftState === "saving" ? "default" : "pointer", boxShadow: "0 2px 10px rgba(27,32,56,0.22)", display: "flex", alignItems: "center", gap: 8 }}>
-                    {saveDraftState === "saving" ? <Loader2 size={17} style={{ animation: "spin 0.8s linear infinite" }} /> : <Save size={17} />}
-                    {saveDraftState === "saving" ? "Saving…" : "Save Draft"}
-                  </button>
-                  {saveDraftState === "saved" && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: "#16a34a" }}>
-                      <CheckCircle2 size={16} /> Draft saved
-                    </div>
+                {/* Summary stats */}
+                <div className="flex items-center gap-2 mb-6 flex-wrap">
+                  <Badge variant="outline" className="gap-1.5 text-xs font-semibold">
+                    <AlertCircle size={11} /> {totalFindings} Finding{totalFindings !== 1 ? "s" : ""}
+                  </Badge>
+                  <Badge variant="outline" className="gap-1.5 text-xs font-semibold">
+                    {sectionsWithDamage} of 3 Sections Affected
+                  </Badge>
+                  {aiDetectedCount > 0 && (
+                    <Badge className="gap-1.5 text-xs font-semibold border-[rgba(124,58,237,0.28)] bg-[rgba(124,58,237,0.10)] text-[#7C3AED]">
+                      <Sparkles size={11} strokeWidth={1.75} /> {aiDetectedCount} AI Detected
+                    </Badge>
                   )}
-                  {saveDraftState === "savedAgo" && (
-                    <div className="text-muted-foreground" style={{ fontSize: 13 }}>
-                      Last saved {savedTimestamp ? `${Math.round((Date.now() - savedTimestamp) / 1000)}s` : "5s"} ago
-                    </div>
+                  {editMode && (
+                    <Badge className="gap-1.5 text-xs font-semibold border-amber-300 bg-amber-100 text-amber-800">
+                      <Pencil size={10} /> Editing
+                    </Badge>
                   )}
                 </div>
-                <button
-                  onClick={handleNext}
-                  disabled={hasUnconfirmedAssessments}
-                  title={hasUnconfirmedAssessments ? "Confirm all assessments before proceeding" : undefined}
-                  style={{ height: 52, padding: "0 28px", borderRadius: 9999, fontSize: 16, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, border: "none", cursor: hasUnconfirmedAssessments ? "not-allowed" : "pointer", background: hasUnconfirmedAssessments ? "hsl(var(--muted-foreground)/0.4)" : "#0047bb", boxShadow: hasUnconfirmedAssessments ? "none" : "0 4px 16px rgba(0,71,187,0.28)", color: "white", opacity: hasUnconfirmedAssessments ? 0.65 : 1, transition: "all 0.15s" }}
-                >
-                  Next: Electrical <ChevronRight size={18} />
-                </button>
+
+                {/* Evaluation Comments accordion */}
+                <div className="mb-4">
+                  <Accordion type="single" collapsible>
+                    <AccordionItem value="comments" className="border border-border rounded-xl bg-card overflow-hidden">
+                      <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                        <div className="flex items-center gap-2">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0047BB]">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                          </svg>
+                          <span className="text-sm font-semibold text-foreground">Evaluation Comments</span>
+                          <Badge className="w-[18px] h-[18px] rounded-full bg-[#0047BB] text-white text-[10px] font-bold p-0 flex items-center justify-center">
+                            {comments.length}
+                          </Badge>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-4">
+                        <div className="flex flex-col gap-3 pt-1">
+                          {comments.map((c, idx) => {
+                            const isOwn = c.initials === "YU";
+                            const isEditing = editingCommentIdx === idx;
+                            return (
+                              <Card key={idx} className={cn("shadow-none rounded-lg", isEditing ? "border-[#0047BB]" : "border-border", "bg-muted/50")}>
+                                <CardContent className="p-3.5">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Avatar className="h-7 w-7 flex-shrink-0">
+                                      <AvatarFallback className="text-[10px] font-bold text-white" style={{ background: c.color }}>{c.initials}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1">
+                                      <p className="text-sm font-semibold text-foreground">{c.name}</p>
+                                      <p className="text-xs text-muted-foreground">{c.role} · {c.time}</p>
+                                    </div>
+                                    {isOwn && !isEditing && (
+                                      <div className="flex items-center gap-0.5 flex-shrink-0">
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted" onClick={() => { setEditingCommentIdx(idx); setEditDraft(c.text); }}>
+                                          <Pencil size={13} />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => setComments((prev) => prev.filter((_, i) => i !== idx))}>
+                                          <Trash2 size={13} />
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {isEditing ? (
+                                    <div>
+                                      <Textarea autoFocus value={editDraft} onChange={(e) => setEditDraft(e.target.value)} rows={3} className="text-sm resize-none bg-background shadow-none" />
+                                      <div className="flex justify-end gap-1.5 mt-2">
+                                        <Button variant="outline" size="sm" onClick={() => setEditingCommentIdx(null)}>Cancel</Button>
+                                        <Button size="sm" disabled={!editDraft.trim()} onClick={() => { if (!editDraft.trim()) return; setComments((prev) => prev.map((item, i) => i === idx ? { ...item, text: editDraft.trim(), time: "Edited · Just now" } : item)); setEditingCommentIdx(null); }} className="bg-[#0047BB] border-[#0047BB] text-white hover:bg-[#0040AA]">Save</Button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm text-foreground leading-relaxed m-0">{c.text}</p>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                          {/* New comment input */}
+                          <Card className="shadow-none rounded-lg overflow-hidden">
+                            <Textarea
+                              value={commentDraft}
+                              onChange={(e) => setCommentDraft(e.target.value)}
+                              placeholder="Leave a comment…"
+                              rows={3}
+                              className="border-0 rounded-none focus-visible:ring-0 resize-none text-sm bg-transparent shadow-none"
+                            />
+                            <div className="border-t border-border px-3 py-2 flex justify-end items-center gap-2 bg-muted/30">
+                              {commentDraft.trim() && (
+                                <Button variant="outline" size="sm" onClick={() => setCommentDraft("")}>Cancel</Button>
+                              )}
+                              <Button
+                                size="sm"
+                                disabled={!commentDraft.trim() || postingComment}
+                                onClick={() => {
+                                  if (!commentDraft.trim()) return;
+                                  setPostingComment(true);
+                                  setTimeout(() => {
+                                    setComments((prev) => [...prev, { initials: "YU", color: "#182557", name: "You", role: "Supervisor", time: "Just now", text: commentDraft.trim() }]);
+                                    setCommentDraft(""); setPostingComment(false);
+                                  }, 400);
+                                }}
+                                className="gap-1.5 bg-[#0047BB] border-[#0047BB] text-white hover:bg-[#0040AA] disabled:opacity-50"
+                              >
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                                </svg>
+                                {postingComment ? "Posting…" : "Post Comment"}
+                              </Button>
+                            </div>
+                          </Card>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </div>
+
+                {/* Document Damage CTA (edit mode only) */}
+                {editMode && (
+                  <Card className="mb-6 shadow-none rounded-xl border-dashed border-[#0047bb]/40 cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => openDocumentFlow()}>
+                    <CardContent className="p-5 flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-xl flex-shrink-0 flex items-center justify-center" style={{ background: "rgba(59,130,246,0.10)", border: "1px solid rgba(147,197,253,0.40)" }}>
+                        <Camera size={26} color="#2563eb" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-foreground mb-0.5">Document Damage</p>
+                        <p className="text-sm text-muted-foreground">Take or upload a photo — AI will automatically detect damage type and severity.</p>
+                      </div>
+                      <Button className="gap-2 bg-[#0047bb] hover:bg-[#0040aa] text-white font-semibold flex-shrink-0 shadow-md" onClick={(e) => { e.stopPropagation(); openDocumentFlow(); }}>
+                        <Camera size={15} /> Document Damage
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Section cards — view mode or edit mode */}
+                {(["Tank", "Cabinet", "Radiator"] as SectionId[]).map((sec) =>
+                  editMode ? (
+                    <SectionCard
+                      key={sec}
+                      section={sec}
+                      entries={entries.filter((e) => e.sectionLocation === sec)}
+                      pendingEntry={currentEntry?.sectionLocation === sec ? currentEntry : null}
+                      baseStatus={sec === "Tank" ? baseStatus : undefined}
+                      onBaseClean={() => setBaseStatus("clean")}
+                      onBaseDocument={() => openDocumentFlow("Tank")}
+                      onBaseDismiss={() => setBaseStatus("dismissed")}
+                      onDocumentContextual={(s, sub) => openDocumentFlow(s, sub)}
+                      onEntryChange={(id, updated) => setEntries((prev) => prev.map((e) => e.id === id ? updated : e))}
+                      onEntryDelete={(id) => {
+                        setEntries((prev) => {
+                          const next = prev.filter((e) => e.id !== id);
+                          if (sec === "Tank" && !next.some((e) => e.sectionLocation === "Tank") && baseStatus === "damaged") setBaseStatus("pending");
+                          return next;
+                        });
+                      }}
+                      onPendingChange={setCurrentEntry}
+                      onLightbox={setLightboxUrl}
+                    />
+                  ) : (
+                    <ReadOnlySectionCard
+                      key={sec}
+                      section={sec}
+                      entries={entries.filter((e) => e.sectionLocation === sec)}
+                      pendingEntry={currentEntry}
+                      baseStatus={sec === "Tank" ? baseStatus : undefined}
+                      onLightbox={setLightboxUrl}
+                    />
+                  )
+                )}
+
+                <div className="h-20" />
               </div>
             </div>
+          </div>
+
+          {/* ── Bottom action bar (identical to NameplatePage) ── */}
+          <div style={{ padding: "14px 24px", borderTop: "1px solid hsl(var(--border))", display: "flex", alignItems: "center", justifyContent: "space-between", background: "hsl(var(--background))", flexShrink: 0 }}>
+            <button
+              onClick={() => setCurrentPage("nameplate")}
+              style={{ height: 44, padding: "0 18px", borderRadius: 9999, background: "rgba(27,32,56,0.07)", border: "1px solid rgba(27,32,56,0.09)", color: "hsl(var(--foreground))", fontSize: 14, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              Back to Nameplate
+            </button>
+            <button
+              onClick={handleNext}
+              disabled={nextDisabled}
+              title={nextDisabled ? "Confirm all assessments before proceeding" : undefined}
+              style={{ height: 44, padding: "0 22px", borderRadius: 9999, background: nextDisabled ? "hsl(var(--muted-foreground)/0.4)" : "#0047bb", border: "none", color: "white", fontSize: 14, fontWeight: 600, cursor: nextDisabled ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: nextDisabled ? "none" : "0 4px 14px rgba(0,71,187,0.28)", opacity: nextDisabled ? 0.65 : 1, transition: "all 0.15s" }}
+            >
+              Next: Electrical
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
           </div>
         </main>
       </div>
 
       <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileSelected} />
 
-      {modalStep === "location" && <LocationSelectorModal onSelect={(sec) => { setFlowSection(sec); setModalStep("sublocation"); }} onCancel={() => setModalStep(null)} />}
-      {modalStep === "sublocation" && flowSection && <SublocationSelectorModal section={flowSection} onSelect={(sub) => { setFlowSublocation(sub); setModalStep("photoSource"); }} onBack={() => setModalStep("location")} onCancel={() => setModalStep(null)} />}
-      {modalStep === "photoSource" && <PhotoSourceModal onTakePhoto={simulateTakePhoto} onUpload={handleUploadPhoto} onWithoutPhoto={handleWithoutPhoto} onCancel={() => setModalStep(null)} />}
-      {modalStep === "aiAnalyzing" && <AIAnalyzingOverlay onCancel={() => setModalStep(null)} />}
-      {modalStep === "baseDamageAlert" && <BaseDamageAlert onProceed={() => { setModalStep(null); setCurrentPage("evaluations-history"); }} onGoBack={() => setModalStep(null)} />}
+      {modalStep === "location"      && <LocationSelectorModal onSelect={(sec) => { setFlowSection(sec); setModalStep("sublocation"); }} onCancel={() => setModalStep(null)} />}
+      {modalStep === "sublocation"   && flowSection && <SublocationSelectorModal section={flowSection} onSelect={(sub) => { setFlowSublocation(sub); setModalStep("photoSource"); }} onBack={() => setModalStep("location")} onCancel={() => setModalStep(null)} />}
+      {modalStep === "photoSource"   && <PhotoSourceModal onTakePhoto={simulateTakePhoto} onUpload={handleUploadPhoto} onWithoutPhoto={handleWithoutPhoto} onCancel={() => setModalStep(null)} />}
+      {modalStep === "aiAnalyzing"   && <AIAnalyzingOverlay onCancel={() => setModalStep(null)} />}
+      {modalStep === "baseDamageAlert" && <BaseDamageAlert onProceed={() => { setModalStep(null); setCurrentPage("electrical"); }} onGoBack={() => setModalStep(null)} />}
       {lightboxUrl && <ImageLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
     </div>
   );

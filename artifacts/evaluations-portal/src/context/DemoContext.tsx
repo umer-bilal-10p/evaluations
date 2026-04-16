@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
-export type DemoPage = "login" | "home" | "evaluations-history" | "nameplate" | "condition";
+export type DemoPage = "login" | "home" | "evaluations-history" | "nameplate" | "condition" | "electrical";
 
 export interface DemoPageDef {
   id: DemoPage;
