@@ -1508,32 +1508,30 @@ export default function ConditionPage() {
                   )
                 )}
 
-                <div className="h-20" />
+                {/* Floating sticky navigation */}
+                <div className="sticky bottom-6 z-40 mt-8 flex items-center justify-between pointer-events-none">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentPage("nameplate")}
+                    className="pointer-events-auto h-11 rounded-full px-5 text-sm font-semibold gap-1.5 shadow-lg bg-background/95 backdrop-blur-sm"
+                  >
+                    <ChevronLeft size={16} />
+                    Back to Nameplate
+                  </Button>
+                  <Button
+                    onClick={handleNext}
+                    disabled={nextDisabled}
+                    title={nextDisabled ? "Confirm all assessments before proceeding" : undefined}
+                    className="pointer-events-auto h-11 rounded-full px-6 text-sm font-semibold gap-1.5 shadow-lg"
+                    style={nextDisabled ? {} : { background: "#0047bb", boxShadow: "0 4px 14px rgba(0,71,187,0.28)" }}
+                  >
+                    Next: Electrical
+                    <ChevronRight size={16} />
+                  </Button>
+                </div>
+
               </div>
             </div>
-          </div>
-
-          {/* ── Bottom action bar (identical to NameplatePage) ── */}
-          <div style={{ padding: "14px 24px", borderTop: "1px solid hsl(var(--border))", display: "flex", alignItems: "center", justifyContent: "space-between", background: "hsl(var(--background))", flexShrink: 0 }}>
-            <Button
-              variant="outline" size="sm"
-              onClick={() => setCurrentPage("nameplate")}
-              className="h-11 rounded-full px-5 text-sm font-semibold gap-1.5"
-            >
-              <ChevronLeft size={16} />
-              Back to Nameplate
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleNext}
-              disabled={nextDisabled}
-              title={nextDisabled ? "Confirm all assessments before proceeding" : undefined}
-              className="h-11 rounded-full px-6 text-sm font-semibold gap-1.5"
-              style={nextDisabled ? {} : { background: "#0047bb", boxShadow: "0 4px 14px rgba(0,71,187,0.28)" }}
-            >
-              Next: Electrical
-              <ChevronRight size={16} />
-            </Button>
           </div>
         </main>
       </div>

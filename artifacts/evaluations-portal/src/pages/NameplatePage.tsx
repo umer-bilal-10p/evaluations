@@ -8,7 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkle, Sparkles, Flag } from "lucide-react";
+import { Sparkle, Sparkles, Flag, ChevronLeft, ChevronRight } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -911,8 +911,9 @@ export default function NameplatePage() {
   const lvRef      = useRef<HTMLDivElement>(null);
   const sectionRefs = [identRef, ratingsRef, hvRef, lvRef];
 
-  /* activeStep is fixed at 0 — the whole page is the Nameplate step */
-  const scrollToStep = (_idx: number) => { /* no-op: steps are workflow-level, not in-page sections */ };
+  /* Stepper navigation — clicking a step navigates to that workflow page */
+  const STEP_PAGES: Record<number, "nameplate" | "electrical" | "condition"> = { 0: "nameplate", 1: "electrical", 2: "condition" };
+  const scrollToStep = (idx: number) => { const p = STEP_PAGES[idx]; if (p && p !== "nameplate") setCurrentPage(p); };
 
 
   const toggleComplete = (idx: number) => {
@@ -1498,28 +1499,29 @@ export default function NameplatePage() {
               </Section>
               </div>
 
-              <div className="h-20" />
+              {/* Floating sticky navigation */}
+              <div className="sticky bottom-6 z-40 mt-8 flex items-center justify-between pointer-events-none">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage("evaluations-history")}
+                  className="pointer-events-auto h-11 rounded-full px-5 text-sm font-semibold gap-1.5 shadow-lg bg-background/95 backdrop-blur-sm"
+                >
+                  <ChevronLeft size={16} />
+                  Back to Queue
+                </Button>
+                <Button
+                  onClick={() => setCurrentPage("condition")}
+                  className="pointer-events-auto h-11 rounded-full px-6 text-sm font-semibold gap-1.5 shadow-lg"
+                  style={{ background: "#0047bb", boxShadow: "0 4px 14px rgba(0,71,187,0.28)" }}
+                >
+                  Next: Condition
+                  <ChevronRight size={16} />
+                </Button>
+              </div>
+
             </div>
             </div>{/* end scrollable right */}
           </div>{/* end stepper+content flex */}
-
-          {/* Bottom action bar */}
-          <div style={{ padding: "14px 24px", borderTop: "1px solid hsl(var(--border))", display: "flex", alignItems: "center", justifyContent: "space-between", background: "hsl(var(--background))", flexShrink: 0 }}>
-            <button
-              onClick={() => setCurrentPage("evaluations-history")}
-              style={{ height: 44, padding: "0 18px", borderRadius: 9999, background: "rgba(27,32,56,0.07)", border: "1px solid rgba(27,32,56,0.09)", color: "hsl(var(--foreground))", fontSize: 14, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-              Back to Queue
-            </button>
-            <button
-              onClick={() => setCurrentPage("condition")}
-              style={{ height: 44, padding: "0 22px", borderRadius: 9999, background: "#0047bb", border: "none", color: "white", fontSize: 14, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 4px 14px rgba(0,71,187,0.28)" }}
-            >
-              Next: Condition
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
-          </div>
         </main>
       </div>
     </div>
