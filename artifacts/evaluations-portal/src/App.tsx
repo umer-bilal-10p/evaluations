@@ -11,6 +11,7 @@ import HomePage from "@/pages/HomePage";
 import EvaluationsHistoryPage from "@/pages/EvaluationsHistoryPage";
 import NameplatePage from "@/pages/NameplatePage";
 import ConditionPage from "@/pages/ConditionPage";
+import ElectricalPage from "@/pages/ElectricalPage";
 
 const queryClient = new QueryClient();
 const msalInstance = new PublicClientApplication(msalConfig);
@@ -24,6 +25,7 @@ function AppContent() {
       {currentPage === "home" && <HomePage />}
       {currentPage === "evaluations-history" && <EvaluationsHistoryPage />}
       {currentPage === "nameplate" && <NameplatePage />}
+      {currentPage === "electrical" && <ElectricalPage />}
       {currentPage === "condition" && <ConditionPage />}
       <DemoNav />
     </>

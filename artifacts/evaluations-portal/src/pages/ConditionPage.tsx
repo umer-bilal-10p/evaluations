@@ -376,9 +376,9 @@ function FieldTooltip({ label, items }: { label: string; items: Record<string, s
   const [open, setOpen] = useState(false);
   return (
     <div style={{ position: "relative", display: "inline-flex" }}>
-      <button onClick={() => setOpen((v) => !v)} style={{ width: 20, height: 20, borderRadius: "50%", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
+      <Button variant="ghost" size="icon" onClick={() => setOpen((v) => !v)} className="h-5 w-5 rounded-full p-0">
         <HelpCircle size={14} className="text-muted-foreground/50" />
-      </button>
+      </Button>
       {open && (
         <>
           <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={() => setOpen(false)} />
@@ -421,10 +421,13 @@ function ConfidenceBadge({ pct }: { pct: number }) {
 /* ─── AI Restore Chip ────────────────────────────────────────────────────────── */
 function AiRestoreChip({ aiValue, onRestore }: { aiValue: string; onRestore: () => void }) {
   return (
-    <button onClick={onRestore} style={{ display: "inline-flex", alignItems: "center", gap: 4, height: 22, padding: "0 10px", borderRadius: 9999, background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.22)", cursor: "pointer" }}>
-      <Sparkles size={10} color="#7c3aed" />
-      <span style={{ fontSize: 12, color: "#7c3aed", fontWeight: 600 }}>AI: {aiValue}</span>
-    </button>
+    <Button
+      variant="ghost" size="sm" onClick={onRestore}
+      className="h-[22px] px-2.5 rounded-full text-[11px] font-semibold gap-1 text-[#7c3aed] hover:text-[#7c3aed] border border-[rgba(124,58,237,0.22)] bg-[rgba(124,58,237,0.08)] hover:bg-[rgba(124,58,237,0.12)]"
+    >
+      <Sparkles size={10} />
+      AI: {aiValue}
+    </Button>
   );
 }
 
@@ -497,13 +500,13 @@ function DamageCard({ entry, index, isPending, onChange, onDelete, onLightbox }:
                 <>
                   <div style={{ position: "fixed", inset: 0, zIndex: 49 }} onClick={() => setShowActionsMenu(false)} />
                   <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 50, background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.18)", minWidth: 176, overflow: "hidden" }}>
-                    <button onClick={() => { setShowLocationPicker(true); setShowActionsMenu(false); if (collapsed) setCollapsed(false); }} className="text-foreground hover:bg-accent w-full flex items-center gap-2 h-11 px-4 text-sm border-none cursor-pointer bg-transparent">
+                    <Button variant="ghost" size="sm" onClick={() => { setShowLocationPicker(true); setShowActionsMenu(false); if (collapsed) setCollapsed(false); }} className="w-full justify-start gap-2 h-11 px-4 text-sm rounded-none text-foreground">
                       <MapPin size={14} /> Change Location
-                    </button>
-                    <div style={{ height: 1, background: "hsl(var(--border))" }} />
-                    <button onClick={() => { onDelete(); setShowActionsMenu(false); }} className="w-full flex items-center gap-2 h-11 px-4 text-sm border-none cursor-pointer bg-transparent text-destructive hover:bg-destructive/10">
+                    </Button>
+                    <Separator />
+                    <Button variant="ghost" size="sm" onClick={() => { onDelete(); setShowActionsMenu(false); }} className="w-full justify-start gap-2 h-11 px-4 text-sm rounded-none text-destructive hover:bg-destructive/10 hover:text-destructive">
                       <Trash2 size={14} /> Delete Finding
-                    </button>
+                    </Button>
                   </div>
                 </>
               )}
@@ -730,9 +733,14 @@ function SectionCard({ section, entries, pendingEntry, baseStatus, onBaseClean, 
                     const isActive = activeTab === tab;
                     const count = tab === "All" ? null : entries.filter((e) => e.subLocation === tab).length;
                     return (
-                      <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding: "6px 14px", borderRadius: 100, fontSize: 13, cursor: "pointer", background: isActive ? si.iconColor : "hsl(var(--background))", color: isActive ? "white" : "hsl(var(--muted-foreground))", fontWeight: isActive ? 600 : 500, border: isActive ? "none" : "1px solid hsl(var(--border))", boxShadow: isActive ? "0 2px 8px rgba(0,0,0,0.15)" : "none" }}>
-                        {tab}{count != null && <span style={{ marginLeft: 6, opacity: 0.7, fontSize: 12 }}>{count}</span>}
-                      </button>
+                      <Button
+                        key={tab} size="sm" onClick={() => setActiveTab(tab)}
+                        variant={isActive ? "default" : "outline"}
+                        className="rounded-full h-8 text-[13px] font-medium"
+                        style={isActive ? { background: si.iconColor, borderColor: si.iconColor, color: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" } : { color: "hsl(var(--muted-foreground))" }}
+                      >
+                        {tab}{count != null && <span className="ml-1.5 opacity-70 text-[12px]">{count}</span>}
+                      </Button>
                     );
                   })}
                 </div>
@@ -811,8 +819,8 @@ function ReadOnlySectionCard({
       </div>
 
       <CardContent className="p-0">
-        {/* Tank base inspection status row */}
-        {section === "Tank" && baseStatus && baseStatus !== "dismissed" && (
+        {/* Tank base inspection status row — always shown (including dismissed) */}
+        {section === "Tank" && baseStatus && (
           <div className="flex items-center gap-3 px-5 py-3 border-b border-border" style={{ background: "hsl(var(--muted)/0.3)" }}>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Base Inspection</span>
             <Badge className={cn("text-xs font-semibold rounded-full px-2.5 py-0.5", baseStatusBadge[baseStatus].cls)}>
@@ -831,10 +839,9 @@ function ReadOnlySectionCard({
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30 hover:bg-muted/30">
-                  <TableHead className="h-9 w-10 text-[10px] font-bold uppercase tracking-wider">#</TableHead>
-                  <TableHead className="h-9 w-14 text-[10px] font-bold uppercase tracking-wider">Photo</TableHead>
-                  <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Location</TableHead>
-                  <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Type</TableHead>
+                  <TableHead className="h-9 w-14 text-[10px] font-bold uppercase tracking-wider">#</TableHead>
+                  <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Sub-location</TableHead>
+                  <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Damage Type</TableHead>
                   <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Repairability</TableHead>
                   <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Assessment</TableHead>
                   <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">AI</TableHead>
@@ -846,55 +853,56 @@ function ReadOnlySectionCard({
                   const isIncomplete = !entry.damageType || (entry.damageType !== "None" && (!entry.assessment || !entry.damageAssessment));
                   return (
                     <TableRow key={entry.id} className="hover:bg-muted/20">
-                      <TableCell className="text-sm font-medium py-3">
-                        <div className="flex items-center gap-1.5">
-                          {idx + 1}
-                          {isIncomplete && (
-                            <Badge className="text-[10px] px-1 py-0 gap-0.5 border-amber-300 bg-amber-100 text-amber-800 font-semibold">
-                              <AlertCircle size={9} /> Incomplete
-                            </Badge>
+                      {/* # column: row number + optional photo thumbnail + incomplete badge */}
+                      <TableCell className="py-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="flex flex-col items-center gap-1">
+                            <span className="text-sm font-medium text-muted-foreground">{idx + 1}</span>
+                            {isIncomplete && (
+                              <Badge className="text-[9px] px-1 py-0 gap-0.5 border-amber-300 bg-amber-100 text-amber-800 font-semibold leading-tight">
+                                <AlertCircle size={8} /> Incomplete
+                              </Badge>
+                            )}
+                          </div>
+                          {entry.imageUrl ? (
+                            <img
+                              src={entry.imageUrl} alt="damage"
+                              onClick={() => onLightbox(entry.imageUrl)}
+                              className="w-9 h-9 rounded-lg object-cover cursor-zoom-in border border-border flex-shrink-0"
+                            />
+                          ) : (
+                            <Badge variant="outline" className="text-[9px] text-muted-foreground font-medium px-1 py-0 flex-shrink-0">No Photo</Badge>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="py-3">
-                        {entry.imageUrl ? (
-                          <img
-                            src={entry.imageUrl} alt="damage"
-                            onClick={() => onLightbox(entry.imageUrl)}
-                            className="w-10 h-10 rounded-lg object-cover cursor-zoom-in border border-border"
-                          />
-                        ) : (
-                          <Badge variant="outline" className="text-[10px] text-muted-foreground font-medium px-1.5 py-0.5">No Photo</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm py-3 font-medium">{entry.subLocation || entry.sectionLocation}</TableCell>
-                      <TableCell className="py-3">
+                      <TableCell className="text-sm py-2.5 font-medium">{entry.subLocation || entry.sectionLocation}</TableCell>
+                      <TableCell className="py-2.5">
                         {entry.damageType ? (
                           <Badge className={cn("text-xs font-semibold rounded-full px-2 py-0.5", DAMAGE_TYPE_BADGE[entry.damageType] ?? "border-border bg-muted text-muted-foreground")}>
                             {entry.damageType}
                           </Badge>
                         ) : <span className="text-sm text-muted-foreground">—</span>}
                       </TableCell>
-                      <TableCell className="py-3">
+                      <TableCell className="py-2.5">
                         {entry.assessment === "Repairable" && <Badge className="text-xs font-semibold rounded-full px-2 py-0.5 border-green-300 bg-green-100 text-green-800">Repairable</Badge>}
                         {entry.assessment === "Non-Repairable" && <Badge className="text-xs font-semibold rounded-full px-2 py-0.5 border-red-300 bg-red-100 text-red-800">Non-Repairable</Badge>}
                         {!entry.assessment && <span className="text-sm text-muted-foreground">—</span>}
                       </TableCell>
-                      <TableCell className="py-3">
+                      <TableCell className="py-2.5">
                         {entry.damageAssessment === "Surface" && <Badge className="text-xs font-semibold rounded-full px-2 py-0.5 border-blue-300 bg-blue-100 text-blue-800">Surface</Badge>}
                         {entry.damageAssessment === "Structural" && <Badge className="text-xs font-semibold rounded-full px-2 py-0.5 border-amber-300 bg-amber-100 text-amber-800">Structural</Badge>}
                         {!entry.damageAssessment && <span className="text-sm text-muted-foreground">—</span>}
                       </TableCell>
-                      <TableCell className="py-3">
+                      <TableCell className="py-2.5">
                         {entry.aiDetected && entry.confidence != null ? (
                           <ConfidenceBadge pct={entry.confidence} />
                         ) : (
                           <Badge variant="outline" className="text-xs text-muted-foreground font-medium">Manual</Badge>
                         )}
                       </TableCell>
-                      <TableCell className="py-3 max-w-[200px]">
+                      <TableCell className="py-2.5 max-w-[200px]">
                         <span className="text-sm text-muted-foreground block truncate" title={entry.comments}>
-                          {entry.comments ? (entry.comments.length > 55 ? entry.comments.slice(0, 55) + "…" : entry.comments) : "—"}
+                          {entry.comments ? (entry.comments.length > 60 ? entry.comments.slice(0, 60) + "…" : entry.comments) : "—"}
                         </span>
                       </TableCell>
                     </TableRow>
@@ -930,10 +938,13 @@ function LocationSelectorModal({ onSelect, onCancel }: { onSelect: (s: SectionId
           {(["Tank", "Cabinet", "Radiator"] as SectionId[]).map((sec) => {
             const si = SECTION_INFO[sec];
             return (
-              <button key={sec} onClick={() => onSelect(sec)} className="rounded-2xl" style={{ padding: "28px 16px", background: "hsl(var(--card))", border: "1.5px solid hsl(var(--border))", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, transition: "transform 0.12s" }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.02)"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}>
+              <Button
+                key={sec} variant="outline" onClick={() => onSelect(sec)}
+                className="rounded-2xl h-auto flex-col gap-3.5 py-7 px-4 shadow-sm hover:scale-[1.02] transition-transform"
+              >
                 <div style={{ width: 84, height: 84, borderRadius: 16, background: si.iconBg, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor }}>{SECTION_ICON_LG[sec]}</div>
                 <span className="text-foreground text-base font-semibold">{sec}</span>
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -962,10 +973,13 @@ function SublocationSelectorModal({ section, onSelect, onBack, onCancel }: { sec
         </div>
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols},1fr)`, gap: 12, padding: "0 20px 18px" }}>
           {subLocs.map((sub) => (
-            <button key={sub.label} onClick={() => onSelect(sub.label)} className="rounded-2xl" style={{ padding: "20px 8px", background: "hsl(var(--card))", border: "1.5px solid hsl(var(--border))", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, transition: "transform 0.12s" }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.02)"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}>
+            <Button
+              key={sub.label} variant="outline" onClick={() => onSelect(sub.label)}
+              className="rounded-2xl h-auto flex-col gap-2.5 py-5 px-2 shadow-sm hover:scale-[1.02] transition-transform"
+            >
               <div style={{ width: 56, height: 56, borderRadius: 12, background: si.iconBg, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor, transform: sub.flip ? "scaleX(-1)" : undefined }}>{sub.icon}</div>
               <span className="text-foreground text-sm font-semibold text-center leading-tight">{sub.label}</span>
-            </button>
+            </Button>
           ))}
         </div>
         <div style={{ display: "flex", gap: 12, padding: "0 20px 24px" }}>
@@ -987,16 +1001,21 @@ function PhotoSourceModal({ onTakePhoto, onUpload, onWithoutPhoto, onCancel }: {
         </div>
         <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
           {[
-            { label: "Take Photo", icon: <Camera size={20} color="#0047bb" />, action: onTakePhoto },
-            { label: "Upload Photo", icon: <Upload size={20} color="#0047bb" />, action: onUpload },
-            { label: "Enter Without Photo", icon: <EyeOff size={20} color="#0047bb" />, action: onWithoutPhoto },
+            { label: "Take Photo", icon: <Camera size={20} className="text-[#0047bb]" />, action: onTakePhoto },
+            { label: "Upload Photo", icon: <Upload size={20} className="text-[#0047bb]" />, action: onWithoutPhoto },
+            { label: "Enter Without Photo", icon: <EyeOff size={20} className="text-[#0047bb]" />, action: onWithoutPhoto },
           ].map(({ label, icon, action }) => (
-            <button key={label} onClick={action} className="text-foreground" style={{ height: 56, borderRadius: 14, border: "none", background: "hsl(var(--card))", fontSize: 16, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 14, padding: "0 20px" }}>
+            <Button
+              key={label} variant="ghost" onClick={action}
+              className="h-14 rounded-2xl justify-start gap-3.5 px-5 text-base font-medium text-foreground bg-card hover:bg-accent"
+            >
               {icon} {label}
-            </button>
+            </Button>
           ))}
-          <div style={{ height: 1, background: "hsl(var(--border))", margin: "2px 0" }} />
-          <button onClick={onCancel} className="text-muted-foreground" style={{ height: 56, borderRadius: 14, border: "none", background: "hsl(var(--card))", fontSize: 16, fontWeight: 500, cursor: "pointer" }}>Cancel</button>
+          <Separator />
+          <Button variant="ghost" onClick={onCancel} className="h-14 rounded-2xl text-muted-foreground text-base font-medium w-full bg-card hover:bg-accent">
+            Cancel
+          </Button>
         </div>
       </div>
     </div>
@@ -1089,7 +1108,7 @@ export default function ConditionPage() {
 
   /* ── Stepper ── */
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set([0]));
-  const STEP_PAGES: Record<number, "nameplate" | "condition" | "electrical"> = { 0: "nameplate", 2: "condition" };
+  const STEP_PAGES: Record<number, "nameplate" | "condition" | "electrical"> = { 0: "nameplate", 1: "electrical", 2: "condition" };
   const handleStepClick = (i: number) => { const p = STEP_PAGES[i]; if (p) setCurrentPage(p); };
   const toggleComplete = (i: number) => setCompletedSteps((prev) => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; });
 
@@ -1496,22 +1515,25 @@ export default function ConditionPage() {
 
           {/* ── Bottom action bar (identical to NameplatePage) ── */}
           <div style={{ padding: "14px 24px", borderTop: "1px solid hsl(var(--border))", display: "flex", alignItems: "center", justifyContent: "space-between", background: "hsl(var(--background))", flexShrink: 0 }}>
-            <button
+            <Button
+              variant="outline" size="sm"
               onClick={() => setCurrentPage("nameplate")}
-              style={{ height: 44, padding: "0 18px", borderRadius: 9999, background: "rgba(27,32,56,0.07)", border: "1px solid rgba(27,32,56,0.09)", color: "hsl(var(--foreground))", fontSize: 14, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+              className="h-11 rounded-full px-5 text-sm font-semibold gap-1.5"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              <ChevronLeft size={16} />
               Back to Nameplate
-            </button>
-            <button
+            </Button>
+            <Button
+              size="sm"
               onClick={handleNext}
               disabled={nextDisabled}
               title={nextDisabled ? "Confirm all assessments before proceeding" : undefined}
-              style={{ height: 44, padding: "0 22px", borderRadius: 9999, background: nextDisabled ? "hsl(var(--muted-foreground)/0.4)" : "#0047bb", border: "none", color: "white", fontSize: 14, fontWeight: 600, cursor: nextDisabled ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: nextDisabled ? "none" : "0 4px 14px rgba(0,71,187,0.28)", opacity: nextDisabled ? 0.65 : 1, transition: "all 0.15s" }}
+              className="h-11 rounded-full px-6 text-sm font-semibold gap-1.5"
+              style={nextDisabled ? {} : { background: "#0047bb", boxShadow: "0 4px 14px rgba(0,71,187,0.28)" }}
             >
               Next: Electrical
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
+              <ChevronRight size={16} />
+            </Button>
           </div>
         </main>
       </div>
