@@ -1509,24 +1509,25 @@ export default function ConditionPage() {
                 )}
 
                 {/* Floating sticky navigation */}
-                <div className="sticky bottom-6 z-40 mt-8 flex items-center justify-between pointer-events-none">
+                <div className="sticky bottom-6 z-40 mt-8 flex items-center justify-between">
                   <Button
-                    variant="outline"
+                    size="sm"
                     onClick={() => setCurrentPage("nameplate")}
-                    className="pointer-events-auto h-11 rounded-full px-5 text-sm font-semibold gap-1.5 shadow-lg bg-background/95 backdrop-blur-sm"
+                    className="gap-1.5 font-medium shadow-md bg-zinc-600 hover:bg-zinc-700 text-white border-zinc-600 hover:border-zinc-700"
                   >
-                    <ChevronLeft size={16} />
+                    <ChevronLeft size={14} />
                     Back to Nameplate
                   </Button>
                   <Button
+                    size="sm"
                     onClick={handleNext}
                     disabled={nextDisabled}
                     title={nextDisabled ? "Confirm all assessments before proceeding" : undefined}
-                    className="pointer-events-auto h-11 rounded-full px-6 text-sm font-semibold gap-1.5 shadow-lg"
+                    className="gap-1.5 font-medium shadow-md text-white"
                     style={nextDisabled ? {} : { background: "#0047bb", boxShadow: "0 4px 14px rgba(0,71,187,0.28)" }}
                   >
                     Next: Electrical
-                    <ChevronRight size={16} />
+                    <ChevronRight size={14} />
                   </Button>
                 </div>
 
