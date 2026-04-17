@@ -740,7 +740,7 @@ function EvalStepper({
                 onClick={() => onToggleComplete(i)}
                 title={done ? "Mark incomplete" : "Mark complete"}
                 variant="ghost"
-                className="w-6 h-6 shrink-0 rounded-full p-0 hover:bg-transparent focus-visible:ring-0"
+                className="w-6 h-6 min-h-0 shrink-0 rounded-full p-0 hover:bg-transparent focus-visible:ring-0"
                 style={{ border: done ? "none" : active ? "2px solid #5b9cf6" : "2px solid rgba(255,255,255,0.18)", background: done ? "#0047BB" : active ? "rgba(91,156,246,0.15)" : "transparent", color: done ? "#fff" : active ? "#5b9cf6" : "rgba(255,255,255,0.5)", transition: "all 0.2s" }}
               >
                 {step.icon}
