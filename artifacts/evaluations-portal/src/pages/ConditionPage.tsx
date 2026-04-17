@@ -255,14 +255,20 @@ function EvalStepper({
               </div>
             )}
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <button
+              <Button
                 onClick={() => onToggleComplete(i)}
                 title={done ? "Mark incomplete" : "Mark complete"}
-                style={{ width: 24, height: 24, borderRadius: "50%", flexShrink: 0, border: done ? "none" : active ? "2px solid #5b9cf6" : "2px solid rgba(255,255,255,0.18)", background: done ? "#0047BB" : active ? "rgba(91,156,246,0.15)" : "transparent", color: done ? "#fff" : active ? "#5b9cf6" : "rgba(255,255,255,0.5)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.2s" }}
-              >{step.icon}</button>
-              <button onClick={() => onStepClick(i)} style={{ flex: 1, textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                variant="ghost"
+                className="p-0 flex-shrink-0 rounded-full hover:bg-transparent"
+                style={{ width: 24, height: 24, border: done ? "none" : active ? "2px solid #5b9cf6" : "2px solid rgba(255,255,255,0.18)", background: done ? "#0047BB" : active ? "rgba(91,156,246,0.15)" : "transparent", color: done ? "#fff" : active ? "#5b9cf6" : "rgba(255,255,255,0.5)", transition: "all 0.2s", minWidth: 0 }}
+              >{step.icon}</Button>
+              <Button
+                onClick={() => onStepClick(i)}
+                variant="ghost"
+                className="flex-1 justify-start h-auto p-0 hover:bg-transparent"
+              >
                 <span style={{ fontSize: 12, fontWeight: active ? 600 : 400, color: active ? "#5b9cf6" : "rgba(255,255,255,0.85)", transition: "color 0.15s" }}>{step.label}</span>
-              </button>
+              </Button>
               {done ? (
                 <div style={{ width: 16, height: 16, borderRadius: "50%", flexShrink: 0, background: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
@@ -358,15 +364,17 @@ function SegmentControl<T extends string>({
           const isSelected = value === opt;
           const isAiSuggested = !value && aiOriginal === opt;
           return (
-            <button
+            <Button
               key={opt}
               onClick={() => onChange(opt)}
-              style={{ flex: 1, borderRadius: 100, fontSize: fs, cursor: "pointer", border: "none", transition: "all 0.15s", background: isSelected ? (activeColors[opt] ?? "#0047bb") : "transparent", color: isSelected ? "white" : "hsl(var(--muted-foreground))", fontWeight: isSelected ? 600 : 500, boxShadow: isSelected ? "0 1px 4px rgba(0,0,0,0.18)" : "none", outline: isAiSuggested ? "1px solid rgba(124,58,237,0.35)" : "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
+              variant="ghost"
+              className="flex-1 rounded-full h-auto p-0 gap-1 hover:bg-transparent"
+              style={{ fontSize: fs, transition: "all 0.15s", background: isSelected ? (activeColors[opt] ?? "#0047bb") : "transparent", color: isSelected ? "white" : "hsl(var(--muted-foreground))", fontWeight: isSelected ? 600 : 500, boxShadow: isSelected ? "0 1px 4px rgba(0,0,0,0.18)" : "none", outline: isAiSuggested ? "1px solid rgba(124,58,237,0.35)" : "none" }}
             >
               {isSelected && <Check size={12} strokeWidth={2.5} />}
               {isAiSuggested && !isSelected && <Sparkles size={12} color="#7c3aed" />}
               {opt}
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -1504,7 +1512,7 @@ export default function ConditionPage() {
         </main>
       </div>
 
-      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileSelected} />
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelected} />
 
       {modalStep === "location"      && <LocationSelectorModal onSelect={(sec) => { setFlowSection(sec); setModalStep("sublocation"); }} onCancel={() => setModalStep(null)} />}
       {modalStep === "sublocation"   && flowSection && <SublocationSelectorModal section={flowSection} onSelect={(sub) => { setFlowSublocation(sub); setModalStep("photoSource"); }} onBack={() => setModalStep("location")} onCancel={() => setModalStep(null)} />}
