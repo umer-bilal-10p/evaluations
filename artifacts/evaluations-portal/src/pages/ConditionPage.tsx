@@ -834,11 +834,11 @@ function ReadOnlySectionCard({
             <p className="text-sm text-muted-foreground">No damage findings documented</p>
           </div>
         ) : (
-          <Table>
+          <Table style={{ tableLayout: "fixed", width: "100%" }}>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
-                {/* Fixed widths keep all three section tables aligned */}
-                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 88 }}>#</TableHead>
+                {/* Fixed widths — tableLayout:fixed enforces these across all section tables */}
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 112 }}>#</TableHead>
                 <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 130 }}>Sub-location</TableHead>
                 <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 110 }}>Damage Type</TableHead>
                 <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 120 }}>Repairability</TableHead>
@@ -867,7 +867,7 @@ function ReadOnlySectionCard({
                           <img
                             src={entry.imageUrl} alt="damage"
                             onClick={() => onLightbox(entry.imageUrl)}
-                            className="w-9 h-9 rounded-md object-cover cursor-zoom-in border border-border flex-shrink-0"
+                            className="w-14 h-14 rounded-md object-cover cursor-zoom-in border border-border flex-shrink-0"
                           />
                         ) : (
                           <span className="text-[10px] text-muted-foreground leading-none pt-1">No photo</span>
