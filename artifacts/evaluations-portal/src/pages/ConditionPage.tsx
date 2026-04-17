@@ -1202,11 +1202,6 @@ export default function ConditionPage() {
 
   const npxTags = unit.intakeTags.filter((t: string) => t.startsWith("NPX: "));
 
-  /* ── Stats for view mode ── */
-  const totalFindings = entries.length + (currentEntry ? 1 : 0);
-  const sectionsWithDamage = (["Tank", "Cabinet", "Radiator"] as SectionId[]).filter((s) => allEntries.some((e) => e.sectionLocation === s)).length;
-  const aiDetectedCount = entries.filter((e) => e.aiDetected).length;
-
   return (
     <div className="h-screen flex flex-col overflow-hidden" style={{ background: "hsl(var(--background))", color: "hsl(var(--foreground))" }}>
       <PortalHeader />
@@ -1329,32 +1324,6 @@ export default function ConditionPage() {
             {/* Right: scrollable content */}
             <div className="flex-1 overflow-auto px-8 py-6">
               <div className="max-w-[900px] mx-auto">
-
-                {/* Page heading */}
-                <div className="mb-4">
-                  <h1 className="text-3xl font-bold text-foreground mb-1">Condition Assessment</h1>
-                  <p className="text-sm text-muted-foreground">Review physical damage findings for this transformer unit</p>
-                </div>
-
-                {/* Summary stats */}
-                <div className="flex items-center gap-2 mb-6 flex-wrap">
-                  <Badge variant="outline" className="gap-1.5 text-xs font-semibold">
-                    <AlertCircle size={11} /> {totalFindings} Finding{totalFindings !== 1 ? "s" : ""}
-                  </Badge>
-                  <Badge variant="outline" className="gap-1.5 text-xs font-semibold">
-                    {sectionsWithDamage} of 3 Sections Affected
-                  </Badge>
-                  {aiDetectedCount > 0 && (
-                    <Badge className="gap-1.5 text-xs font-semibold border-[rgba(124,58,237,0.28)] bg-[rgba(124,58,237,0.10)] text-[#7C3AED]">
-                      <Sparkles size={11} strokeWidth={1.75} /> {aiDetectedCount} AI Detected
-                    </Badge>
-                  )}
-                  {editMode && (
-                    <Badge className="gap-1.5 text-xs font-semibold border-amber-300 bg-amber-100 text-amber-800">
-                      <Pencil size={10} /> Editing
-                    </Badge>
-                  )}
-                </div>
 
                 {/* Evaluation Comments accordion */}
                 <div className="mb-4">
