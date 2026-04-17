@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { PortalHeader } from "@/components/PortalHeader";
 import { Sidebar } from "@/components/Sidebar";
+import { EvalSubHeader } from "@/components/EvalSubHeader";
 import { useDemoContext } from "@/context/DemoContext";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -740,7 +741,7 @@ function EvalStepper({
                 onClick={() => onToggleComplete(i)}
                 title={done ? "Mark incomplete" : "Mark complete"}
                 variant="ghost"
-                className="w-6 h-6 min-h-0 shrink-0 rounded-full p-0 hover:bg-transparent focus-visible:ring-0"
+                className="w-7 h-7 min-h-0 shrink-0 rounded-full p-0 hover:bg-transparent focus-visible:ring-0 [&_svg]:size-3"
                 style={{ border: done ? "none" : active ? "2px solid #5b9cf6" : "2px solid rgba(255,255,255,0.18)", background: done ? "#0047BB" : active ? "rgba(91,156,246,0.15)" : "transparent", color: done ? "#fff" : active ? "#5b9cf6" : "rgba(255,255,255,0.5)", transition: "all 0.2s" }}
               >
                 {step.icon}
@@ -928,80 +929,11 @@ export default function NameplatePage() {
         <main className="flex-1 flex flex-col overflow-hidden">
 
           {/* ── Unit sub-header ── */}
-          <div className="flex items-center gap-4 px-6 flex-shrink-0 flex-wrap min-h-12"
-            style={{ background: "#0d1629", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-
-            {/* Back button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage("evaluations-history")}
-              className="gap-1.5 border-white/22 bg-white/8 text-white/85 hover:bg-white/15 hover:text-white flex-shrink-0"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 12H5M12 5l-7 7 7 7"/>
-              </svg>
-              Back to Evaluation History
-            </Button>
-
-            <Separator orientation="vertical" className="h-4 bg-white/15 flex-shrink-0" />
-
-            {/* Breadcrumb pills */}
-            <div className="flex items-center gap-1.5 flex-wrap flex-1">
-              {/* Transformer type abbr + Manufacturer pill */}
-              {(() => {
-                const abbr: Record<string, string> = {
-                  "Three-Phase Pad": "3PPM",
-                  "Single-Phase Pad": "1PPM",
-                  "Underground": "URD",
-                  "Network": "NTX",
-                  "Auto-Transformer": "AUTO",
-                };
-                return (
-                  <Badge variant="outline" className="text-xs font-medium text-white/80 bg-white/7 border-white/12 rounded-md px-2.5 py-0.5 gap-1.5">
-                    {abbr[unit.transformerType] ?? unit.transformerType}
-                    <span className="text-white/30">|</span>
-                    {unit.manufacturer}
-                  </Badge>
-                );
-              })()}
-              {/* Label + value pills */}
-              {([
-                ["IC", unit.icNumber],
-                ["Serial", unit.mfgSerial],
-                ["kVA", unit.kva.toLocaleString()],
-              ] as [string, string][]).map(([lbl, val]) => (
-                <Badge key={lbl} variant="outline" className="text-xs font-medium text-white/80 bg-white/7 border-white/12 rounded-md px-2.5 py-0.5 gap-1.5">
-                  {lbl}
-                  <span className="text-white/30">|</span>
-                  {val}
-                </Badge>
-              ))}
-              {/* NPX intake tags — split on ": " into label + value */}
-              {(unit.intakeTags ?? []).map((tag: string) => {
-                const sep = tag.indexOf(": ");
-                const lbl = sep !== -1 ? tag.slice(0, sep) : null;
-                const val = sep !== -1 ? tag.slice(sep + 2) : tag;
-                return (
-                  <Badge key={tag} variant="outline" className="text-xs font-medium text-white/80 bg-white/7 border-white/12 rounded-md px-2.5 py-0.5 gap-1.5">
-                    {lbl}
-                    {lbl && <span className="text-white/30">|</span>}
-                    {val}
-                  </Badge>
-                );
-              })}
-              {/* Base Damage */}
-              {unit.hasBaseDamage && (
-                <Badge className="text-xs font-semibold gap-1.5 rounded-md px-2.5 py-0.5 border-[rgba(234,88,12,0.45)] bg-[rgba(234,88,12,0.25)] text-[#FEF3C7]">
-                  <Flag size={11} strokeWidth={2} />
-                  Base Damage
-                </Badge>
-              )}
-            </div>
-
-            {/* Edit / Save / Discard */}
-            {editMode ? (
-              <div className="flex items-center gap-1.5 flex-shrink-0">
+          <EvalSubHeader
+            unit={unit}
+            onBack={() => setCurrentPage("evaluations-history")}
+            rightSlot={editMode ? (
+              <>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1023,12 +955,12 @@ export default function NameplatePage() {
                   </svg>
                   Save
                 </Button>
-              </div>
+              </>
             ) : (
               <Button
                 size="sm"
                 onClick={() => setEditMode(true)}
-                className="flex-shrink-0 gap-1.5 bg-[#0047BB] border-[#0047BB] text-white hover:bg-[#0040AA]"
+                className="gap-1.5 bg-[#0047BB] border-[#0047BB] text-white hover:bg-[#0040AA]"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -1037,7 +969,7 @@ export default function NameplatePage() {
                 Edit
               </Button>
             )}
-          </div>
+          />
 
           {/* ── Content: stepper panel + scrollable sections ── */}
           <div className="flex-1 overflow-hidden flex">
