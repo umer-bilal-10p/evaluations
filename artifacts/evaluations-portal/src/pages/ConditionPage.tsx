@@ -847,14 +847,14 @@ function ReadOnlySectionCard({
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
                 {/* Fixed widths — tableLayout:fixed enforces these across all section tables */}
-                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 40 }}>#</TableHead>
-                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 76 }}>Photo</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 44 }}>#</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 100 }}>Photo</TableHead>
                 <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 130 }}>Sub-location</TableHead>
                 <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 110 }}>Damage Type</TableHead>
                 <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 120 }}>Repairability</TableHead>
                 <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 100 }}>Assessment</TableHead>
                 <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 160 }}>Capture Method</TableHead>
-                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Notes</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 260 }}>Notes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -863,7 +863,7 @@ function ReadOnlySectionCard({
                 return (
                   <TableRow key={entry.id} className="hover:bg-muted/20">
                     {/* # — row number only */}
-                    <TableCell className="py-2.5 align-top">
+                    <TableCell className="py-4 align-top">
                       <div className="flex flex-col items-start gap-1">
                         <span className="text-sm font-medium text-muted-foreground">{idx + 1}</span>
                         {isIncomplete && (
@@ -874,7 +874,7 @@ function ReadOnlySectionCard({
                       </div>
                     </TableCell>
                     {/* Photo — thumbnail or placeholder */}
-                    <TableCell className="py-2.5 align-top">
+                    <TableCell className="py-4 align-top">
                       {entry.imageUrl ? (
                         <img
                           src={entry.imageUrl} alt="damage"
@@ -887,11 +887,11 @@ function ReadOnlySectionCard({
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="py-2.5 text-sm text-foreground align-top">{entry.subLocation || entry.sectionLocation || "—"}</TableCell>
-                    <TableCell className="py-2.5 text-sm text-foreground align-top">{entry.damageType || "—"}</TableCell>
-                    <TableCell className="py-2.5 text-sm text-foreground align-top">{entry.assessment || "—"}</TableCell>
-                    <TableCell className="py-2.5 text-sm text-foreground align-top">{entry.damageAssessment || "—"}</TableCell>
-                    <TableCell className="py-2.5 align-top">
+                    <TableCell className="py-4 text-sm text-foreground align-top">{entry.subLocation || entry.sectionLocation || "—"}</TableCell>
+                    <TableCell className="py-4 text-sm text-foreground align-top">{entry.damageType || "—"}</TableCell>
+                    <TableCell className="py-4 text-sm text-foreground align-top">{entry.assessment || "—"}</TableCell>
+                    <TableCell className="py-4 text-sm text-foreground align-top">{entry.damageAssessment || "—"}</TableCell>
+                    <TableCell className="py-4 align-top">
                       {entry.aiDetected && entry.confidence != null ? (
                         <div className="flex flex-col items-start gap-1">
                           <span className="text-sm text-foreground">AI</span>
@@ -902,7 +902,7 @@ function ReadOnlySectionCard({
                       )}
                     </TableCell>
                     {/* Notes — wraps freely */}
-                    <TableCell className="py-2.5 text-sm text-muted-foreground align-top">
+                    <TableCell className="py-4 text-sm text-muted-foreground align-top">
                       {entry.comments || "—"}
                     </TableCell>
                   </TableRow>
