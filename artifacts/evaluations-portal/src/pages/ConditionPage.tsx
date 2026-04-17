@@ -295,8 +295,17 @@ function makeSeedEntry(
 const AI_ORIG_TANK: AIOriginal = { damageType: "Rust", assessment: "Repairable", damageAssessment: "Surface", comments: "Surface corrosion detected near base weld line. Appears containable — recommend grinding and repainting." };
 
 const SEED_ENTRIES: DamageEntry[] = [
-  makeSeedEntry("dmg-seed-1", "Tank", "Base", "/nameplate.png", true, "Rust", "Repairable", "Surface", 87, "Surface corrosion detected near base weld line. Appears containable — recommend grinding and repainting.", AI_ORIG_TANK),
-  makeSeedEntry("dmg-seed-2", "Cabinet", "Left Door", "", false, "Dent", "Non-Repairable", "Structural", undefined, "Large dent on left door panel — hinge is misaligned and door no longer closes flush. Structural concern.", undefined),
+  /* ── Tank ── */
+  makeSeedEntry("dmg-seed-1", "Tank", "Base", "/nameplate.png", true,  "Rust", "Repairable",     "Surface",    87,        "Surface corrosion detected near base weld line. Appears containable — recommend grinding and repainting.", AI_ORIG_TANK),
+  makeSeedEntry("dmg-seed-4", "Tank", "Top Panel",       "",              false, "Dent", "Repairable",     "Surface",    undefined, "Minor dent on top panel from impact during transport. No structural concern.", undefined),
+  makeSeedEntry("dmg-seed-5", "Tank", "Right Side Wall", "/nameplate.png", true,  "Rust", "Non-Repairable", "Structural", 73,        "Deep corrosion along right weld seam — metal thickness compromised. Recommend panel replacement.", undefined),
+  /* ── Cabinet ── */
+  makeSeedEntry("dmg-seed-2", "Cabinet", "Left Door",       "",              false, "Dent",  "Non-Repairable", "Structural", undefined, "Large dent on left door panel — hinge is misaligned and door no longer closes flush. Structural concern.", undefined),
+  makeSeedEntry("dmg-seed-6", "Cabinet", "Top Cover",       "/nameplate.png", true,  "Rust",  "Repairable",     "Surface",    79,        "Surface rust on top cover. Recommend treatment and re-coating before storage.", undefined),
+  makeSeedEntry("dmg-seed-7", "Cabinet", "Right Side Panel","",              false, "Holes", "Non-Repairable", "Structural", undefined, "Two puncture holes on right panel, likely from forklift contact. Structural damage to mounting frame.", undefined),
+  /* ── Radiator ── */
+  makeSeedEntry("dmg-seed-8", "Radiator", "Left Side",      "/nameplate.png", true,  "Dent",  "Non-Repairable", "Structural", 62,        "Significant fin deformation across the left cooling array. Thermal performance may be compromised.", undefined),
+  makeSeedEntry("dmg-seed-9", "Radiator", "Bottom Section", "",              false, "Tears", "Non-Repairable", "Structural", undefined, "Torn fins along bottom edge. Coolant flow restriction possible — full replacement recommended.", undefined),
 ];
 
 const SEED_PENDING: DamageEntry = makeSeedEntry("dmg-seed-3", "Radiator", "Left Side", "", false, "", "", "", undefined, "", undefined);
@@ -851,12 +860,12 @@ function ReadOnlySectionCard({
               {allRows.map((entry, idx) => {
                 const isIncomplete = !entry.damageType || (entry.damageType !== "None" && (!entry.assessment || !entry.damageAssessment));
                 return (
-                  <TableRow key={entry.id} className="hover:bg-muted/20 align-top">
-                    {/* # — row number + thumbnail stacked */}
-                    <TableCell className="py-2.5">
-                      <div className="flex items-start gap-2">
-                        <div className="flex flex-col items-start gap-1">
-                          <span className="text-sm font-medium text-muted-foreground leading-none pt-0.5">{idx + 1}</span>
+                  <TableRow key={entry.id} className="hover:bg-muted/20">
+                    {/* # — row number stacked above thumbnail */}
+                    <TableCell className="py-2.5 align-top">
+                      <div className="flex flex-col items-start gap-1.5">
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm font-medium text-muted-foreground">{idx + 1}</span>
                           {isIncomplete && (
                             <Badge className="text-[9px] px-1 py-0 gap-0.5 border-amber-300 bg-amber-100 text-amber-800 font-semibold leading-tight whitespace-nowrap">
                               <AlertCircle size={8} /> Incomplete
@@ -870,21 +879,28 @@ function ReadOnlySectionCard({
                             className="w-14 h-14 rounded-md object-cover cursor-zoom-in border border-border flex-shrink-0"
                           />
                         ) : (
-                          <span className="text-[10px] text-muted-foreground leading-none pt-1">No photo</span>
+                          <div className="w-14 h-14 rounded-md border border-dashed border-border bg-muted/40 flex items-center justify-center flex-shrink-0">
+                            <Camera size={18} className="text-muted-foreground/30" />
+                          </div>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="py-2.5 text-sm text-foreground">{entry.subLocation || entry.sectionLocation || "—"}</TableCell>
-                    <TableCell className="py-2.5 text-sm text-foreground">{entry.damageType || "—"}</TableCell>
-                    <TableCell className="py-2.5 text-sm text-foreground">{entry.assessment || "—"}</TableCell>
-                    <TableCell className="py-2.5 text-sm text-foreground">{entry.damageAssessment || "—"}</TableCell>
-                    <TableCell className="py-2.5 text-sm text-foreground">
-                      {entry.aiDetected && entry.confidence != null
-                        ? `${entry.confidence}% AI Confidence`
-                        : "Manual"}
+                    <TableCell className="py-2.5 text-sm text-foreground align-top">{entry.subLocation || entry.sectionLocation || "—"}</TableCell>
+                    <TableCell className="py-2.5 text-sm text-foreground align-top">{entry.damageType || "—"}</TableCell>
+                    <TableCell className="py-2.5 text-sm text-foreground align-top">{entry.assessment || "—"}</TableCell>
+                    <TableCell className="py-2.5 text-sm text-foreground align-top">{entry.damageAssessment || "—"}</TableCell>
+                    <TableCell className="py-2.5 align-top">
+                      {entry.aiDetected && entry.confidence != null ? (
+                        <div className="flex flex-col items-start gap-1">
+                          <span className="text-sm text-foreground">AI</span>
+                          <ConfidenceBadge pct={entry.confidence} />
+                        </div>
+                      ) : (
+                        <span className="text-sm text-foreground">Manual</span>
+                      )}
                     </TableCell>
-                    {/* Notes — wraps freely, no truncation */}
-                    <TableCell className="py-2.5 text-sm text-muted-foreground">
+                    {/* Notes — wraps freely */}
+                    <TableCell className="py-2.5 text-sm text-muted-foreground align-top">
                       {entry.comments || "—"}
                     </TableCell>
                   </TableRow>
