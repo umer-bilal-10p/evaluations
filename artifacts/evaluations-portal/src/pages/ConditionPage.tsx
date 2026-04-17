@@ -18,7 +18,7 @@ import {
   Sparkles, Flag, Camera, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
   Settings2, Trash2, RotateCcw, MapPin, AlertCircle, Save, Loader2, CheckCircle2,
   Upload, EyeOff, X, Maximize2, Plus, Package2, Box, Layers, Database, ArrowUp, ArrowDown,
-  ChevronsUp, ChevronsDown, Minus, DoorOpen, HelpCircle, Pencil,
+  ChevronsUp, ChevronsDown, Minus, DoorOpen, HelpCircle, Pencil, Wrench,
 } from "lucide-react";
 
 /* ─── Types ─────────────────────────────────────────────────────────────────── */
@@ -853,7 +853,7 @@ function ReadOnlySectionCard({
                 <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 95 }}>Damage Type</TableHead>
                 <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 95 }}>Repairability</TableHead>
                 <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 85 }}>Assessment</TableHead>
-                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 148 }}>Capture Method</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 185 }}>Capture Method</TableHead>
                 <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Notes</TableHead>
               </TableRow>
             </TableHeader>
@@ -864,12 +864,10 @@ function ReadOnlySectionCard({
                   <TableRow key={entry.id} className="hover:bg-muted/20">
                     {/* # — row number only */}
                     <TableCell className="py-4 align-top">
-                      <div className="flex flex-col items-start gap-1">
+                      <div className="flex flex-col items-center gap-1.5">
                         <span className="text-sm font-medium text-muted-foreground">{idx + 1}</span>
                         {isIncomplete && (
-                          <Badge className="text-[9px] px-1 py-0 gap-0.5 border-amber-300 bg-amber-100 text-amber-800 font-semibold leading-tight whitespace-nowrap">
-                            <AlertCircle size={8} /> Incomplete
-                          </Badge>
+                          <Wrench size={13} className="text-amber-500" />
                         )}
                       </div>
                     </TableCell>
@@ -894,7 +892,10 @@ function ReadOnlySectionCard({
                     <TableCell className="py-4 text-sm text-foreground align-top">{entry.damageAssessment || "—"}</TableCell>
                     <TableCell className="py-4 align-top">
                       {entry.aiDetected && entry.confidence != null ? (
-                        <ConfidenceBadge pct={entry.confidence} />
+                        <div className="flex flex-col items-start gap-1">
+                          <span className="text-sm text-foreground">AI</span>
+                          <ConfidenceBadge pct={entry.confidence} />
+                        </div>
                       ) : (
                         <span className="text-sm text-foreground">Manual</span>
                       )}
