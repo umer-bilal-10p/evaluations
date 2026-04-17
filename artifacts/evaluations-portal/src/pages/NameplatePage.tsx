@@ -736,34 +736,26 @@ function EvalStepper({
             {/* Step row — circle + label + status all on one aligned row */}
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {/* Circle toggle */}
-              <button
+              <Button
                 onClick={() => onToggleComplete(i)}
                 title={done ? "Mark incomplete" : "Mark complete"}
-                style={{
-                  width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
-                  border: done ? "none" : active ? "2px solid #5b9cf6" : "2px solid rgba(255,255,255,0.18)",
-                  background: done ? "#0047BB" : active ? "rgba(91,156,246,0.15)" : "transparent",
-                  color: done ? "#fff" : active ? "#5b9cf6" : "rgba(255,255,255,0.5)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  cursor: "pointer", transition: "all 0.2s",
-                }}
+                variant="ghost"
+                className="w-6 h-6 shrink-0 rounded-full p-0 hover:bg-transparent focus-visible:ring-0"
+                style={{ border: done ? "none" : active ? "2px solid #5b9cf6" : "2px solid rgba(255,255,255,0.18)", background: done ? "#0047BB" : active ? "rgba(91,156,246,0.15)" : "transparent", color: done ? "#fff" : active ? "#5b9cf6" : "rgba(255,255,255,0.5)", transition: "all 0.2s" }}
               >
                 {step.icon}
-              </button>
+              </Button>
 
               {/* Label */}
-              <button
+              <Button
                 onClick={() => onStepClick(i)}
-                style={{ flex: 1, textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                variant="ghost"
+                className="flex-1 justify-start h-auto p-0 hover:bg-transparent focus-visible:ring-0"
               >
-                <span style={{
-                  fontSize: 12, fontWeight: active ? 600 : 400,
-                  color: active ? "#5b9cf6" : "rgba(255,255,255,0.85)",
-                  transition: "color 0.15s",
-                }}>
+                <span style={{ fontSize: 12, fontWeight: active ? 600 : 400, color: active ? "#5b9cf6" : "rgba(255,255,255,0.85)", transition: "color 0.15s" }}>
                   {step.label}
                 </span>
-              </button>
+              </Button>
 
               {/* Right status indicator */}
               {done ? (

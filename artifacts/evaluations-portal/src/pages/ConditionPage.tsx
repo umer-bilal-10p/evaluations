@@ -259,13 +259,13 @@ function EvalStepper({
                 onClick={() => onToggleComplete(i)}
                 title={done ? "Mark incomplete" : "Mark complete"}
                 variant="ghost"
-                className="p-0 flex-shrink-0 rounded-full hover:bg-transparent"
-                style={{ width: 24, height: 24, border: done ? "none" : active ? "2px solid #5b9cf6" : "2px solid rgba(255,255,255,0.18)", background: done ? "#0047BB" : active ? "rgba(91,156,246,0.15)" : "transparent", color: done ? "#fff" : active ? "#5b9cf6" : "rgba(255,255,255,0.5)", transition: "all 0.2s", minWidth: 0 }}
+                className="w-6 h-6 shrink-0 rounded-full p-0 hover:bg-transparent focus-visible:ring-0"
+                style={{ border: done ? "none" : active ? "2px solid #5b9cf6" : "2px solid rgba(255,255,255,0.18)", background: done ? "#0047BB" : active ? "rgba(91,156,246,0.15)" : "transparent", color: done ? "#fff" : active ? "#5b9cf6" : "rgba(255,255,255,0.5)", transition: "all 0.2s" }}
               >{step.icon}</Button>
               <Button
                 onClick={() => onStepClick(i)}
                 variant="ghost"
-                className="flex-1 justify-start h-auto p-0 hover:bg-transparent"
+                className="flex-1 justify-start h-auto p-0 hover:bg-transparent focus-visible:ring-0"
               >
                 <span style={{ fontSize: 12, fontWeight: active ? 600 : 400, color: active ? "#5b9cf6" : "rgba(255,255,255,0.85)", transition: "color 0.15s" }}>{step.label}</span>
               </Button>
@@ -1224,13 +1224,13 @@ export default function ConditionPage() {
 
             <Button
               variant="outline" size="sm"
-              onClick={() => setCurrentPage("nameplate")}
+              onClick={() => setCurrentPage("evaluations-history")}
               className="gap-1.5 border-white/22 bg-white/8 text-white/85 hover:bg-white/15 hover:text-white flex-shrink-0"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M19 12H5M12 5l-7 7 7 7"/>
               </svg>
-              Back to Nameplate
+              Back to Evaluation History
             </Button>
 
             <Separator orientation="vertical" className="h-4 bg-white/15 flex-shrink-0" />
@@ -1242,7 +1242,7 @@ export default function ConditionPage() {
                 <span className="text-white/30">|</span>
                 {unit.manufacturer}
               </Badge>
-              {([["IC", unit.icNumber], ["S#", unit.mfgSerial], ["kVA", unit.kva.toLocaleString()]] as [string, string][]).map(([lbl, val]) => (
+              {([["IC", unit.icNumber], ["Serial", unit.mfgSerial], ["kVA", unit.kva.toLocaleString()]] as [string, string][]).map(([lbl, val]) => (
                 <Badge key={lbl} variant="outline" className="text-xs font-medium text-white/80 bg-white/7 border-white/12 rounded-md px-2.5 py-0.5 gap-1.5">
                   {lbl}<span className="text-white/30">|</span>{val}
                 </Badge>
