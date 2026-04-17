@@ -422,7 +422,7 @@ function ConfidenceBadge({ pct }: { pct: number }) {
         : "border-[#FCD34D] bg-[#FEF3C7] text-[#92400E]",
     )}>
       <Sparkles size={10} strokeWidth={1.75} />
-      {pct}%
+      AI was {pct}% Confident
     </Badge>
   );
 }
@@ -847,14 +847,14 @@ function ReadOnlySectionCard({
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
                 {/* Fixed widths — tableLayout:fixed enforces these across all section tables */}
-                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 44 }}>#</TableHead>
-                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 100 }}>Photo</TableHead>
-                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 130 }}>Sub-location</TableHead>
-                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 110 }}>Damage Type</TableHead>
-                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 120 }}>Repairability</TableHead>
-                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 100 }}>Assessment</TableHead>
-                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 160 }}>Capture Method</TableHead>
-                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 260 }}>Notes</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 36 }}>#</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 82 }}>Photo</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 108 }}>Sub-location</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 95 }}>Damage Type</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 95 }}>Repairability</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 85 }}>Assessment</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 148 }}>Capture Method</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Notes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -882,8 +882,9 @@ function ReadOnlySectionCard({
                           className="w-14 h-14 rounded-md object-cover cursor-zoom-in border border-border"
                         />
                       ) : (
-                        <div className="w-14 h-14 rounded-md border border-dashed border-border bg-muted/40 flex items-center justify-center">
-                          <Camera size={18} className="text-muted-foreground/30" />
+                        <div className="w-14 h-14 rounded-md border border-dashed border-border bg-muted/40 flex flex-col items-center justify-center gap-0.5">
+                          <Camera size={13} className="text-muted-foreground/30" />
+                          <span className="text-[8px] font-medium text-muted-foreground/40 leading-none">No Image</span>
                         </div>
                       )}
                     </TableCell>
@@ -893,10 +894,7 @@ function ReadOnlySectionCard({
                     <TableCell className="py-4 text-sm text-foreground align-top">{entry.damageAssessment || "—"}</TableCell>
                     <TableCell className="py-4 align-top">
                       {entry.aiDetected && entry.confidence != null ? (
-                        <div className="flex flex-col items-start gap-1">
-                          <span className="text-sm text-foreground">AI</span>
-                          <ConfidenceBadge pct={entry.confidence} />
-                        </div>
+                        <ConfidenceBadge pct={entry.confidence} />
                       ) : (
                         <span className="text-sm text-foreground">Manual</span>
                       )}
