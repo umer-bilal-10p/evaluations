@@ -800,117 +800,98 @@ function ReadOnlySectionCard({
   const allRows = [...entries, ...(pendingEntry?.sectionLocation === section ? [pendingEntry] : [])];
   const findingCount = entries.length + (pendingEntry?.sectionLocation === section ? 1 : 0);
 
-  const baseStatusBadge = {
-    pending:  { label: "Pending Review", cls: "border-amber-300 bg-amber-100 text-amber-800" },
-    damaged:  { label: "Damage Documented", cls: "border-blue-300 bg-blue-100 text-blue-800" },
-    clean:    { label: "No Damage", cls: "border-green-300 bg-green-100 text-green-800" },
-    dismissed:{ label: "Dismissed", cls: "border-border bg-muted text-muted-foreground" },
+  const baseStatusLabel: Record<BaseStatus, string> = {
+    pending:   "Pending Review",
+    damaged:   "Damage Documented",
+    clean:     "No Damage",
+    dismissed: "Dismissed",
   };
 
   return (
-    <Card className="mb-4 shadow-none rounded-xl overflow-hidden" style={{ border: si.cardBorder }}>
-      {/* Colored section header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", background: si.headerGradient, borderBottom: si.bodyDivider }}>
-        <div style={{ width: 36, height: 36, borderRadius: 12, background: si.iconBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor }}>{si.icon}</div>
-        <span className="text-foreground text-base font-semibold">{section}</span>
-        <Badge className={cn("text-xs font-semibold rounded-full px-2 py-0.5", findingCount > 0 ? "border-border bg-muted text-foreground" : "border-border bg-background text-muted-foreground")}>
+    <Card className="mb-4 shadow-none rounded-xl overflow-hidden border border-border">
+      {/* Neutral header — only the icon keeps its section colour */}
+      <div className="flex items-center gap-3 px-5 py-3.5 border-b border-border bg-muted/30">
+        <div style={{ width: 34, height: 34, borderRadius: 10, background: si.iconBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", color: si.iconColor }}>
+          {si.icon}
+        </div>
+        <span className="text-foreground text-sm font-semibold">{section}</span>
+        <span className="text-xs text-muted-foreground">
           {findingCount} finding{findingCount !== 1 ? "s" : ""}
-        </Badge>
+        </span>
       </div>
 
       <CardContent className="p-0">
-        {/* Tank base inspection status row — always shown (including dismissed) */}
+        {/* Tank base inspection — always shown, plain text */}
         {section === "Tank" && baseStatus && (
-          <div className="flex items-center gap-3 px-5 py-3 border-b border-border" style={{ background: "hsl(var(--muted)/0.3)" }}>
+          <div className="flex items-center gap-3 px-5 py-2.5 border-b border-border bg-muted/20">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Base Inspection</span>
-            <Badge className={cn("text-xs font-semibold rounded-full px-2.5 py-0.5", baseStatusBadge[baseStatus].cls)}>
-              {baseStatusBadge[baseStatus].label}
-            </Badge>
+            <span className="text-sm text-foreground">{baseStatusLabel[baseStatus]}</span>
           </div>
         )}
 
-        {/* Findings */}
         {allRows.length === 0 ? (
-          <div className="p-6 text-center border border-dashed border-border rounded-lg m-4">
+          <div className="p-6 text-center">
             <p className="text-sm text-muted-foreground">No damage findings documented</p>
           </div>
         ) : (
-          <div className="rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30 hover:bg-muted/30">
-                  <TableHead className="h-9 w-14 text-[10px] font-bold uppercase tracking-wider">#</TableHead>
-                  <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Sub-location</TableHead>
-                  <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Damage Type</TableHead>
-                  <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Repairability</TableHead>
-                  <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Assessment</TableHead>
-                  <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">AI</TableHead>
-                  <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Notes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {allRows.map((entry, idx) => {
-                  const isIncomplete = !entry.damageType || (entry.damageType !== "None" && (!entry.assessment || !entry.damageAssessment));
-                  return (
-                    <TableRow key={entry.id} className="hover:bg-muted/20">
-                      {/* # column: row number + optional photo thumbnail + incomplete badge */}
-                      <TableCell className="py-2.5">
-                        <div className="flex items-center gap-2">
-                          <div className="flex flex-col items-center gap-1">
-                            <span className="text-sm font-medium text-muted-foreground">{idx + 1}</span>
-                            {isIncomplete && (
-                              <Badge className="text-[9px] px-1 py-0 gap-0.5 border-amber-300 bg-amber-100 text-amber-800 font-semibold leading-tight">
-                                <AlertCircle size={8} /> Incomplete
-                              </Badge>
-                            )}
-                          </div>
-                          {entry.imageUrl ? (
-                            <img
-                              src={entry.imageUrl} alt="damage"
-                              onClick={() => onLightbox(entry.imageUrl)}
-                              className="w-9 h-9 rounded-lg object-cover cursor-zoom-in border border-border flex-shrink-0"
-                            />
-                          ) : (
-                            <Badge variant="outline" className="text-[9px] text-muted-foreground font-medium px-1 py-0 flex-shrink-0">No Photo</Badge>
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30 hover:bg-muted/30">
+                {/* Fixed widths keep all three section tables aligned */}
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 88 }}>#</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 130 }}>Sub-location</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 110 }}>Damage Type</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 120 }}>Repairability</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 100 }}>Assessment</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 160 }}>Capture Method</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider">Notes</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {allRows.map((entry, idx) => {
+                const isIncomplete = !entry.damageType || (entry.damageType !== "None" && (!entry.assessment || !entry.damageAssessment));
+                return (
+                  <TableRow key={entry.id} className="hover:bg-muted/20 align-top">
+                    {/* # — row number + thumbnail stacked */}
+                    <TableCell className="py-2.5">
+                      <div className="flex items-start gap-2">
+                        <div className="flex flex-col items-start gap-1">
+                          <span className="text-sm font-medium text-muted-foreground leading-none pt-0.5">{idx + 1}</span>
+                          {isIncomplete && (
+                            <Badge className="text-[9px] px-1 py-0 gap-0.5 border-amber-300 bg-amber-100 text-amber-800 font-semibold leading-tight whitespace-nowrap">
+                              <AlertCircle size={8} /> Incomplete
+                            </Badge>
                           )}
                         </div>
-                      </TableCell>
-                      <TableCell className="text-sm py-2.5 font-medium">{entry.subLocation || entry.sectionLocation}</TableCell>
-                      <TableCell className="py-2.5">
-                        {entry.damageType ? (
-                          <Badge className={cn("text-xs font-semibold rounded-full px-2 py-0.5", DAMAGE_TYPE_BADGE[entry.damageType] ?? "border-border bg-muted text-muted-foreground")}>
-                            {entry.damageType}
-                          </Badge>
-                        ) : <span className="text-sm text-muted-foreground">—</span>}
-                      </TableCell>
-                      <TableCell className="py-2.5">
-                        {entry.assessment === "Repairable" && <Badge className="text-xs font-semibold rounded-full px-2 py-0.5 border-green-300 bg-green-100 text-green-800">Repairable</Badge>}
-                        {entry.assessment === "Non-Repairable" && <Badge className="text-xs font-semibold rounded-full px-2 py-0.5 border-red-300 bg-red-100 text-red-800">Non-Repairable</Badge>}
-                        {!entry.assessment && <span className="text-sm text-muted-foreground">—</span>}
-                      </TableCell>
-                      <TableCell className="py-2.5">
-                        {entry.damageAssessment === "Surface" && <Badge className="text-xs font-semibold rounded-full px-2 py-0.5 border-blue-300 bg-blue-100 text-blue-800">Surface</Badge>}
-                        {entry.damageAssessment === "Structural" && <Badge className="text-xs font-semibold rounded-full px-2 py-0.5 border-amber-300 bg-amber-100 text-amber-800">Structural</Badge>}
-                        {!entry.damageAssessment && <span className="text-sm text-muted-foreground">—</span>}
-                      </TableCell>
-                      <TableCell className="py-2.5">
-                        {entry.aiDetected && entry.confidence != null ? (
-                          <ConfidenceBadge pct={entry.confidence} />
+                        {entry.imageUrl ? (
+                          <img
+                            src={entry.imageUrl} alt="damage"
+                            onClick={() => onLightbox(entry.imageUrl)}
+                            className="w-9 h-9 rounded-md object-cover cursor-zoom-in border border-border flex-shrink-0"
+                          />
                         ) : (
-                          <Badge variant="outline" className="text-xs text-muted-foreground font-medium">Manual</Badge>
+                          <span className="text-[10px] text-muted-foreground leading-none pt-1">No photo</span>
                         )}
-                      </TableCell>
-                      <TableCell className="py-2.5 max-w-[200px]">
-                        <span className="text-sm text-muted-foreground block truncate" title={entry.comments}>
-                          {entry.comments ? (entry.comments.length > 60 ? entry.comments.slice(0, 60) + "…" : entry.comments) : "—"}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-2.5 text-sm text-foreground">{entry.subLocation || entry.sectionLocation || "—"}</TableCell>
+                    <TableCell className="py-2.5 text-sm text-foreground">{entry.damageType || "—"}</TableCell>
+                    <TableCell className="py-2.5 text-sm text-foreground">{entry.assessment || "—"}</TableCell>
+                    <TableCell className="py-2.5 text-sm text-foreground">{entry.damageAssessment || "—"}</TableCell>
+                    <TableCell className="py-2.5 text-sm text-foreground">
+                      {entry.aiDetected && entry.confidence != null
+                        ? `${entry.confidence}% AI Confidence`
+                        : "Manual"}
+                    </TableCell>
+                    {/* Notes — wraps freely, no truncation */}
+                    <TableCell className="py-2.5 text-sm text-muted-foreground">
+                      {entry.comments || "—"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         )}
       </CardContent>
     </Card>
