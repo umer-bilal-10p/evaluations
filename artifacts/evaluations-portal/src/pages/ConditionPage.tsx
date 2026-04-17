@@ -847,7 +847,8 @@ function ReadOnlySectionCard({
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
                 {/* Fixed widths — tableLayout:fixed enforces these across all section tables */}
-                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 112 }}>#</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 40 }}>#</TableHead>
+                <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 76 }}>Photo</TableHead>
                 <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 130 }}>Sub-location</TableHead>
                 <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 110 }}>Damage Type</TableHead>
                 <TableHead className="h-9 text-[10px] font-bold uppercase tracking-wider" style={{ width: 120 }}>Repairability</TableHead>
@@ -861,29 +862,30 @@ function ReadOnlySectionCard({
                 const isIncomplete = !entry.damageType || (entry.damageType !== "None" && (!entry.assessment || !entry.damageAssessment));
                 return (
                   <TableRow key={entry.id} className="hover:bg-muted/20">
-                    {/* # — row number stacked above thumbnail */}
+                    {/* # — row number only */}
                     <TableCell className="py-2.5 align-top">
-                      <div className="flex flex-col items-start gap-1.5">
-                        <div className="flex items-center gap-1">
-                          <span className="text-sm font-medium text-muted-foreground">{idx + 1}</span>
-                          {isIncomplete && (
-                            <Badge className="text-[9px] px-1 py-0 gap-0.5 border-amber-300 bg-amber-100 text-amber-800 font-semibold leading-tight whitespace-nowrap">
-                              <AlertCircle size={8} /> Incomplete
-                            </Badge>
-                          )}
-                        </div>
-                        {entry.imageUrl ? (
-                          <img
-                            src={entry.imageUrl} alt="damage"
-                            onClick={() => onLightbox(entry.imageUrl)}
-                            className="w-14 h-14 rounded-md object-cover cursor-zoom-in border border-border flex-shrink-0"
-                          />
-                        ) : (
-                          <div className="w-14 h-14 rounded-md border border-dashed border-border bg-muted/40 flex items-center justify-center flex-shrink-0">
-                            <Camera size={18} className="text-muted-foreground/30" />
-                          </div>
+                      <div className="flex flex-col items-start gap-1">
+                        <span className="text-sm font-medium text-muted-foreground">{idx + 1}</span>
+                        {isIncomplete && (
+                          <Badge className="text-[9px] px-1 py-0 gap-0.5 border-amber-300 bg-amber-100 text-amber-800 font-semibold leading-tight whitespace-nowrap">
+                            <AlertCircle size={8} /> Incomplete
+                          </Badge>
                         )}
                       </div>
+                    </TableCell>
+                    {/* Photo — thumbnail or placeholder */}
+                    <TableCell className="py-2.5 align-top">
+                      {entry.imageUrl ? (
+                        <img
+                          src={entry.imageUrl} alt="damage"
+                          onClick={() => onLightbox(entry.imageUrl)}
+                          className="w-14 h-14 rounded-md object-cover cursor-zoom-in border border-border"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-md border border-dashed border-border bg-muted/40 flex items-center justify-center">
+                          <Camera size={18} className="text-muted-foreground/30" />
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="py-2.5 text-sm text-foreground align-top">{entry.subLocation || entry.sectionLocation || "—"}</TableCell>
                     <TableCell className="py-2.5 text-sm text-foreground align-top">{entry.damageType || "—"}</TableCell>
